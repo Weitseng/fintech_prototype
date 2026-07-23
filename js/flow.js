@@ -188,8 +188,10 @@ function stageF(){
   const calcLabel=calcLabelFor(prod);
   aiSay(["> 了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
     const w=wrap();
+    if(S.path!=='supplement'){
+      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
+    }
     w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
-    w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
     setControls(w);
   });
 }
@@ -236,7 +238,7 @@ function enterProductDetail(p,items){
   aiSay([lines],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('試算這檔商品','看看這檔商品的年化報酬試算',()=>{meSay('試算這檔商品');clearControls();enterProductCalc(p,items);},['試算','算','好','可以','ok','OK']));
-    w.appendChild(choiceBtn('返回清單','看看其他商品',()=>{meSay('返回清單');clearControls();backToCatalogList(items);},['返回','清單','其他','上一步','回去']));
+    w.appendChild(choiceBtn('再看看其他產品','看看其他商品',()=>{meSay('再看看其他產品');clearControls();backToCatalogList(items);},['返回','清單','其他','上一步','回去']));
     setControls(w);
   });
 }
@@ -253,7 +255,9 @@ function enterProductCalc(p,items){
       renderFinalCTA();
       const w=wrap();
       w.appendChild(choiceBtn('查看其他天期','回到清單看看別的天期',()=>{meSay('查看其他天期');clearControls();backToCatalogList(items);},['查看','其他','天期','清單','回去','返回']));
-      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+      if(S.path!=='supplement'){
+        w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+      }
       setControls(w);
     });
     return;
@@ -265,7 +269,9 @@ function enterProductCalc(p,items){
     renderFinalCTA();
     const w=wrap();
     w.appendChild(choiceBtn('查看其他產品','回到清單看看別的選擇',()=>{meSay('查看其他產品');clearControls();backToCatalogList(items);},['查看','其他','清單','商品','回去','返回']));
-    w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+    if(S.path!=='supplement'){
+      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+    }
     setControls(w);
   });
 }
