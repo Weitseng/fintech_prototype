@@ -5,7 +5,7 @@
    - 三人各自的內容只寫在 content-attr-a.js／content-attr-b.js／content-attr-c.js
    ============================================================ */
 
-/* ================= 商品資料區（凱基致富管家） =================
+/* ================= 商品資料區（凱基智富管家） =================
    PRODUCT_DATA／RECO_REASON 依「使用者屬性」分 key：
    - deposit（屬性 C）由 content-attr-c.js 填入
    - bond（屬性 B）由 content-attr-b.js 填入

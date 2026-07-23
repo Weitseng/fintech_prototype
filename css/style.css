@@ -1,5 +1,5 @@
 :root{
-  --brand:#1854d6; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
+  --brand:#0044ad; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
   --ink:#1b1b19; --muted:#7a7f88; --line:#e9ebee; --bg:#f4f6f9;
   --user-bg:#f0efea; --idle:#dfe4ee;
 }
@@ -151,7 +151,7 @@ input.cx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;wi
   font-size:13px;padding:9px 0;border-radius:6px;cursor:pointer;transition:.15s;font-family:inherit}
 .prod-btn:hover{background:var(--brand-soft)}
 .prod-btn.primary-action{background:var(--brand);color:#fff}
-.prod-btn.primary-action:hover{background:#123fa8}
+.prod-btn.primary-action:hover{background:#003382}
 
 /* 商品清單橫向滑動：多筆商品時卡片並排、可左右滑動瀏覽（單筆商品仍維持直式滿版 .prod） */
 .prod-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;

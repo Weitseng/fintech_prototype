@@ -18,9 +18,9 @@ function stepA(){
   clearControls();hideInput();
   const p=wrap();p.className='selpage';
   p.innerHTML=`
-    <div class="kicker">凱基銀行 · 致富管家</div>
+    <div class="kicker">凱基銀行 · 智富管家</div>
     <h1>閒置資金健檢活動</h1>
-    <div class="lead">花 2 分鐘，讓「致富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
+    <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     <button class="primary" id="startBtn">開始體驗 →</button>`;
   screen().innerHTML='';screen().appendChild(p);
   p.querySelector('#startBtn').onclick=()=>stepB();
@@ -33,12 +33,12 @@ function stepB(){
   p.innerHTML=`
     <div class="kicker">開始之前</div>
     <h1>先設定您在凱基銀行的資產情境</h1>
-    <div class="lead">這些設定僅用於本次試算，幫助致富管家給您更貼近現況的建議。</div>
+    <div class="lead">這些設定僅用於本次試算，幫助智富管家給您更貼近現況的建議。</div>
     <div class="q">1. 您在本行的總資產級距約為？</div>
     <div id="rangeOpts"></div>
     <div class="q">2. 其中現金（活存／定存）比例約為？</div>
     <div id="cashOpts"></div>
-    <button class="primary" id="startBtn" disabled>開啟致富管家分析 →</button>`;
+    <button class="primary" id="startBtn" disabled>開啟智富管家分析 →</button>`;
   screen().innerHTML='';screen().appendChild(p);
   const ro=p.querySelector('#rangeOpts'),co=p.querySelector('#cashOpts'),startBtn=p.querySelector('#startBtn');
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
@@ -57,7 +57,7 @@ function stepB(){
   startBtn.onclick=()=>enterChat();
 }
 
-/* ================= 階段 C｜致富管家分析 ================= */
+/* ================= 階段 C｜智富管家分析 ================= */
 function idleEstimate(){
   const base=assetMid();
   const pct={'85% 以上':0.92,'60–85%':0.72,'30–60%':0.45,'30% 以下':0.2}[S.cashRatio]||0.5;
@@ -83,7 +83,7 @@ function cashInsight(){
 }
 function stageC(){
   const est=idleEstimate();
-  aiSay(["您好，我是凱基銀行的致富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
+  aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
     setTimeout(()=>{
       addDonut(100-est.pct,assetMid());
       aiSay([`${cashInsight()}\n\n依您的資產級距與現金比例推估，您目前大概有一筆 **NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}** 的資金，一直是用比較低的利率方式閒置著。`],()=>{
@@ -190,7 +190,7 @@ function stageF(){
   aiSay(["了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn(calcLabel,sub,()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
-    w.appendChild(choiceBtn('補充更多資產資訊','讓建議更貼近您的整體配置',()=>{meSay('補充更多資產資訊');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行']));
+    w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
     setControls(w);
   });
 }
@@ -259,7 +259,7 @@ function enterProductCalc(p,items){
     renderFinalCTA();
     const w=wrap();
     w.appendChild(choiceBtn('查看其他產品','回到清單看看別的選擇',()=>{meSay('查看其他產品');clearControls();backToCatalogList(items);},['查看','其他','清單','商品','回去','返回']));
-    w.appendChild(choiceBtn('補充更多資產資訊','讓建議更貼近您的整體配置',()=>{meSay('補充更多資產資訊');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行']));
+    w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
     setControls(w);
   });
 }
