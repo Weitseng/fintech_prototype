@@ -119,7 +119,7 @@ function stageC(){
 function ch_d1(){
   aiSay([
     "接下來想請教您幾個問題，幫您找到比較合適的**資金配置方式**——也就是這筆錢大概抓多少比例放在穩定的地方、多少比例配置在追求成長的商品上，讓這筆資金運用得更有效率。",
-    "首先想了解，這筆資金大概多久之後可能會用到呢？"
+    "> 首先想了解，這筆資金大概多久之後可能會用到呢？"
   ],()=>{
     const w=wrap();
     const o=[
@@ -134,7 +134,7 @@ function ch_d1(){
   });
 }
 function ch_d2(){
-  aiSay(["接下來想了解一下您的風險承受度：如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
+  aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
       aiSay(['**看得出來您偏好本金穩定，不希望有任何波動**，這樣的話，我會以保本為優先來幫您規劃，不會建議您承擔額外的市場風險。'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
@@ -146,7 +146,7 @@ function ch_d2(){
   });
 }
 function ch_d3(){
-  aiSay(["最後一個問題，想了解在投資型商品裡，您比較看重哪一種特質？這能幫我判斷債券還是基金更適合您。"],()=>{
+  aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您：","> 在投資型商品裡，您比較看重哪一種特質？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('希望領息穩定、到期時間明確',null,()=>{S.q3='領息穩定、到期時間明確';meSay('希望領息穩定、到期時間明確');clearControls();resolveAttribute('bond','B');},['領息','到期','穩定','固定','確定','債']));
     w.appendChild(choiceBtn('希望門檻較低、追求收益潛能',null,()=>{S.q3='想以較低門檻參與、追求收益潛能';meSay('希望門檻較低、追求收益潛能');clearControls();resolveAttribute('fund','A');},['低門檻','收益潛能','成長','基金','潛力']));
@@ -187,7 +187,7 @@ function stageF(){
   const prod=PRODUCT_DATA[S.recoType];
   const calcLabel=calcLabelFor(prod);
   const sub=prod.key==='deposit'?'看看定存的試算結果':'看看符合需求的商品，再從中試算';
-  aiSay(["了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
+  aiSay(["> 了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn(calcLabel,sub,()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
     w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
@@ -275,7 +275,7 @@ function stageH1(){
   });
 }
 function stageH1b(){
-  aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好，這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
+  aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：','> 這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
     const w=wrap();
     ['0%','1–50%','50% 以上'].forEach(x=>{
       w.appendChild(choiceBtn(x,null,()=>{S.h1Ratio=x;meSay(x);clearControls();stageH2();},[x]));
@@ -323,7 +323,7 @@ function stageH2(){
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3());
     return;
   }
-  aiSay(['您目前主要有投資哪些項目呢？可以複選，選好之後點一下「確認送出」。'],()=>{
+  aiSay(['> 您目前主要有投資哪些項目呢？','可以複選，選好之後點一下「確認送出」。'],()=>{
     const w=wrap();
     const selected=new Set();
     H2_OPTIONS.forEach(opt=>{

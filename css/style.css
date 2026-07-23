@@ -45,12 +45,11 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .me-msg{display:flex;justify-content:flex-end;margin:16px 0;animation:fade .4s ease}
 .me-msg span{background:var(--user-bg);border-radius:6px;padding:10px 14px;font-size:15px;font-weight:600;max-width:84%;line-height:1.5}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-/* 提問句（需要使用者實際選擇的問題）：跟一般敘述性 ai-msg 區分開，用左側色塊＋徽章凸顯 */
-.ask-msg{display:flex;align-items:flex-start;gap:10px;margin:16px 0;padding:13px 15px;
-  background:var(--brand-soft);border-left:3px solid var(--brand);border-radius:6px;animation:fade .4s ease}
-.ask-badge{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;
-  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
-.ask-text{font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.6}
+/* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
+   跟一般敘述性 ai-msg 區分開，不用左側色塊或徽章，改用溫和的底色與圓角 */
+.md-quote{background:#f7f5f2;border-radius:12px;padding:14px 18px;margin:14px 0;
+  font-size:15.5px;font-weight:600;color:var(--ink);line-height:1.6;animation:fade .4s ease}
+.ai-msg .md-quote{margin:6px 0}
 .typing{display:flex;gap:4px;margin:16px 0;align-items:center}
 .typing .d{width:7px;height:7px;border-radius:50%;background:#b8bfca;animation:blink 1.2s infinite}
 .typing .d:nth-child(2){animation-delay:.2s}.typing .d:nth-child(3){animation-delay:.4s}

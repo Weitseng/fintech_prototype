@@ -71,6 +71,7 @@ function mdToHtml(src){
       if(!inList){out.push('<ul class="md-ul">');inList=true;}
       out.push(`<li>${mdInline(m[1])}</li>`);return;
     }
+    if((m=line.match(/^>\s?(.*)/))){closeList();out.push(`<div class="md-quote">${mdInline(m[1])}</div>`);return;}
     closeList();out.push(`<p class="md-p">${mdInline(line)}</p>`);
   });
   closeList();
@@ -91,11 +92,11 @@ function aiSay(msgs,done){
       m.innerHTML=mdToHtml(msgs[i]);chatBox.appendChild(m);down();i++;setTimeout(next,300);},620);
   })();
 }
-/* 需要使用者實際回答的提問句：用醒目的提問卡呈現，跟一般敘述性訊息（aiSay）區分開，
-   讓使用者一眼看出「這句是要請你選」，不會被前面的說明文字稀釋掉 */
+/* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
+   跟一般敘述性訊息區分開，讓使用者一眼看出「這句是要請你選」，不會被前面的說明文字稀釋掉 */
 function aiAsk(question){
-  const m=document.createElement('div');m.className='ask-msg';
-  m.innerHTML=`<span class="ask-badge">?</span><span class="ask-text">${mdInline(question)}</span>`;
+  const m=document.createElement('div');m.className='ai-msg';
+  m.innerHTML=`<div class="md-quote">${mdInline(question)}</div>`;
   chatBox.appendChild(m);down();
 }
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
