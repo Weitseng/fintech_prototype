@@ -109,8 +109,10 @@ input.cx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;wi
 .cx-tag{display:inline-block;margin-top:3px;font-size:10px;font-weight:600;color:#767a8c;background:#f2f3f8;padding:2px 7px;border-radius:6px}
 .cx-rate{font-size:11.5px;color:var(--muted);text-align:right;width:42px;flex-shrink:0}
 .cx-approxnote{font-size:9.5px;color:#b3b7c6;margin-top:2px}
+.cx-insight{font-size:13px;line-height:1.65;color:var(--muted);background:#f8f9fb;border-radius:6px;
+  padding:11px 13px;margin-bottom:14px}
 .cx-summary{margin-top:14px}
-/* 倍率視覺主角：漸層卡＋大字倍數＋對比條 */
+/* 倍率視覺主角：漸層卡＋大字倍數 */
 .cx-herobox{background:linear-gradient(135deg,var(--cx-accent),var(--cx-accent-dark));border-radius:6px;
   padding:16px 16px 15px;color:#fff;position:relative;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.16)}
 .cx-herobox::after{content:"";position:absolute;top:-34px;right:-24px;width:110px;height:110px;
@@ -120,15 +122,8 @@ input.cx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;wi
   animation:heroPop .5s ease}
 .cx-heromult{font-size:42px;font-weight:800;line-height:1;letter-spacing:-.5px}
 .cx-herox{font-size:19px;font-weight:800}
+.cx-heroyear{font-size:13px;font-weight:700;opacity:.85;margin-left:2px}
 @keyframes heroPop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
-.cx-herosub{font-size:11.5px;opacity:.88;position:relative;z-index:1}
-.cx-herobars{margin-top:13px;display:flex;flex-direction:column;gap:7px;position:relative;z-index:1}
-.cx-herobarrow{display:flex;align-items:center;gap:8px;font-size:10.5px}
-.cx-herobarlabel{width:64px;flex-shrink:0;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cx-herobartrack{flex:1;height:8px;background:rgba(255,255,255,.25);border-radius:6px;overflow:hidden}
-.cx-herobarfill{height:100%;background:rgba(255,255,255,.55);border-radius:6px;transition:width .3s ease}
-.cx-herobarfill.hi{background:#fff}
-.cx-herobarval{width:50px;text-align:right;font-weight:800}
 .cx-heronote{margin-top:10px;font-size:12px;line-height:1.65;color:var(--ink);background:#f2f5ff;border-radius:6px;padding:11px 12px}
 .cx-card.fund .cx-heronote,.cx-card.combo .cx-heronote{background:#f6f2ff}
 .cx-disclaimer{margin-top:12px;background:#f6f7f9;border-radius:6px;padding:11px 13px;font-size:10.5px;color:#9599ab;line-height:1.6}
@@ -159,9 +154,10 @@ input.cx-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;wi
 .prod-row .prod.prod-card{flex:0 0 78%;max-width:300px;margin:0;scroll-snap-align:start}
 .prod-row .prod .pn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .prod-row .prod .meta{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.cx-periodtoggle{display:flex;gap:6px;margin-bottom:12px}
-.cx-periodtoggle button{flex:1;border:1.5px solid var(--line);background:#fff;color:var(--ink);
-  font-weight:700;font-size:13px;padding:8px 0;border-radius:6px;cursor:pointer;transition:.15s;font-family:inherit}
+.cx-periodtoggle{display:flex;align-items:center;gap:8px;margin:2px 0 12px}
+.cx-periodlabel{font-size:12.5px;font-weight:700;color:var(--muted);margin-right:2px}
+.cx-periodtoggle button{border:1.5px solid var(--line);background:#fff;color:var(--ink);
+  font-weight:700;font-size:12.5px;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.15s;font-family:inherit}
 .cx-periodtoggle button.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
 .endcard{text-align:center;padding:22px 14px;background:#fff;border-radius:6px;margin:14px 0}
 .endcard .ic{font-size:40px}.endcard .t{font-size:17px;font-weight:800;margin:8px 0 4px}

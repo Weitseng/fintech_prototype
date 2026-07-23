@@ -165,8 +165,12 @@ function investRationale(tag){
   return `${reason}，我建議先保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成您覺得合適的配置。`;
 }
 
-/* 拉桿試算卡：CATALOG 裡的單一商品（債券／基金）vs 活期存款，附「近1年／近3年」切換（僅呈現百分比，不出現實際金額） */
-function buildProductCalcCard(p,initialInvestPct){
+/* 拉桿試算卡：CATALOG 裡的單一商品（債券／基金）vs 活期存款，附「近1年／近3年」切換（僅呈現百分比，不出現實際金額）
+   insightHtml（investRationale 的結果）整合呈現在卡片內，不再另外用聊天訊息重複一次；
+   配置比例只在拉桿上呈現（cx-left／cx-right），summary 不重複畫比例條；
+   近1年／近3年只影響${p.cat==='bond'?'債券':'基金'}這一側的利率（活存固定不隨年期變動），
+   所以切換鈕放在拉桿之後、明確標示是哪個商品的報酬期間 */
+function buildProductCalcCard(p,initialInvestPct,insightHtml){
   const dep=DEMAND_DEPOSIT;
   const tag=p.cat==='bond'?'債券':'基金';
   const accent=p.cat==='bond'?'#3355FF':'#7A4FE0',accentDark=p.cat==='bond'?'#1f3ad6':'#5c34c2';
@@ -174,15 +178,14 @@ function buildProductCalcCard(p,initialInvestPct){
   card.style.setProperty('--cx-accent',accent);card.style.setProperty('--cx-accent-dark',accentDark);
   card.innerHTML=`
     <div class="cx-titlebar">${p.name}<span class="cx-dot">・</span>年化報酬試算</div>
+    <div class="cx-insight">${insightHtml}</div>
+    <div class="cx-sliderlabels"><div class="cx-big cx-left"></div><div class="cx-big cx-right"></div></div>
+    <input class="cx-slider" type="range" min="0" max="100" value="${initialInvestPct}">
     <div class="cx-periodtoggle">
+      <span class="cx-periodlabel">${tag}報酬期間</span>
       <button class="cx-period sel" data-period="1y" type="button">近1年</button>
       <button class="cx-period" data-period="3y" type="button">近3年</button>
     </div>
-    <div class="cx-sliderlabels"><div class="cx-big cx-left"></div><div class="cx-big cx-right"></div></div>
-    <input class="cx-slider" type="range" min="0" max="100" value="${initialInvestPct}">
-    <div class="cx-divider"></div>
-    <div class="cx-fixedrows"></div>
-    <div class="cx-optrows"></div>
     <div class="cx-approxnote">＊${tag}近1年／近3年報酬率為試算參考值，${p.cat==='bond'?'債券票面利率固定、不隨年期變動':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="cx-summary"></div>
     <div class="cx-disclaimer">${DISCLAIMER}</div>`;
@@ -197,23 +200,16 @@ function buildProductCalcCard(p,initialInvestPct){
   function draw(){
     const investPct=+slider.value,keepPct=100-investPct;
     const rate=currentRate();
-    const prodRow={name:p.name,tag,color:accent,rate};
     card.querySelector('.cx-left').textContent=`${tag} ${investPct}%`;
     card.querySelector('.cx-right').textContent=`${keepPct}% ${dep.tag}`;
     slider.style.setProperty('--fill',investPct+'%');
-    card.querySelector('.cx-fixedrows').innerHTML=calcRowHtml(dep,1);
-    card.querySelector('.cx-optrows').innerHTML=calcRowHtml(prodRow,2);
     const blended=(keepPct/100)*dep.rate+(investPct/100)*rate;
     const blendedPctStr=fmtPct(blended*100);
     const life=lifeValueEq(estimatedIdlePrincipal()*blended);
     card.querySelector('.cx-summary').innerHTML=`
       <div class="cx-herobox">
-        <div class="cx-herolabel">${investPct}% ${tag}＋${keepPct}% ${dep.tag}　資產有機會增長約</div>
-        <div class="cx-heromultrow"><span class="cx-heromult">${blendedPctStr}</span><span class="cx-herox">%</span></div>
-        <div class="cx-herobars">
-          <div class="cx-herobarrow"><span class="cx-herobarlabel">${tag}</span><div class="cx-herobartrack"><div class="cx-herobarfill hi" style="width:${investPct}%"></div></div><span class="cx-herobarval">${investPct}%</span></div>
-          <div class="cx-herobarrow"><span class="cx-herobarlabel">${dep.tag}</span><div class="cx-herobartrack"><div class="cx-herobarfill" style="width:${keepPct}%"></div></div><span class="cx-herobarval">${keepPct}%</span></div>
-        </div>
+        <div class="cx-herolabel">預估年化增長約</div>
+        <div class="cx-heromultrow"><span class="cx-heromult">${blendedPctStr}</span><span class="cx-herox">%</span><span class="cx-heroyear">／年</span></div>
       </div>
       <div class="cx-heronote">這樣的成長幅度，一年下來大約相當於 <b>${life.trips} 趟小旅行</b>，或 <b>${life.dinners} 頓和朋友的聚餐</b>。</div>`;
   }

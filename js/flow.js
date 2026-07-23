@@ -206,10 +206,13 @@ function stageGList(){
   const cats=S.recoType==='combo'?['bond','fund']:[S.recoType];
   const tolerance=S.q2==='可接受小幅波動'?'穩健':'積極';
   const items=matchCatalog(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange));
+  const riskNote=tolerance==='穩健'
+    ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內。'
+    :'考量您能接受較明顯的波動、也想追求更高的成長空間，這裡的篩選範圍涵蓋穩健到積極的商品，讓您有更多元的選擇。';
   const intro={
-    bond:'我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券，您可以先看看商品詳情，或直接試算：',
-    fund:'我依您能接受的波動程度與資金規模，從資產類別、配息方式幫您篩出幾檔基金，您可以先看看商品詳情，或直接試算：',
-    combo:'我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看，您可以先看看商品詳情，或直接試算：',
+    bond:`我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券。${riskNote}您可以先看看商品詳情，或直接試算：`,
+    fund:`我依您能接受的波動程度與資金規模，從資產類別、配息方式幫您篩出幾檔基金。${riskNote}您可以先看看商品詳情，或直接試算：`,
+    combo:`我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看。${riskNote}您可以先看看商品詳情，或直接試算：`,
     deposit:'我整理了本行美元定存的天期與利率供您參考，您可以先看看各天期的商品詳情，或直接試算：'
   }[S.recoType]||'依您剛才的回答，我幫您整理了幾檔符合需求的商品，您可以先看看商品詳情，或直接試算：';
   aiSay([intro],()=>{
@@ -263,8 +266,8 @@ function enterProductCalc(p,items){
     return;
   }
   const tag=p.cat==='bond'?'債券':'基金';
-  aiSay([investRationale(tag),'這是這檔商品的試算結果，您可以切換「近1年／近3年」，也能拖動下面的拉桿調整配置比例：'],()=>{
-    chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor()));
+  aiSay(['這是這檔商品的試算結果：'],()=>{
+    chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor(),investRationale(tag)));
     down();
     renderFinalCTA();
     const w=wrap();
@@ -363,35 +366,35 @@ function stageH2(){
   });
 }
 
-/* ================= H-3 試算與轉入建議 ================= */
+/* ================= H-3 試算與轉入建議 =================
+   資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現 */
 function stageH3(){
   const prod=PRODUCT_DATA[S.recoTypeH];
   const calcLabel=calcLabelFor(prod);
+  const recap=`幫您把目前掌握到的資產樣貌整理一下：
+- 凱基銀行資產級距：**${S.assetRange||'—'}**，現金比例：**${S.cashRatio||'—'}**
+- 其他銀行資產級距：**${S.h1Amt||'—'}**，投資比例：**${S.h1Ratio||'—'}**
+- 其他銀行主要投資項目：**${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}**`;
   const bridge=S.recoTypeH==='deposit'
     ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
     : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
-  aiSay([`把您在其他銀行大約「${S.h1Amt}」的資產、還有投資比例（${S.h1Ratio}）都一起考慮進來，這樣整體的配置樣貌會更完整。`,
-    S.h2Reason,
-    bridge],()=>{
+  aiSay([recap,S.h2Reason,bridge],()=>{
     const w=wrap();
     w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();stageH3List();},['試算','配置','查看','清單','商品','好','可以','ok','OK']));
     setControls(w);
   });
 }
 /* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
-   先把完整資產樣貌做個整理，再帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
+   資產樣貌已在 stageH3 呈現過，這裡只帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
 function stageH3List(){
-  const recap=`幫您把目前掌握到的資產樣貌整理一下：
-- 凱基銀行資產級距：**${S.assetRange||'—'}**，現金比例：**${S.cashRatio||'—'}**
-- 其他銀行資產級距：**${S.h1Amt||'—'}**，投資比例：**${S.h1Ratio||'—'}**
-- 其他銀行主要投資項目：**${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}**`;
   const items=matchCatalog([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt));
+  const riskNote='考量您在本行與其他銀行的整體資產配置與投資經驗，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
   const intro={
-    bond:'納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考，您可以先看看商品詳情，或直接試算：',
-    fund:'納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考，您可以先看看商品詳情，或直接試算：',
+    bond:`納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
+    fund:`納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
     deposit:'納入您整體的資產狀況，我整理了本行美元定存的天期與利率供您參考，您可以先看看商品詳情，或直接試算：'
   }[S.recoTypeH];
-  aiSay([recap,intro],()=>{
+  aiSay([intro],()=>{
     showCatalogCards(items);
   });
 }
