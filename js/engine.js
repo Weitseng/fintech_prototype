@@ -117,17 +117,7 @@ function handleFree(text){
   if(c){meSay(text);suppressNextEcho=true;c.el.click();return;}
   meSay(text);clarify();
 }
-function addDonut(investedPct,amount,id){
-  const idle=100-investedPct;const card=document.createElement('div');card.className='donutcard';if(id)card.id=id;
-  const inv=Math.round(amount*investedPct/100),idl=amount-inv;
-  card.innerHTML=`<div class="donut" style="background:conic-gradient(var(--brand) 0 ${investedPct}%,var(--idle) ${investedPct}% 100%)">
-      <div class="hole"><div><div class="hv">${idle}%</div><div class="hl">閒置現金</div></div></div></div>
-    <div class="legend">
-      <div class="li"><span class="dot" style="background:var(--brand)"></span>已投資<span class="amt">$${inv.toLocaleString()}</span></div>
-      <div class="li"><span class="dot" style="background:var(--idle)"></span>閒置現金<span class="amt">$${idl.toLocaleString()}</span></div>
-    </div>`;
-  chatBox.appendChild(card);down();return card;
-}
+/* 資產配置圓餅圖已改用 chart/pie 元件（js/component-library.js）呈現，見 flow.js 的 stageC() */
 
 /* ================= 試算共用工具 ================= */
 function fmt(n){return Math.round(n).toLocaleString('en-US');}
@@ -239,33 +229,7 @@ function buildDepositCard(){
   return card;
 }
 
-/* ================= 商品清單卡片 ================= */
-/* 可點擊的商品清單卡片（來自 CATALOG）：每張卡片可以「商品詳情」或「試算」
-   多筆商品時，卡片改為橫向排列並放進可滑動的 .prod-row，讓使用者能左右滑動瀏覽；只有單一商品時維持原本的直式滿版卡片 */
-function renderCatalogCards(items,onCalc,onDetail){
-  const multi=items.length>1;
-  let holder=chatBox;
-  if(multi){
-    holder=document.createElement('div');holder.className='prod-row';
-    chatBox.appendChild(holder);
-  }
-  items.forEach(p=>{
-    const rc={'穩健':'r-low','中等':'r-mid','積極':'r-high'}[p.risk];
-    const rateStr=(p.rate*100).toFixed(2).replace(/\.?0+$/,'');
-    const el=document.createElement('div');el.className='prod'+(multi?' prod-card':'');
-    el.innerHTML=`<div class="ph"><div class="pn">${p.name}</div><span class="tag">${p.cat==='bond'?'債券':'基金'}</span></div>
-      <div class="yield">${rateStr}%<small>參考年化</small></div>
-      <div class="meta"><span class="risk ${rc}">${p.risk}</span> · ${p.currency}｜最低申購 ${p.minAmt}<br>${p.feature}</div>
-      <div class="prod-actions">
-        <button class="prod-btn detail-btn">商品詳情</button>
-        <button class="prod-btn calc-btn primary-action">試算</button>
-      </div>`;
-    el.querySelector('.detail-btn').onclick=()=>onDetail(p);
-    el.querySelector('.calc-btn').onclick=()=>onCalc(p);
-    holder.appendChild(el);
-  });
-  down();
-}
+/* 商品清單卡片已改用 card/product 元件（js/component-library.js）呈現，見 flow.js 的 showCatalogCards() */
 /* 僅用於定存（保守型）：唯一沒有 CATALOG 清單可選的情境，直接呈現試算 */
 function runDepositCalcAndFinish(nextStep){
   chatBox.appendChild(buildDepositCard());
