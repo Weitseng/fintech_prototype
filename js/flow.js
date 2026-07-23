@@ -18,8 +18,13 @@ function stepA(){
   clearControls();hideInput();
   const p=wrap();p.className='selpage';
   p.innerHTML=`
+    <div class="selpage-hero">
+      <video class="selpage-hero-video" autoplay muted loop playsinline>
+        <source src="assets/opening-animation.mp4" type="video/mp4">
+      </video>
+    </div>
     <div class="kicker">凱基銀行 · 智富管家</div>
-    <h1>閒置資金健檢活動</h1>
+    <h1>幫您的閒置資金做個健康檢查，讓每一分錢都別睡懶覺！</h1>
     <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     <button class="primary" id="startBtn">開始體驗 →</button>`;
   screen().innerHTML='';screen().appendChild(p);
@@ -32,11 +37,11 @@ function stepB(){
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="kicker">開始之前</div>
-    <h1>先設定您在凱基銀行的資產情境</h1>
-    <div class="lead">這些設定僅用於本次試算，幫助智富管家給您更貼近現況的建議。</div>
-    <div class="q">1. 您在本行的總資產級距約為？</div>
+    <h1>開始前，先聊聊您在凱基銀行的資產狀況吧！</h1>
+    <div class="lead">這些資訊只用在這次的初步試算，能幫智富管家給您最貼近現況的小建議喔！</div>
+    <div class="q">1. 您在本行的總資產級距大約落在哪裡呢？</div>
     <div id="rangeOpts"></div>
-    <div class="q">2. 其中現金（活存／定存）比例約為？</div>
+    <div class="q">2. 其中隨時能動用的現金（活存／定存）大概占多少比例？</div>
     <div id="cashOpts"></div>
     <button class="primary" id="startBtn" disabled>開啟智富管家分析 →</button>`;
   screen().innerHTML='';screen().appendChild(p);
@@ -66,41 +71,41 @@ function idleEstimate(){
 }
 function cashInsight(){
   return {
-    '85% 以上':`## 現金比例偏高
-您目前的資產有相當高的比例，是以活存或定存這類方式持有。這樣的安排非常安全、隨時能動用，但長期來看有兩個地方值得留意：
+    '85% 以上':`## 現金比例偏高，實質購買力悄悄被通膨吃掉囉！
+您目前的資產大多放在活存或定存，雖然安全感滿分、隨時要用都很方便，但長期來看有兩個小隱憂：
 
-- 活存利率通常不到 1%，長期下來很難追上物價上漲的幅度，等於資金的實質購買力在慢慢變小
-- 這麼高比例的資金都沒有參與投資，也等於錯過了讓資金成長的機會
+- 通膨怪獸默默威脅： 活存年利率通常不到 1%，很難追上物價上漲的速度，實質購買力其實正在慢慢縮水。
+- 錯過資金長大的機會： 這麼大一部分資金沒參與投資，有點可惜了它們的成長潛力！
 
 這也是接下來我們要一起討論的重點：怎麼讓這筆閒置資金更有效率地運用。`,
-    '60–85%':`## 現金比例偏高
+    '60–85%':`## 現金比例偏高，實質購買力悄悄被通膨吃掉囉！
 您的資產配置目前仍以保守的活存／定存為主。這樣的安排很安全，但也代表有一部分資金的成長效率不高，若能重新規劃一下，會更有機會發揮這筆資金的價值。`,
-    '30–60%':`## 現金與投資接近平衡
-您的現金與投資比例算是接近平衡，這是不錯的基礎。不過還是有一部分資金停留在低利率的帳戶裡，如果能一併規劃，資金運用會更有效率。`,
-    '30% 以下':`## 現金比例已經不高
-看得出來您已經把大部分資產投入運用了，這部分閒置資金如果也能一併規劃，您的整體配置會更完整。`
+    '30–60%':`## 現金與投資配置蠻均衡的，靈活性很棒喔！
+您的配置基礎打得很不錯！不過還是有一少部分資金靜靜躺在低利率帳戶裡，如果能順便幫它們規劃一下，整體效益會更好！`,
+    '30% 以下':`## 您已經是資金活用高手了！現金比例掌握得很好！
+看得出來您非常懂善用資金！如果能把剩餘這小小一筆閒置資金也一併梳理，您的整體資產配置就更完美了！`
   }[S.cashRatio]||'';
 }
 function stageC(){
   const est=idleEstimate();
   aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
     setTimeout(()=>{
-      addDonut(100-est.pct,assetMid());
+      renderComponent('chart/pie',100-est.pct,assetMid());
       aiSay([`${cashInsight()}\n\n依您的資產級距與現金比例推估，您目前大概有一筆 **NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}** 的資金，一直是用比較低的利率方式閒置著。`],()=>{
-        aiAsk("這筆閒置資金，您會怎麼運用呢？");
+        aiAsk("對於這筆閒置資金，您平時比較想怎麼運用它呢？");
         const w=wrap();
         const opts=[
           ['先放著，可能是備用金或短期要用',
-           '**這類「先放著」的資金，很多時候不是沒有想法，而是當作緊急備用金，或是預留給短期內比較明確的用途**——像是子女學費、結婚基金這類支出。即使是這樣，閒置的這段時間也不一定只能放在低利率的地方，也許還有機會利用這段時間，讓資產小小提升一些。',
+           '**沒問題！短期預留的資金最需要兼顧彈性與穩定。**——像是子女學費、結婚基金這類支出。即使是這樣，閒置的這段時間也不一定只能放在低利率的地方，也許還有機會利用這段時間，讓資產小小提升一些。',
            ['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']],
           ['想加減賺一點零用錢，風險不要太高',
-           '**您希望在風險不要太高的前提下，讓這筆錢多少賺一點**，那我再透過幾個問題，幫您抓一個合適的比例。',
+           '**收到！那我們就走「穩穩賺零用錢」路線！**，我們會以控制風險為第一優先，幫您尋找穩健撥息或保本型的工具。',
            ['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']],
           ['想讓這筆錢成長更多，可以承擔一些風險',
-           '**您希望這筆資金有更明顯的成長空間，也願意承擔一些風險**，那我再透過幾個問題，幫您抓一個合適的配置方向。',
+           '**太棒了！展現積極成長的衝勁！**，我們會為您挑選具備成長潛力的工具，在您可以接受的風險範圍內，一起爭取更漂亮的報酬率！',
            ['提升價值','價值提升','增值','成長','積極','提高','承擔風險']],
           ['還沒想法，想先聽看看建議',
-           '**沒問題，那我先透過幾個簡單的問題，了解一下您的使用時間與風險承受度**，幫您找一個比較合適的方向。',
+           '**別擔心！交給我就好！**，我們先透過幾個簡單又輕鬆的小問題，幫您找出最適合的規劃方向！',
            ['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']]
         ];
         opts.forEach(([label,ack,kw])=>w.appendChild(choiceBtn(label,null,()=>{
@@ -118,6 +123,8 @@ function stageC(){
    每題的按鈕「顯示文字」寫成順口的完整回答，但存進 S.q1/S.q2/S.q3 的仍是原本的短字串（見檔頭說明）*/
 function ch_d1(){
   aiSay([
+    "接下來想請教您幾個問題，幫您抓住合適的**資金配置方式**——也就是多少比例放穩定型、多少比例追求成長，讓每一分錢都用得更有效率！",
+    "首先想了解，這筆資金大概多久之後可能會用到呢？"
     "接下來想請教您幾個問題，幫您找到比較合適的**資金配置方式**——也就是這筆錢大概抓多少比例放在穩定的地方、多少比例配置在追求成長的商品上，讓這筆資金運用得更有效率。",
     "> 首先想了解，這筆資金大概多久之後可能會用到呢？"
   ],()=>{
@@ -128,15 +135,21 @@ function ch_d1(){
       ['還不確定，要看情況','還不確定','mid',['還不確定','不確定','不一定','看情況','說不準','不知道']],
     ];
     o.forEach(([label,val,wt,kw])=>w.appendChild(choiceBtn(label,null,()=>{S.q1=val;S.depositWeight=wt;meSay(label);clearControls();
-      const summary=val==='一年以上'?'這筆資金短期內應該用不到，可以承擔比較長的投資期間':val==='一年內'?'這筆資金在比較短的時間內就可能會用到，需要保留一定的靈活性':'目前還不確定什麼時候會用到，那就先用均衡一點的比例配置，保留彈性';
+      const summary=val==='一年以上'?'這筆錢很有時間優勢！ 適合作中長期規劃，有更大的彈性去參與市場成長！':val==='一年內'?'這筆錢隨時可能派上用場，我們會把「靈活性與安全性」放在第一位！':'先幫您做均衡配置！ 既能享受收益，又保留隨時調度資金的彈性！';
       aiSay([`**${summary}**。`],()=>ch_d2());},kw)));
     setControls(w);
   });
 }
 function ch_d2(){
+  aiSay(["接下來想了解一下您的風險承受度：如果市場偶爾出現短暫下跌，您的心情反應比較偏向？"],()=>{
   aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
+      aiSay(['**看得出您非常重視本金安全！**，我會以「完全保本與高穩定」的商品為您量身規劃，不讓您睡不著覺！'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
+    w.appendChild(choiceBtn('可以接受小幅度的波動',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅度的波動');clearControls();
+      aiSay(['**適度波動完全 OK！**，我們可以在維持資產穩健的前提下，稍微搭配點收益型商品增加甜頭！'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受']));
+    w.appendChild(choiceBtn('可以接受淨值明顯波動，換取成長空間',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受淨值明顯波動，換取成長空間');clearControls();
+      aiSay(['**您很有投資眼光與強大的心臟！**，成長型商品會非常適合您，幫您衝刺資產增值的潛力！'],()=>ch_d3());},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長']));
       aiSay(['**看得出來您偏好本金穩定，不希望有任何波動**，這樣的話，我會以保本為優先來幫您規劃，不會建議您承擔額外的市場風險。'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
     w.appendChild(choiceBtn('可以接受小幅波動（跌幅約 10%～30%）',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅波動（跌幅約 10%～30%）');clearControls();
       aiSay(['**您可以接受小幅度的波動**，那我們可以再往下聊聊，投資型商品裡有哪一種比較適合您。'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
@@ -222,9 +235,14 @@ function stageGList(){
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
 function showCatalogCards(items){
-  renderCatalogCards(items,
-    p=>enterProductCalc(p,items),
-    p=>enterProductDetail(p,items));
+  const onDetail=p=>enterProductDetail(p,items);
+  const onCalc=p=>enterProductCalc(p,items);
+  if(items.length>1){
+    renderComponentRow('card/product',items,onDetail,onCalc);
+  }else{
+    chatBox.appendChild(renderComponent('card/product',items[0],onDetail,onCalc));
+    down();
+  }
 }
 function enterProductDetail(p,items){
   clearControls();
@@ -266,6 +284,13 @@ function enterProductCalc(p,items){
     return;
   }
   const tag=p.cat==='bond'?'債券':'基金';
+  aiSay([investRationale(tag),'這是這檔商品的試算結果，您可以切換「近1年／近3年」，也能拖動下面的拉桿調整配置比例：'],()=>{
+    if(p.cat==='fund'){
+      renderComponent('card/calculator',p,100-keepPctFor());
+    }else{
+      chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor()));
+      down();
+    }
   aiSay(['這是這檔商品的試算結果：'],()=>{
     chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor(),investRationale(tag)));
     down();
@@ -309,30 +334,34 @@ const H2_OPTIONS=[
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
+  if(keys.length===0||(keys.length===1&&keys[0]==='insurance')){
+    return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！'};
   if(keys.length===0){
     return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
   }
   if(hasGrowth&&!hasBond){
-    return{result:'bond',reason:'**您已經持有股票、ETF 或基金這類波動型資產，但還缺少固定收益的部位**——用債券補上相對穩定的配息與現金流，能讓整體配置更分散、更平衡。'};
+    return{result:'bond',reason:'**您已經很有衝勁了！但稍微缺少了防禦型武器～**——建議補上一點債券部位，用穩定的配息現金流幫您的整體資產裝個避震器！'};
   }
   if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
-    return{result:'fund',reason:'**您已經建立了基礎配置、也有一定的投資經驗**——這個階段適合用基金組合再進階分散，進一步追求成長。'};
+    return{result:'fund',reason:'**哇！您的資產配置非常豐富且有經驗！**——這階段很適合用精選基金組合做跨區域分散配置，繼續挑戰更高的資本利得！'};
   }
+  return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！'};
   return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
   let{result,reason}=base;
   if(result==='fund'&&(S.cashRatio==='85% 以上'||S.h1Ratio==='1–50%')){
-    return{result:'bond',reason:'**雖然您已經有投資經驗，但現金比例偏高、或是其他銀行的投資比例還偏保守**——先以債券建立穩定的收益基礎，會比直接跳到基金更穩健。'};
+    return{result:'bond',reason:'**看得出您很有投資概念囉！不過手邊的現金比例稍高、或是其他配置比較保守**——建議先用債券把「收益底氣」打好，會比直接衝基金更穩健、更安心喔！'};
   }
   if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
-    return{result:'fund',reason:'**您的資金規模充裕，其他銀行的投資比例也相對積極**——可以再進一步用基金組合追求成長，讓資金的成長潛力發揮更完整。'};
+    return{result:'fund',reason:'**您的資金實力非常充足，而且投資風格也很積極喔！**——常適合進一步搭配基金組合，讓資金全力衝刺，把成長潛力發揮到極致！'};
   }
   return{result,reason};
 }
 function stageH2(){
   if(S.h1Ratio==='0%'){
+    S.h2Items=[];S.h2Reason='**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！';S.recoTypeH='deposit';
     S.h2Items=[];S.h2Reason='**您在其他銀行的資金幾乎沒有參與市場，風險偏好也偏低**——先以美元定存穩定累積，會是比較安心的做法。';S.recoTypeH='deposit';
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3());
     return;
