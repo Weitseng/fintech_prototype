@@ -5,9 +5,10 @@
    - rate3y：近三年年化參考值。債券票面利率固定，1年/3年數字相同；
      基金無公開票面利率，rate1y／rate3y 為示範性參考值（非真實歷史績效），僅供試算展示
    - risk：穩健／中等／積極（風險接受度，稻越高風險越大）
-   - cat：bond／fund
+   - cat：bond／fund／deposit（deposit 為屬性 C 的美元定存天期商品，rate 為銀行公告牌告利率，非試算示範值）
    - investType：['收益'|'平衡'|'成長']，可複選
    - assetSize：小／中／大（對應最低申購門檻的資產規模建議）
+   - tenor：僅 deposit 商品使用，顯示用的天期文字（如「7天」「12個月」）
    ============================================================ */
 const CATALOG=[
   {code:'BD337',cat:'bond',name:'美林 Merrill Lynch BV',currency:'AUD',rate:0.051,rate1y:0.051,rate3y:0.051,
@@ -53,7 +54,28 @@ const CATALOG=[
   {code:'FUND5',cat:'fund',name:'凱基台灣精五門基金',currency:'台幣',rate:0.09,rate1y:0.09,rate3y:0.07,
     payFreq:'不配息',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
-    feature:'台股五大趨勢產業；追求資本利得；RR4 股票型'}
+    feature:'台股五大趨勢產業；追求資本利得；RR4 股票型'},
+  /* 屬性 C（保本安穩型）推薦商品：美元定存，依天期分為 5 檔，供橫向商品卡片列選擇（見 content-attr-c.js） */
+  {code:'FDUSD07D',cat:'deposit',name:'美元定存 7天',currency:'USD',rate:0.10,rate1y:0.10,rate3y:0.10,
+    payFreq:'到期領息',minAmt:'3,000',maturity:'-',callDate:'-',tenor:'7天',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
+    feature:'短天期資金靈活運用；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
+  {code:'FDUSD1M',cat:'deposit',name:'美元定存 1個月',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.045,
+    payFreq:'到期領息',minAmt:'3,000',maturity:'-',callDate:'-',tenor:'1個月',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
+    feature:'短期資金停泊首選；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
+  {code:'FDUSD6M',cat:'deposit',name:'美元定存 6個月',currency:'USD',rate:0.04,rate1y:0.04,rate3y:0.04,
+    payFreq:'到期領息',minAmt:'3,000',maturity:'-',callDate:'-',tenor:'6個月',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
+    feature:'半年期穩定收益；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
+  {code:'FDUSD9M',cat:'deposit',name:'美元定存 9個月',currency:'USD',rate:0.0385,rate1y:0.0385,rate3y:0.0385,
+    payFreq:'到期領息',minAmt:'3,000',maturity:'-',callDate:'-',tenor:'9個月',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
+    feature:'中期資金規劃；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
+  {code:'FDUSD12M',cat:'deposit',name:'美元定存 12個月',currency:'USD',rate:0.0365,rate1y:0.0365,rate3y:0.0365,
+    payFreq:'到期領息',minAmt:'3,000',maturity:'-',callDate:'-',tenor:'12個月',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
+    feature:'一年期資金規劃；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'}
 ];
 
 /* ================= 商品篩選（依客戶屬性挑出符合需求的清單） =================

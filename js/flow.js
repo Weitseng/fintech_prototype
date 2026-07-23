@@ -176,38 +176,28 @@ function stageE(){
   ],()=>{
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
-      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的定存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
+      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
     aiSay([bridge],()=>stageF());
   });
 }
 
 /* ================= 階段 F｜詢問下一步 ================= */
-function calcLabelFor(prod){return prod.key==='deposit'?'開始試算':`查看${prod.tag}清單`;}
+function calcLabelFor(prod){return `查看${prod.tag}清單`;}
 function stageF(){
   const prod=PRODUCT_DATA[S.recoType];
   const calcLabel=calcLabelFor(prod);
-  const sub=prod.key==='deposit'?'看看定存的試算結果':'看看符合需求的商品，再從中試算';
   aiSay(["> 了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
     const w=wrap();
-    w.appendChild(choiceBtn(calcLabel,sub,()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
+    w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
     w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
     setControls(w);
   });
 }
 
 /* ================= 階段 G｜（路徑 1）直接媒合 =================
-   定存（屬性 C）沒有 CATALOG 清單可選，直接試算；債券／基金／搭配則先帶出符合需求的商品清單，
+   定存／債券／基金／搭配都從 CATALOG 帶出符合需求的商品清單（定存＝美元定存 5 檔天期），
    使用者從清單挑選商品後才進入試算，試算完可以查看其他產品、或前往下單／諮詢理專 */
 function stageG(){
-  if(S.recoType==='deposit'){
-    aiSay(['那我們就來看看定存方案的年化報酬試算：'],()=>{
-      runDepositCalcAndFinish(()=>{
-        S.selectedProductCode=null;
-        renderFinalCTA();
-      });
-    });
-    return;
-  }
   stageGList();
 }
 function stageGList(){
@@ -217,7 +207,8 @@ function stageGList(){
   const intro={
     bond:'我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券，您可以先看看商品詳情，或直接試算：',
     fund:'我依您能接受的波動程度與資金規模，從資產類別、配息方式幫您篩出幾檔基金，您可以先看看商品詳情，或直接試算：',
-    combo:'我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看，您可以先看看商品詳情，或直接試算：'
+    combo:'我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看，您可以先看看商品詳情，或直接試算：',
+    deposit:'我整理了本行美元定存的天期與利率供您參考，您可以先看看各天期的商品詳情，或直接試算：'
   }[S.recoType]||'依您剛才的回答，我幫您整理了幾檔符合需求的商品，您可以先看看商品詳情，或直接試算：';
   aiSay([intro],()=>{
     showCatalogCards(items);
@@ -232,12 +223,15 @@ function showCatalogCards(items){
 }
 function enterProductDetail(p,items){
   clearControls();
+  const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
   const lines=[
     `## ${p.name}`,
     p.feature,
-    `- 商品類別：**${p.cat==='bond'?'債券':'基金'}**｜幣別：**${p.currency}**`,
+    `- 商品類別：**${catLabel}**｜幣別：**${p.currency}**`,
     `- 最低申購金額：**${p.minAmt}**｜配息頻率：**${p.payFreq}**`,
-    p.cat==='bond'?`- 到期日：**${p.maturity}**（首次贖回日：${p.callDate}）`:`- 申購方式：**${p.entry}**`
+    p.cat==='bond'?`- 到期日：**${p.maturity}**（首次贖回日：${p.callDate}）`
+      :p.cat==='deposit'?`- 存款天期：**${p.tenor}**｜計息方式：**機動利率、到期領息**`
+      :`- 申購方式：**${p.entry}**`
   ].join('\n');
   aiSay([lines],()=>{
     const w=wrap();
@@ -252,6 +246,18 @@ function backToCatalogList(items){
 function enterProductCalc(p,items){
   clearControls();
   S.selectedProductCode=p.code;
+  if(p.cat==='deposit'){
+    aiSay([`這是「${p.name}」的年化報酬試算：`],()=>{
+      chatBox.appendChild(buildDepositCard(p));
+      down();
+      renderFinalCTA();
+      const w=wrap();
+      w.appendChild(choiceBtn('查看其他天期','回到清單看看別的天期',()=>{meSay('查看其他天期');clearControls();backToCatalogList(items);},['查看','其他','天期','清單','回去','返回']));
+      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+      setControls(w);
+    });
+    return;
+  }
   const tag=p.cat==='bond'?'債券':'基金';
   aiSay([investRationale(tag),'這是這檔商品的試算結果，您可以切換「近1年／近3年」，也能拖動下面的拉桿調整配置比例：'],()=>{
     chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor()));
@@ -296,7 +302,7 @@ function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
   if(keys.length===0||(keys.length===1&&keys[0]==='insurance')){
-    return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以定存穩定累積，會是比較安心的做法。'};
+    return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
   }
   if(hasGrowth&&!hasBond){
     return{result:'bond',reason:'**您已經持有股票、ETF 或基金這類波動型資產，但還缺少固定收益的部位**——用債券補上相對穩定的配息與現金流，能讓整體配置更分散、更平衡。'};
@@ -304,7 +310,7 @@ function classifyH2(keys){
   if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
     return{result:'fund',reason:'**您已經建立了基礎配置、也有一定的投資經驗**——這個階段適合用基金組合再進階分散，進一步追求成長。'};
   }
-  return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以定存穩定累積，會是比較安心的做法。'};
+  return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
@@ -319,7 +325,7 @@ function adjustH2(base){
 }
 function stageH2(){
   if(S.h1Ratio==='0%'){
-    S.h2Items=[];S.h2Reason='**您在其他銀行的資金幾乎沒有參與市場，風險偏好也偏低**——先以定存穩定累積，會是比較安心的做法。';S.recoTypeH='deposit';
+    S.h2Items=[];S.h2Reason='**您在其他銀行的資金幾乎沒有參與市場，風險偏好也偏低**——先以美元定存穩定累積，會是比較安心的做法。';S.recoTypeH='deposit';
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3());
     return;
   }
@@ -355,38 +361,30 @@ function stageH2(){
 function stageH3(){
   const prod=PRODUCT_DATA[S.recoTypeH];
   const calcLabel=calcLabelFor(prod);
-  const sub=prod.key==='deposit'?'看看定存的試算結果':'看看符合需求的商品，再從中試算';
   const bridge=S.recoTypeH==='deposit'
     ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的定存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
+    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
   aiSay([`把您在其他銀行大約「${S.h1Amt}」的資產、還有投資比例（${S.h1Ratio}）都一起考慮進來，這樣整體的配置樣貌會更完整。`,
     S.h2Reason,
     bridge],()=>{
     const w=wrap();
-    w.appendChild(choiceBtn(calcLabel,sub,()=>{meSay(calcLabel);clearControls();stageH3List();},['試算','配置','查看','清單','商品','好','可以','ok','OK']));
+    w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();stageH3List();},['試算','配置','查看','清單','商品','好','可以','ok','OK']));
     setControls(w);
   });
 }
 /* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
-   先把完整資產樣貌做個整理，再帶出符合需求的商品清單（deposit 情境沒有 CATALOG 可選，直接試算） */
+   先把完整資產樣貌做個整理，再帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
 function stageH3List(){
   const recap=`幫您把目前掌握到的資產樣貌整理一下：
 - 凱基銀行資產級距：**${S.assetRange||'—'}**，現金比例：**${S.cashRatio||'—'}**
 - 其他銀行資產級距：**${S.h1Amt||'—'}**，投資比例：**${S.h1Ratio||'—'}**
 - 其他銀行主要投資項目：**${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}**`;
-  if(S.recoTypeH==='deposit'){
-    aiSay([recap,'那我們就來看看定存方案的年化報酬試算：'],()=>{
-      runDepositCalcAndFinish(()=>{
-        S.selectedProductCode=null;
-        renderFinalCTA();
-      });
-    });
-    return;
-  }
   const items=matchCatalog([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt));
-  const intro=S.recoTypeH==='bond'
-    ?'納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考，您可以先看看商品詳情，或直接試算：'
-    :'納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考，您可以先看看商品詳情，或直接試算：';
+  const intro={
+    bond:'納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考，您可以先看看商品詳情，或直接試算：',
+    fund:'納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考，您可以先看看商品詳情，或直接試算：',
+    deposit:'納入您整體的資產狀況，我整理了本行美元定存的天期與利率供您參考，您可以先看看商品詳情，或直接試算：'
+  }[S.recoTypeH];
   aiSay([recap,intro],()=>{
     showCatalogCards(items);
   });
