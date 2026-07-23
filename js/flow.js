@@ -303,14 +303,13 @@ const H2_OPTIONS=[
   {key:'stock',label:'股票',cat:'growth'},
   {key:'etf',label:'ETF',cat:'growth'},
   {key:'fund',label:'基金',cat:'growth'},
-  {key:'bond',label:'債券',cat:'bond'},
-  {key:'insurance',label:'儲蓄險',cat:'insurance'}
+  {key:'bond',label:'債券',cat:'bond'}
 ];
 /* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）*/
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
-  if(keys.length===0||(keys.length===1&&keys[0]==='insurance')){
+  if(keys.length===0){
     return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
   }
   if(hasGrowth&&!hasBond){
