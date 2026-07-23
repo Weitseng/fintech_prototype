@@ -24,9 +24,9 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
   color:var(--ink);font-size:15px;font-weight:600;padding:15px 16px;border-radius:6px;margin:9px 0;cursor:pointer;transition:.15s}
 .opt:hover{border-color:var(--brand)}
 .opt.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
-.primary{width:100%;background:#1ea34d;color:#fff;border:0;font-size:16px;font-weight:700;
-  padding:16px;border-radius:6px;cursor:pointer;margin-top:22px}
-.primary:hover{background:#158039}
+.primary{display:block;width:auto;min-width:220px;margin:22px auto 0;background:#0044ad;color:#fff;border:0;font-size:16px;font-weight:700;
+  padding:16px 32px;border-radius:6px;cursor:pointer;text-align:center}
+.primary:hover{background:#003382}
 .primary:disabled{opacity:.35;cursor:not-allowed}
 
 /* Claude 風格對話 */
