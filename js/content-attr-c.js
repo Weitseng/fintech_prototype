@@ -4,7 +4,7 @@
    實際可選的天期／利率商品（7天／1個月／6個月／9個月／12個月）放在 catalog.js 的 CATALOG（cat:'deposit'），
    跟債券／基金一樣走橫向商品卡片列（見 flow.js stageGList／stageH3List）。
    注意：這裡的 PRODUCT_DATA.deposit.rate 只是家族描述用，不是比較基準利率——
-   債券／基金／搭配試算卡的對照基準是「活存」（engine.js 的 DEMAND_DEPOSIT），兩者互不影響。
+   債券／基金／外匯定存的試算卡（card/calculator 元件）都固定用「活存」2.5% 做對照基準，兩者互不影響。
    提問、試算、清單、CTA 等流程一律共用 engine.js／flow.js，不要在這裡重寫或另刻樣式。
    ============================================================ */
 PRODUCT_DATA.deposit={key:'deposit',name:'美元定存',tag:'定存',rate:0.0365,color:'#8b93a1',colorDark:'#6b7280'};

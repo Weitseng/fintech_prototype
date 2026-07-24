@@ -258,46 +258,24 @@ function enterProductDetail(p,items){
 function backToCatalogList(items){
   aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items));
 }
+/* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
+   跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
+   外匯定存利率不隨年期變動，關掉近1年/近3年切換（showPeriodTabs:false） */
 function enterProductCalc(p,items){
   clearControls();
   S.selectedProductCode=p.code;
-  if(p.cat==='deposit'){
-    aiSay([`這是「${p.name}」的年化報酬試算：`],()=>{
-      chatBox.appendChild(buildDepositCard(p));
-      down();
-      renderFinalCTA();
-      const w=wrap();
-      w.appendChild(choiceBtn('查看其他天期','回到清單看看別的天期',()=>{meSay('查看其他天期');clearControls();backToCatalogList(items);},['查看','其他','天期','清單','回去','返回']));
-      if(S.path!=='supplement'){
-        w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
-      }
-      setControls(w);
-    });
-    return;
-  }
-  const tag=p.cat==='bond'?'債券':'基金';
-  const followUp=()=>{
+  const tag={bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
+  const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
+  aiSay([investRationale(tag)],()=>{
+    renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});
     renderFinalCTA();
     const w=wrap();
-    w.appendChild(choiceBtn('查看其他產品','回到清單看看別的選擇',()=>{meSay('查看其他產品');clearControls();backToCatalogList(items);},['查看','其他','清單','商品','回去','返回']));
+    w.appendChild(choiceBtn(backLabel,'回到清單看看別的選擇',()=>{meSay(backLabel);clearControls();backToCatalogList(items);},['查看','其他','清單','商品','天期','回去','返回']));
     if(S.path!=='supplement'){
       w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
     }
     setControls(w);
-  };
-  if(p.cat==='fund'){
-    /* 基金 vs 定存 用 Figma 對應的 card/calculator 元件（含手搖飲/聚餐動畫），insight 沒有對應欄位，先用一句話帶出 */
-    aiSay([investRationale(tag)],()=>{
-      renderComponent('card/calculator',p,100-keepPctFor());
-      followUp();
-    });
-  }else{
-    aiSay(['這是這檔商品的試算結果：'],()=>{
-      chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor(),investRationale(tag)));
-      down();
-      followUp();
-    });
-  }
+  });
 }
 
 /* ================= 階段 H｜（路徑 2）補充更多資產資訊 ================= */
