@@ -188,8 +188,8 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     const dinnerCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.dinnerPrice));
     const yearLabel=years===1?'一年':`${years}年`;
     card.querySelector('.calc-sentence').textContent=mode==='dinner'
-      ?`這樣的成長幅度，${yearLabel}下來大約等於可以和朋友開心聚餐 ${dinnerCount} 次！`
-      :`這樣的成長幅度，${yearLabel}下來大約等於多了 ${drinkCount} 杯手搖飲！`;
+      ?`這樣的成長幅度，${yearLabel}下來大約相當於和朋友聚餐 ${dinnerCount} 次。`
+      :`這樣的成長幅度，${yearLabel}下來大約相當於 ${drinkCount} 杯手搖飲。`;
     return mode==='dinner'?dinnerCount:drinkCount;
   }
   function refresh(triggerAnim){

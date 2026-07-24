@@ -55,7 +55,7 @@ function step2(){
     <div class="total"><div class="k">存款總額</div><div class="v"><small>NTD</small>＊＊＊＊ 👁</div></div>
     <div class="hintcard"><span class="x">✕</span>
       <div class="top"><div class="bot">🤖</div>
-        <div class="msg">發現你帳戶有筆資金默默躺了一個月，要不要撥一點做「定期定額」或「高股息投資」，把這些閒置資產活化起來！</div></div>
+        <div class="msg">系統發現您有一筆資金已閒置一段時間，或許可以評估是否有更合適的運用方式。</div></div>
       <div class="cta"><button id="learnBtn">我想了解 ›</button></div></div>
     <div class="sec-title">臺幣存款</div>
     <div class="sec-sub">臺幣總計 2 筆　NTD ＊＊＊＊</div>

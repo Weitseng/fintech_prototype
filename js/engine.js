@@ -168,6 +168,6 @@ function finishFlow(action){
     chatBox.appendChild(end);down();
     const w=wrap();const b=document.createElement('button');b.className='primary';b.style.marginTop='4px';
     b.textContent='重新開始';b.onclick=resetAll;w.appendChild(b);setControls(w);
-    freeOverride=()=>aiSay(["本次分析已經完成囉，若要重新開始，請點選下方按鈕。"]);
+    freeOverride=()=>aiSay(["本次分析已經完成，若要重新開始，請點選下方按鈕。"]);
   });
 }
