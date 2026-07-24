@@ -38,12 +38,12 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 /* ---- card/product（Figma node 178:664）ProductCard_Display ----
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
    數值標籤依商品類別區分：債券為商品對照矩陣原始欄位「票面/配息率」；基金無真實績效欄位，
-   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「投資1年報酬」；
+   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「過去一年報酬率」；
    定存天期未滿 12 個月屬短天期商品，不能標示為「年利率」（實際持有期間遠短於一年），改用天期本身當標籤 */
 function renderProductCardDisplay(p,onDetail,onCalc){
   const rate1Str=(p.rate1y*100).toFixed(2);
   const investTypeStr=p.investType.join('／');
-  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?(p.tenor==='12個月'?'年利率':`${p.tenor}利率`):'投資1年報酬';
+  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?(p.tenor==='12個月'?'年利率':`${p.tenor}利率`):'過去一年報酬率';
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
