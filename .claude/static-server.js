@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = '/Users/cdib3845/Desktop/fintech_prototype';
+const ROOT = path.join(__dirname, '..');
 const PORT = 8734;
 
 const MIME = {
