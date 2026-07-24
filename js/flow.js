@@ -299,14 +299,15 @@ function stageH1b(){
 }
 /* H-2：目前主要投資項目（可複選） */
 const H2_OPTIONS=[
-  {key:'stock',label:'股票',cat:'growth'},
+  {key:'stock',label:'台股',cat:'growth'},
+  {key:'oversea_stock',label:'海外股',cat:'growth'},
   {key:'etf',label:'ETF',cat:'growth'},
   {key:'fund',label:'基金',cat:'growth'},
   {key:'bond',label:'債券',cat:'bond'}
 ];
 /* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）*/
 function classifyH2(keys){
-  const hasGrowth=keys.some(k=>k==='stock'||k==='etf'||k==='fund');
+  const hasGrowth=keys.some(k=>k==='stock'||k==='oversea_stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
   if(keys.length===0){
     return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從美元定存或極低風險的工具開始，慢慢建立理財的信心！'};
