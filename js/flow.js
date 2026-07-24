@@ -210,7 +210,7 @@ function stageG(){
 function stageGList(){
   const cats=S.recoType==='combo'?['bond','fund']:[S.recoType];
   const tolerance=S.q2==='可接受小幅波動'?'穩健':'積極';
-  const items=matchCatalog(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange));
+  const items=matchCatalogAtLeast(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange),2);
   const riskNote=tolerance==='穩健'
     ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內。'
     :'考量您能接受較明顯的波動、也想追求更高的成長空間，這裡的篩選範圍涵蓋穩健到積極的商品，讓您有更多元的選擇。';
@@ -385,7 +385,7 @@ function stageH3(){
 /* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
    資產樣貌已在 stageH3 呈現過，這裡只帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
 function stageH3List(){
-  const items=matchCatalog([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt));
+  const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
   const riskNote='考量您在本行與其他銀行的整體資產配置與投資經驗，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
   const intro={
     bond:`納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,

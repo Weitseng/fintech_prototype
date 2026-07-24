@@ -101,4 +101,19 @@ function biggerAssetTierAllowed(rangeA,rangeB){
 function matchCatalog(cats,riskTiers,assetTiers){
   return CATALOG.filter(p=>cats.includes(p.cat)&&riskTiers.includes(p.risk)&&assetTiers.includes(p.assetSize));
 }
+/* 法規要求：推薦清單不能只呈現一檔商品。篩選後不足 min 檔時依序放寬：
+   1) 先放寬資產規模門檻——只是讓使用者多一個「門檻較高」的選項可以比較，不影響風險適合度
+   2) 資產規模全開了還不夠，才不得已放寬風險層級——每張商品卡片仍會標示實際風險等級（穩健／中等／積極），
+      使用者仍能一眼看出哪些超出原本設定的風險承受度，不會被誤導
+   任一階段一旦達到 min 檔就停止放寬，避免不必要地擴大清單 */
+function matchCatalogAtLeast(cats,riskTiers,assetTiers,min){
+  min=min||2;
+  let items=matchCatalog(cats,riskTiers,assetTiers);
+  if(items.length>=min)return items;
+  const widerAsset=['小','中','大'];
+  items=matchCatalog(cats,riskTiers,widerAsset);
+  if(items.length>=min)return items;
+  const widerRisk=['穩健','中等','積極'];
+  return matchCatalog(cats,widerRisk,widerAsset);
+}
 function catalogItem(code){return CATALOG.find(p=>p.code===code);}
