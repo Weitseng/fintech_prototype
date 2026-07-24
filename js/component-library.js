@@ -42,7 +42,7 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 function renderProductCardDisplay(p,onDetail,onCalc){
   const rate1Str=(p.rate1y*100).toFixed(2);
   const investTypeStr=p.investType.join('／');
-  const rateLabel=p.cat==='bond'?'票面/配息率':'近一年報酬';
+  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'近一年報酬';
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
@@ -70,60 +70,65 @@ function renderProductCardDisplayRow(items,onDetail,onCalc){
 }
 COMPONENTS['card/product']={render:renderProductCardDisplay,renderRow:renderProductCardDisplayRow};
 
-/* ---- card/calculator（Figma node 202:709）基金 vs 定存 互動試算卡 ----
-   拉桿調整基金／定存配置比例，即時計算加權年化報酬，並把獲利換算成手搖飲杯數／聚餐次數，
+/* ---- card/calculator（Figma node 202:709）資產 vs 活存 互動試算卡 ----
+   原為「基金 vs 定存」設計，現通用給債券／基金／外匯定存三種 CATALOG 商品共用：
+   拉桿調整資產／活存配置比例，即時計算加權年化報酬，並把獲利換算成手搖飲杯數／聚餐次數，
    用掉落 emoji 呈現（Figma 無對應動畫 prototype，掉落效果為此檔自行設計）。
-   baseAmount／高利活存利率／生活換算基準皆抽成 CALC_CONFIG，之後串接真實資料時只需替換這裡。 */
+   baseAmount／高利活存利率／生活換算基準皆抽成 CALC_CONFIG，之後串接真實資料時只需替換這裡。
+   opts.tag：資產標籤文字（債券／基金／外匯定存），預設「基金」；
+   opts.showPeriodTabs：定存利率不隨年期變動，傳 false 隱藏近1年/近3年切換，固定用 asset.rate1y */
 const CALC_CONFIG={
   baseAmount:100000,   // 預設本金 10 萬元（placeholder），之後由「現金留存」互動結果動態帶入，計算邏輯不需更動
-  depositRate:0.025,   // 台幣高利活存 固定年利率，不隨 Tab 或滑桿變動
+  depositRate:0.025,   // 活存 固定年利率，不隨 Tab 或滑桿變動
   drinkPrice:60,       // 一杯手搖飲
   dinnerPrice:800,     // 一次朋友聚會
   maxEmoji:15          // 掉落 emoji 上限，避免畫面過亂
 };
-function renderFundVsDepositCalc(fund,initialFundRatio,opts){
+function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   opts=opts||{};
   const baseAmount=opts.baseAmount!=null?opts.baseAmount:CALC_CONFIG.baseAmount;
+  const tag=opts.tag||'基金';
+  const showPeriodTabs=opts.showPeriodTabs!==false;
   let period='1y';
-  let fundRatio=initialFundRatio==null?50:initialFundRatio;
+  let assetRatio=initialAssetRatio==null?50:initialAssetRatio;
   let mode='drink';
   const card=document.createElement('div');card.className='calc-card';
   card.innerHTML=`
-    <div class="calc-title">${fund.name}・年化報酬試算</div>
-    <div class="calc-tabs">
+    <div class="calc-title">${asset.name}・年化報酬試算</div>
+    ${showPeriodTabs?`<div class="calc-tabs">
       <button type="button" class="calc-tab sel" data-period="1y">近一年</button>
       <button type="button" class="calc-tab" data-period="3y">近三年</button>
-    </div>
+    </div>`:''}
     <div class="calc-ratio-row">
       <div class="calc-ratio-col">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--brand)"></span>基金</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--brand)"></span>${tag}</div>
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:#68c89e"></span>定存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:#68c89e"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>
     <div class="calc-slider-wrap">
-      <input type="range" class="calc-slider" min="0" max="100" value="${fundRatio}" aria-label="基金配置比例">
+      <input type="range" class="calc-slider" min="0" max="100" value="${assetRatio}" aria-label="${tag}配置比例">
     </div>
     <div class="calc-cards-row">
       <div class="calc-minicard">
-        <div class="calc-minicard-name" title="${fund.name}">${fund.name}</div>
+        <div class="calc-minicard-name" title="${asset.name}">${asset.name}</div>
         <div class="calc-minicard-stat">
           <div class="calc-minicard-label calc-fund-rate-label"></div>
           <div class="calc-minicard-value calc-fund-rate-value"></div>
         </div>
       </div>
       <div class="calc-minicard">
-        <div class="calc-minicard-name">台幣高利活存</div>
+        <div class="calc-minicard-name">活期存款</div>
         <div class="calc-minicard-stat">
           <div class="calc-minicard-label">年利率</div>
           <div class="calc-minicard-value">${(CALC_CONFIG.depositRate*100).toFixed(1)}%</div>
         </div>
       </div>
     </div>
-    <div class="calc-note">*基金近1年/近3年報酬率為試算參考值，基金為歷史績效示範，不代表未來報酬</div>
+    <div class="calc-note">*${showPeriodTabs?`${tag}近1年/近3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="calc-result">
       <div class="calc-result-panel">
         <div class="calc-emoji-layer"></div>
@@ -143,7 +148,7 @@ function renderFundVsDepositCalc(fund,initialFundRatio,opts){
   const emojiLayer=card.querySelector('.calc-emoji-layer');
   const toggle=card.querySelector('.calc-toggle');
 
-  function currentRate(){return period==='1y'?fund.rate1y:fund.rate3y;}
+  function currentRate(){return showPeriodTabs?(period==='1y'?asset.rate1y:asset.rate3y):asset.rate1y;}
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -161,14 +166,14 @@ function renderFundVsDepositCalc(fund,initialFundRatio,opts){
     }
   }
   function update(){
-    const depositRatio=100-fundRatio;
-    card.querySelector('.calc-fund-ratio').textContent=fundRatio;
+    const depositRatio=100-assetRatio;
+    card.querySelector('.calc-fund-ratio').textContent=assetRatio;
     card.querySelector('.calc-deposit-ratio').textContent=depositRatio;
-    slider.style.setProperty('--fill',fundRatio+'%');
+    slider.style.setProperty('--fill',assetRatio+'%');
     const rate=currentRate();
-    card.querySelector('.calc-fund-rate-label').textContent=period==='1y'?'近一年報酬':'近三年報酬';
+    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'近一年報酬':'近三年報酬'):'年利率';
     card.querySelector('.calc-fund-rate-value').textContent=(rate*100).toFixed(2)+'%';
-    const weighted=(fundRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate;
+    const weighted=(assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate;
     card.querySelector('.calc-weighted').textContent=(weighted*100).toFixed(2)+'%';
     const gainAmount=baseAmount*weighted;
     const drinkCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.drinkPrice));
@@ -184,7 +189,7 @@ function renderFundVsDepositCalc(fund,initialFundRatio,opts){
   }
 
   let debounceTimer=null;
-  slider.addEventListener('input',()=>{fundRatio=+slider.value;refresh(false);});
+  slider.addEventListener('input',()=>{assetRatio=+slider.value;refresh(false);});
   slider.addEventListener('change',()=>{
     clearTimeout(debounceTimer);
     debounceTimer=setTimeout(()=>refresh(true),300);
@@ -206,4 +211,4 @@ function renderFundVsDepositCalc(fund,initialFundRatio,opts){
   chatBox.appendChild(card);down();
   return card;
 }
-COMPONENTS['card/calculator']={render:renderFundVsDepositCalc};
+COMPONENTS['card/calculator']={render:renderAssetVsDepositCalc};
