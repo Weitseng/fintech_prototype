@@ -27,6 +27,9 @@ const RECO_REASON={
 這樣的組合，能讓這筆資金同時兼顧穩定與成長兩種特性；實際比例會依您的使用時間與風險承受度做調整，等一下的試算也能讓您自己拖動拉桿微調。`
 };
 const DISCLAIMER='以上試算為過往資料回測，實際投資仍需評估市場風險。';
+/* 活期存款（活存）：債券／基金／搭配試算卡裡固定作為對照的「穩定基準」利率，
+   跟屬性 C 實際推薦的商品（美元定存，見 content-attr-c.js／CATALOG）是兩件事，不要混用 */
+const DEMAND_DEPOSIT={name:'活期存款',tag:'活存',rate:0.025,color:'#8b93a1',colorDark:'#6b7280'};
 
 /* ================= 全域對話狀態 =================
    欄位皆由 flow.js（共用流程）讀寫，三人的 content-attr-*.js 不需要碰這裡。
@@ -71,6 +74,7 @@ function mdToHtml(src){
       if(!inList){out.push('<ul class="md-ul">');inList=true;}
       out.push(`<li>${mdInline(m[1])}</li>`);return;
     }
+    if((m=line.match(/^>\s?(.*)/))){closeList();out.push(`<div class="md-quote">${mdInline(m[1])}</div>`);return;}
     closeList();out.push(`<p class="md-p">${mdInline(line)}</p>`);
   });
   closeList();
@@ -91,11 +95,11 @@ function aiSay(msgs,done){
       m.innerHTML=mdToHtml(msgs[i]);chatBox.appendChild(m);down();i++;setTimeout(next,300);},620);
   })();
 }
-/* 需要使用者實際回答的提問句：用醒目的提問卡呈現，跟一般敘述性訊息（aiSay）區分開，
-   讓使用者一眼看出「這句是要請你選」，不會被前面的說明文字稀釋掉 */
+/* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
+   跟一般敘述性訊息區分開，讓使用者一眼看出「這句是要請你選」，不會被前面的說明文字稀釋掉 */
 function aiAsk(question){
-  const m=document.createElement('div');m.className='ask-msg';
-  m.innerHTML=`<span class="ask-badge">?</span><span class="ask-text">${mdInline(question)}</span>`;
+  const m=document.createElement('div');m.className='ai-msg';
+  m.innerHTML=`<div class="md-quote">${mdInline(question)}</div>`;
   chatBox.appendChild(m);down();
 }
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
@@ -143,32 +147,35 @@ function calcRowHtml(p,rateDecimals){
     </div>
   </div>`;
 }
-/* 依 D-1（資金動用時間）決定留在定存的比例：可用時間越短，定存佔比越高 */
+/* 依 D-1（資金動用時間）決定留在活存的比例：可用時間越短，活存佔比越高 */
 function keepPctFor(){return {high:70,mid:40,low:15}[S.depositWeight||'mid'];}
 function investRationale(tag){
   const reason={high:'考量這筆資金可能在一年內就會用到',mid:'考量這筆資金的使用時間還不確定',low:'考量這筆資金一年以上都不會用到'}[S.depositWeight||'mid'];
   const keepPct=keepPctFor(),investPct=100-keepPct;
-  return `${reason}，我建議先保留約 <b>${keepPct}%</b> 於定存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成您覺得合適的配置。`;
+  return `${reason}，我建議先保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成您覺得合適的配置。`;
 }
 
-/* 拉桿試算卡：CATALOG 裡的單一商品（債券／基金）vs 本行定存，附「近1年／近3年」切換（僅呈現百分比，不出現實際金額） */
-function buildProductCalcCard(p,initialInvestPct){
-  const dep=PRODUCT_DATA.deposit;
+/* 拉桿試算卡：CATALOG 裡的單一商品（債券／基金）vs 活期存款，附「近1年／近3年」切換（僅呈現百分比，不出現實際金額）
+   insightHtml（investRationale 的結果）整合呈現在卡片內，不再另外用聊天訊息重複一次；
+   配置比例只在拉桿上呈現（cx-left／cx-right），summary 不重複畫比例條；
+   近1年／近3年只影響${p.cat==='bond'?'債券':'基金'}這一側的利率（活存固定不隨年期變動），
+   所以切換鈕放在拉桿之後、明確標示是哪個商品的報酬期間 */
+function buildProductCalcCard(p,initialInvestPct,insightHtml){
+  const dep=DEMAND_DEPOSIT;
   const tag=p.cat==='bond'?'債券':'基金';
   const accent=p.cat==='bond'?'#3355FF':'#7A4FE0',accentDark=p.cat==='bond'?'#1f3ad6':'#5c34c2';
   const card=document.createElement('div');card.className='cx-card '+p.cat;
   card.style.setProperty('--cx-accent',accent);card.style.setProperty('--cx-accent-dark',accentDark);
   card.innerHTML=`
     <div class="cx-titlebar">${p.name}<span class="cx-dot">・</span>年化報酬試算</div>
+    <div class="cx-insight">${insightHtml}</div>
+    <div class="cx-sliderlabels"><div class="cx-big cx-left"></div><div class="cx-big cx-right"></div></div>
+    <input class="cx-slider" type="range" min="0" max="100" value="${initialInvestPct}">
     <div class="cx-periodtoggle">
+      <span class="cx-periodlabel">${tag}報酬期間</span>
       <button class="cx-period sel" data-period="1y" type="button">近1年</button>
       <button class="cx-period" data-period="3y" type="button">近3年</button>
     </div>
-    <div class="cx-sliderlabels"><div class="cx-big cx-left"></div><div class="cx-big cx-right"></div></div>
-    <input class="cx-slider" type="range" min="0" max="100" value="${initialInvestPct}">
-    <div class="cx-divider"></div>
-    <div class="cx-fixedrows"></div>
-    <div class="cx-optrows"></div>
     <div class="cx-approxnote">＊${tag}近1年／近3年報酬率為試算參考值，${p.cat==='bond'?'債券票面利率固定、不隨年期變動':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="cx-summary"></div>
     <div class="cx-disclaimer">${DISCLAIMER}</div>`;
@@ -183,23 +190,16 @@ function buildProductCalcCard(p,initialInvestPct){
   function draw(){
     const investPct=+slider.value,keepPct=100-investPct;
     const rate=currentRate();
-    const prodRow={name:p.name,tag,color:accent,rate};
     card.querySelector('.cx-left').textContent=`${tag} ${investPct}%`;
-    card.querySelector('.cx-right').textContent=`${keepPct}% 定存`;
+    card.querySelector('.cx-right').textContent=`${keepPct}% ${dep.tag}`;
     slider.style.setProperty('--fill',investPct+'%');
-    card.querySelector('.cx-fixedrows').innerHTML=calcRowHtml(dep,1);
-    card.querySelector('.cx-optrows').innerHTML=calcRowHtml(prodRow,2);
     const blended=(keepPct/100)*dep.rate+(investPct/100)*rate;
     const blendedPctStr=fmtPct(blended*100);
     const life=lifeValueEq(estimatedIdlePrincipal()*blended);
     card.querySelector('.cx-summary').innerHTML=`
       <div class="cx-herobox">
-        <div class="cx-herolabel">${investPct}% ${tag}＋${keepPct}% 定存　資產有機會增長約</div>
-        <div class="cx-heromultrow"><span class="cx-heromult">${blendedPctStr}</span><span class="cx-herox">%</span></div>
-        <div class="cx-herobars">
-          <div class="cx-herobarrow"><span class="cx-herobarlabel">${tag}</span><div class="cx-herobartrack"><div class="cx-herobarfill hi" style="width:${investPct}%"></div></div><span class="cx-herobarval">${investPct}%</span></div>
-          <div class="cx-herobarrow"><span class="cx-herobarlabel">定存</span><div class="cx-herobartrack"><div class="cx-herobarfill" style="width:${keepPct}%"></div></div><span class="cx-herobarval">${keepPct}%</span></div>
-        </div>
+        <div class="cx-herolabel">預估年化增長約</div>
+        <div class="cx-heromultrow"><span class="cx-heromult">${blendedPctStr}</span><span class="cx-herox">%</span><span class="cx-heroyear">／年</span></div>
       </div>
       <div class="cx-heronote">這樣的成長幅度，一年下來大約相當於 <b>${life.trips} 趟小旅行</b>，或 <b>${life.dinners} 頓和朋友的聚餐</b>。</div>`;
   }
@@ -207,20 +207,20 @@ function buildProductCalcCard(p,initialInvestPct){
   draw();return card;
 }
 
-/* 定存（保守型）：不需拉桿比較，直接呈現年化報酬試算（僅呈現百分比，不出現實際金額） */
-function buildDepositCard(){
-  const dep=PRODUCT_DATA.deposit;
+/* 美元定存（屬性 C，來自 CATALOG 的特定天期商品 p）：不需拉桿比較，直接呈現該天期的年化報酬試算
+   （僅呈現百分比，不出現實際金額） */
+function buildDepositCard(p){
   const card=document.createElement('div');card.className='cx-card deposit';
-  card.style.setProperty('--cx-accent',dep.color);card.style.setProperty('--cx-accent-dark',dep.colorDark);
-  const rateStr=(dep.rate*100).toFixed(1);
-  const life=lifeValueEq(estimatedIdlePrincipal()*dep.rate);
+  card.style.setProperty('--cx-accent','#8b93a1');card.style.setProperty('--cx-accent-dark','#6b7280');
+  const rateStr=(p.rate*100).toFixed(2).replace(/\.?0+$/,'');
+  const life=lifeValueEq(estimatedIdlePrincipal()*p.rate);
   card.innerHTML=`
-    <div class="cx-titlebar">定存<span class="cx-dot">・</span>年化報酬試算</div>
+    <div class="cx-titlebar">${p.name}<span class="cx-dot">・</span>年化報酬試算</div>
     <div class="cx-divider"></div>
-    <div class="cx-fixedrows">${calcRowHtml(dep,1)}</div>
+    <div class="cx-fixedrows">${calcRowHtml({name:p.name,tag:'定存',color:'#8b93a1',rate:p.rate},2)}</div>
     <div class="cx-summary">
       <div class="cx-herobox">
-        <div class="cx-herolabel">預估年化報酬率約為</div>
+        <div class="cx-herolabel">預估年利率約為</div>
         <div class="cx-heromultrow"><span class="cx-heromult">${rateStr}</span><span class="cx-herox">%</span></div>
       </div>
       <div class="cx-heronote">這樣的收益，一年下來大約相當於 <b>${life.trips} 趟小旅行</b>，或 <b>${life.dinners} 頓和朋友的聚餐</b>。</div>
@@ -229,12 +229,6 @@ function buildDepositCard(){
   return card;
 }
 
-/* 商品清單卡片已改用 card/product 元件（js/component-library.js）呈現，見 flow.js 的 showCatalogCards() */
-/* 僅用於定存（保守型）：唯一沒有 CATALOG 清單可選的情境，直接呈現試算 */
-function runDepositCalcAndFinish(nextStep){
-  chatBox.appendChild(buildDepositCard());
-  down();nextStep();
-}
 /* 建議行動（藥丸狀小按鈕）：接在對話內容最後，非 sticky，不佔用底部固定控制列 */
 function renderSuggestedActions(actions){
   const row=wrap();row.className='sugg-row';

@@ -124,8 +124,6 @@ function stageC(){
 function ch_d1(){
   aiSay([
     "接下來想請教您幾個問題，幫您抓住合適的**資金配置方式**——也就是多少比例放穩定型、多少比例追求成長，讓每一分錢都用得更有效率！",
-    "首先想了解，這筆資金大概多久之後可能會用到呢？"
-    "接下來想請教您幾個問題，幫您找到比較合適的**資金配置方式**——也就是這筆錢大概抓多少比例放在穩定的地方、多少比例配置在追求成長的商品上，讓這筆資金運用得更有效率。",
     "> 首先想了解，這筆資金大概多久之後可能會用到呢？"
   ],()=>{
     const w=wrap();
@@ -141,20 +139,14 @@ function ch_d1(){
   });
 }
 function ch_d2(){
-  aiSay(["接下來想了解一下您的風險承受度：如果市場偶爾出現短暫下跌，您的心情反應比較偏向？"],()=>{
   aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
       aiSay(['**看得出您非常重視本金安全！**，我會以「完全保本與高穩定」的商品為您量身規劃，不讓您睡不著覺！'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
-    w.appendChild(choiceBtn('可以接受小幅度的波動',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅度的波動');clearControls();
-      aiSay(['**適度波動完全 OK！**，我們可以在維持資產穩健的前提下，稍微搭配點收益型商品增加甜頭！'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受']));
-    w.appendChild(choiceBtn('可以接受淨值明顯波動，換取成長空間',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受淨值明顯波動，換取成長空間');clearControls();
-      aiSay(['**您很有投資眼光與強大的心臟！**，成長型商品會非常適合您，幫您衝刺資產增值的潛力！'],()=>ch_d3());},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長']));
-      aiSay(['**看得出來您偏好本金穩定，不希望有任何波動**，這樣的話，我會以保本為優先來幫您規劃，不會建議您承擔額外的市場風險。'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
     w.appendChild(choiceBtn('可以接受小幅波動（跌幅約 10%～30%）',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅波動（跌幅約 10%～30%）');clearControls();
-      aiSay(['**您可以接受小幅度的波動**，那我們可以再往下聊聊，投資型商品裡有哪一種比較適合您。'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
+      aiSay(['**適度波動完全 OK！**，我們可以在維持資產穩健的前提下，稍微搭配點收益型商品增加甜頭！'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
     w.appendChild(choiceBtn('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會');clearControls();
-      aiSay(['**您願意承擔比較明顯的波動來換取成長空間**，這樣的話，投資型商品應該會更適合您。'],()=>ch_d3());},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
+      aiSay(['**您很有投資眼光與強大的心臟！**，成長型商品會非常適合您，幫您衝刺資產增值的潛力！'],()=>ch_d3());},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
     setControls(w);
   });
 }
@@ -284,16 +276,7 @@ function enterProductCalc(p,items){
     return;
   }
   const tag=p.cat==='bond'?'債券':'基金';
-  aiSay([investRationale(tag),'這是這檔商品的試算結果，您可以切換「近1年／近3年」，也能拖動下面的拉桿調整配置比例：'],()=>{
-    if(p.cat==='fund'){
-      renderComponent('card/calculator',p,100-keepPctFor());
-    }else{
-      chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor()));
-      down();
-    }
-  aiSay(['這是這檔商品的試算結果：'],()=>{
-    chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor(),investRationale(tag)));
-    down();
+  const followUp=()=>{
     renderFinalCTA();
     const w=wrap();
     w.appendChild(choiceBtn('查看其他產品','回到清單看看別的選擇',()=>{meSay('查看其他產品');clearControls();backToCatalogList(items);},['查看','其他','清單','商品','回去','返回']));
@@ -301,7 +284,20 @@ function enterProductCalc(p,items){
       w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
     }
     setControls(w);
-  });
+  };
+  if(p.cat==='fund'){
+    /* 基金 vs 定存 用 Figma 對應的 card/calculator 元件（含手搖飲/聚餐動畫），insight 沒有對應欄位，先用一句話帶出 */
+    aiSay([investRationale(tag)],()=>{
+      renderComponent('card/calculator',p,100-keepPctFor());
+      followUp();
+    });
+  }else{
+    aiSay(['這是這檔商品的試算結果：'],()=>{
+      chatBox.appendChild(buildProductCalcCard(p,100-keepPctFor(),investRationale(tag)));
+      down();
+      followUp();
+    });
+  }
 }
 
 /* ================= 階段 H｜（路徑 2）補充更多資產資訊 ================= */
@@ -334,10 +330,8 @@ const H2_OPTIONS=[
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
-  if(keys.length===0||(keys.length===1&&keys[0]==='insurance')){
-    return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！'};
   if(keys.length===0){
-    return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
+    return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從美元定存或極低風險的工具開始，慢慢建立理財的信心！'};
   }
   if(hasGrowth&&!hasBond){
     return{result:'bond',reason:'**您已經很有衝勁了！但稍微缺少了防禦型武器～**——建議補上一點債券部位，用穩定的配息現金流幫您的整體資產裝個避震器！'};
@@ -345,8 +339,7 @@ function classifyH2(keys){
   if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
     return{result:'fund',reason:'**哇！您的資產配置非常豐富且有經驗！**——這階段很適合用精選基金組合做跨區域分散配置，繼續挑戰更高的資本利得！'};
   }
-  return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！'};
-  return{result:'deposit',reason:'**這筆資金幾乎沒有參與市場，風險偏好也偏低**——在還沒有投資經驗、或還在觀察的階段，先以美元定存穩定累積，會是比較安心的做法。'};
+  return{result:'deposit',reason:'**資金大多還在休息狀態喔！**——建議我們先從美元定存或極低風險的工具開始，慢慢建立理財的信心！'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
@@ -361,8 +354,7 @@ function adjustH2(base){
 }
 function stageH2(){
   if(S.h1Ratio==='0%'){
-    S.h2Items=[];S.h2Reason='**資金大多還在休息狀態喔！**——建議我們先從高利定存或極低風險的工具開始，慢慢建立理財的信心！';S.recoTypeH='deposit';
-    S.h2Items=[];S.h2Reason='**您在其他銀行的資金幾乎沒有參與市場，風險偏好也偏低**——先以美元定存穩定累積，會是比較安心的做法。';S.recoTypeH='deposit';
+    S.h2Items=[];S.h2Reason='**資金大多還在休息狀態喔！**——建議我們先從美元定存或極低風險的工具開始，慢慢建立理財的信心！';S.recoTypeH='deposit';
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3());
     return;
   }

@@ -42,7 +42,7 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 function renderProductCardDisplay(p,onDetail,onCalc){
   const rate1Str=(p.rate1y*100).toFixed(2);
   const investTypeStr=p.investType.join('／');
-  const rateLabel=p.cat==='bond'?'票面/配息率':'近一年報酬';
+  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'近一年報酬';
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
