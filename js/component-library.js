@@ -150,6 +150,10 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   const toggle=card.querySelector('.calc-toggle');
 
   function currentRate(){return showPeriodTabs?(period==='1y'?asset.rate1y:asset.rate3y):asset.rate1y;}
+  /* 投資1年／投資3年切換的是「持有年期」，增長金額要跟著用年期累計（單利，不複利）：
+     債券票面利率固定不隨年期變動，累計增長本來就等於把每年配息加總；基金/活存比照同一邏輯處理，
+     讓兩個 tab 呈現的是「這個年期下來，資產總共有機會增長多少」，而不是重複同一個年化數字 */
+  function currentYears(){return showPeriodTabs&&period==='3y'?3:1;}
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -172,17 +176,20 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     card.querySelector('.calc-deposit-ratio').textContent=depositRatio;
     slider.style.setProperty('--fill',assetRatio+'%');
     const rate=currentRate();
+    const years=currentYears();
     const depositRateLabel=(asset.cat==='deposit'&&asset.tenor!=='12個月')?`${asset.tenor}利率`:'年利率';
     card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'投資1年報酬':'投資3年報酬'):depositRateLabel;
     card.querySelector('.calc-fund-rate-value').textContent=(rate*100).toFixed(2)+'%';
-    const weighted=(assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate;
+    const weighted=((assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate)*years;
     card.querySelector('.calc-weighted').textContent=(weighted*100).toFixed(2)+'%';
+    card.querySelector('.calc-result-label').textContent=years===1?'資產有機會增長約':`投資${years}年，資產有機會增長約`;
     const gainAmount=baseAmount*weighted;
     const drinkCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.drinkPrice));
     const dinnerCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.dinnerPrice));
+    const yearLabel=years===1?'一年':`${years}年`;
     card.querySelector('.calc-sentence').textContent=mode==='dinner'
-      ?`這樣的成長幅度，一年下來大約等於可以和朋友開心聚餐 ${dinnerCount} 次！`
-      :`這樣的成長幅度，一年下來大約等於多了 ${drinkCount} 杯手搖飲！`;
+      ?`這樣的成長幅度，${yearLabel}下來大約等於可以和朋友開心聚餐 ${dinnerCount} 次！`
+      :`這樣的成長幅度，${yearLabel}下來大約等於多了 ${drinkCount} 杯手搖飲！`;
     return mode==='dinner'?dinnerCount:drinkCount;
   }
   function refresh(triggerAnim){
