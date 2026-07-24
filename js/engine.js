@@ -44,7 +44,7 @@ function assetMid(){return {'100 萬以下':800000,'100 萬 – 200 萬':1500000
 
 function resetAll(){
   S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
-     attribute:null,recoType:null,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
+     attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   clearControls();stepA();
 }
 
@@ -168,6 +168,6 @@ function finishFlow(action){
     chatBox.appendChild(end);down();
     const w=wrap();const b=document.createElement('button');b.className='primary';b.style.marginTop='4px';
     b.textContent='重新開始';b.onclick=resetAll;w.appendChild(b);setControls(w);
-    freeOverride=()=>aiSay(["本次分析已經完成囉，若要重新開始，請點選下方按鈕。"]);
+    freeOverride=()=>aiSay(["本次分析已完成，如需重新開始，請點選下方按鈕。"]);
   });
 }

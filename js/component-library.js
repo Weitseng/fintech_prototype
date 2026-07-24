@@ -38,11 +38,12 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 /* ---- card/product（Figma node 178:664）ProductCard_Display ----
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
    數值標籤依商品類別區分：債券為商品對照矩陣原始欄位「票面/配息率」；基金無真實績效欄位，
-   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「近一年報酬」 */
+   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「過去一年報酬率」；
+   定存天期未滿 12 個月屬短天期商品，不能標示為「年利率」（實際持有期間遠短於一年），改用天期本身當標籤 */
 function renderProductCardDisplay(p,onDetail,onCalc){
   const rate1Str=(p.rate1y*100).toFixed(2);
   const investTypeStr=p.investType.join('／');
-  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'近一年報酬';
+  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?(p.tenor==='12個月'?'年利率':`${p.tenor}利率`):'過去一年報酬率';
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
@@ -76,7 +77,7 @@ COMPONENTS['card/product']={render:renderProductCardDisplay,renderRow:renderProd
    用掉落 emoji 呈現（Figma 無對應動畫 prototype，掉落效果為此檔自行設計）。
    baseAmount／高利活存利率／生活換算基準皆抽成 CALC_CONFIG，之後串接真實資料時只需替換這裡。
    opts.tag：資產標籤文字（債券／基金／外匯定存），預設「基金」；
-   opts.showPeriodTabs：定存利率不隨年期變動，傳 false 隱藏近1年/近3年切換，固定用 asset.rate1y */
+   opts.showPeriodTabs：定存利率不隨年期變動，傳 false 隱藏投資1年/投資3年切換，固定用 asset.rate1y */
 const CALC_CONFIG={
   baseAmount:100000,   // 預設本金 10 萬元（placeholder），之後由「現金留存」互動結果動態帶入，計算邏輯不需更動
   depositRate:0.025,   // 活存 固定年利率，不隨 Tab 或滑桿變動
@@ -96,8 +97,8 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   card.innerHTML=`
     <div class="calc-title">${asset.name}・年化報酬試算</div>
     ${showPeriodTabs?`<div class="calc-tabs">
-      <button type="button" class="calc-tab sel" data-period="1y">近一年</button>
-      <button type="button" class="calc-tab" data-period="3y">近三年</button>
+      <button type="button" class="calc-tab sel" data-period="1y">投資1年</button>
+      <button type="button" class="calc-tab" data-period="3y">投資3年</button>
     </div>`:''}
     <div class="calc-ratio-row">
       <div class="calc-ratio-col">
@@ -128,7 +129,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         </div>
       </div>
     </div>
-    <div class="calc-note">*${showPeriodTabs?`${tag}近1年/近3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':'基金為歷史績效示範，不代表未來報酬'}</div>
+    <div class="calc-note">*${showPeriodTabs?`${tag}投資1年/投資3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="calc-result">
       <div class="calc-result-panel">
         <div class="calc-emoji-layer"></div>
@@ -149,6 +150,10 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   const toggle=card.querySelector('.calc-toggle');
 
   function currentRate(){return showPeriodTabs?(period==='1y'?asset.rate1y:asset.rate3y):asset.rate1y;}
+  /* 投資1年／投資3年切換的是「持有年期」，增長金額要跟著用年期累計（單利，不複利）：
+     債券票面利率固定不隨年期變動，累計增長本來就等於把每年配息加總；基金/活存比照同一邏輯處理，
+     讓兩個 tab 呈現的是「這個年期下來，資產總共有機會增長多少」，而不是重複同一個年化數字 */
+  function currentYears(){return showPeriodTabs&&period==='3y'?3:1;}
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -171,16 +176,20 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     card.querySelector('.calc-deposit-ratio').textContent=depositRatio;
     slider.style.setProperty('--fill',assetRatio+'%');
     const rate=currentRate();
-    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'近一年報酬':'近三年報酬'):'年利率';
+    const years=currentYears();
+    const depositRateLabel=(asset.cat==='deposit'&&asset.tenor!=='12個月')?`${asset.tenor}利率`:'年利率';
+    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'投資1年報酬':'投資3年報酬'):depositRateLabel;
     card.querySelector('.calc-fund-rate-value').textContent=(rate*100).toFixed(2)+'%';
-    const weighted=(assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate;
+    const weighted=((assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate)*years;
     card.querySelector('.calc-weighted').textContent=(weighted*100).toFixed(2)+'%';
+    card.querySelector('.calc-result-label').textContent=years===1?'資產有機會增長約':`投資${years}年，資產有機會增長約`;
     const gainAmount=baseAmount*weighted;
     const drinkCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.drinkPrice));
     const dinnerCount=Math.max(0,Math.round(gainAmount/CALC_CONFIG.dinnerPrice));
+    const yearLabel=years===1?'一年':`${years}年`;
     card.querySelector('.calc-sentence').textContent=mode==='dinner'
-      ?`這樣的成長幅度，一年下來大約等於可以和朋友開心聚餐 ${dinnerCount} 次！`
-      :`這樣的成長幅度，一年下來大約等於多了 ${drinkCount} 杯手搖飲！`;
+      ?`這樣的成長幅度，${yearLabel}下來大約等於可以和朋友開心聚餐 ${dinnerCount} 次！`
+      :`這樣的成長幅度，${yearLabel}下來大約等於多了 ${drinkCount} 杯手搖飲！`;
     return mode==='dinner'?dinnerCount:drinkCount;
   }
   function refresh(triggerAnim){
