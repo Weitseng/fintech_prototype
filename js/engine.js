@@ -44,7 +44,7 @@ function assetMid(){return {'100 萬以下':800000,'100 萬 – 200 萬':1500000
 
 function resetAll(){
   S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
-     attribute:null,recoType:null,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
+     attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   clearControls();stepA();
 }
 

@@ -160,7 +160,14 @@ function ch_d3(){
   });
 }
 function resolveConservative(){S.attribute='C';S.recoType='deposit';stageE();}
-function resolveAttribute(recoType,attr){S.attribute=attr;S.recoType=recoType;stageE();}
+function resolveAttribute(recoType,attr){
+  S.horizonOverride=false;
+  if((recoType==='bond'||recoType==='combo')&&S.q1==='一年內'){
+    // 債券要持有到到期日（部分天期長達 20 年）才能保本、穩定領息，跟「一年內就會用到」互相矛盾，改導向基金
+    recoType='fund';attr='A';S.horizonOverride=true;
+  }
+  S.attribute=attr;S.recoType=recoType;stageE();
+}
 
 /* ================= 階段 E｜屬性分流與初步推薦 =================
    不顯示屬性標籤（A/B/C/AB）；流程是：先反映使用者剛才說的需求 → RECO_REASON 解釋為什麼適合
@@ -175,10 +182,12 @@ function stageE(){
     '可接受小幅波動':'也能接受小幅度的波動，只是還是希望以相對穩健為主',
     '可接受淨值明顯波動換取成長':'也願意承擔比較明顯的波動，換取更大的成長空間'
   }[S.q2]||'也能接受一定程度的波動，換取成長的機會';
-  aiSay([
-    `綜合您剛才的回答——這筆資金${timeframeNote()}，${riskNote}，我來幫您分析一下比較合適的方向。`,
-    RECO_REASON[S.recoType]
-  ],()=>{
+  const messages=[`綜合您剛才的回答——這筆資金${timeframeNote()}，${riskNote}，我來幫您分析一下比較合適的方向。`];
+  if(S.horizonOverride){
+    messages.push('不過債券通常要持有到到期日（有些天期長達 20 年）才能真正保本、穩定領息，如果中途臨時需要動用，提前賣出可能拿不回全部本金——這跟這筆錢一年內就可能會用到不太搭，所以這裡我改為您規劃彈性較高的基金，一樣能兼顧穩定與收益。');
+  }
+  messages.push(RECO_REASON[S.recoType]);
+  aiSay(messages,()=>{
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
@@ -324,10 +333,12 @@ function classifyH2(keys){
 function adjustH2(base){
   let{result,reason}=base;
   if(result==='fund'&&(S.cashRatio==='85% 以上'||S.h1Ratio==='1–50%')){
-    return{result:'bond',reason:'**看得出您很有投資概念囉！不過手邊的現金比例稍高、或是其他配置比較保守**——建議先用債券把「收益底氣」打好，會比直接衝基金更穩健、更安心喔！'};
+    result='bond';reason='**看得出您很有投資概念囉！不過手邊的現金比例稍高、或是其他配置比較保守**——建議先用債券把「收益底氣」打好，會比直接衝基金更穩健、更安心喔！';
+  }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
+    result='fund';reason='**您的資金實力非常充足，而且投資風格也很積極喔！**——常適合進一步搭配基金組合，讓資金全力衝刺，把成長潛力發揮到極致！';
   }
-  if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
-    return{result:'fund',reason:'**您的資金實力非常充足，而且投資風格也很積極喔！**——常適合進一步搭配基金組合，讓資金全力衝刺，把成長潛力發揮到極致！'};
+  if(result==='bond'&&S.q1==='一年內'){
+    result='fund';reason='**這筆資金一年內就可能會用到——債券通常要持有到到期日（有些天期長達 20 年）才能穩定保本、領息**，中途提前賣出可能拿不回全部本金，所以這裡改為您規劃彈性較高的基金，兼顧收益與資金運用的靈活度！';
   }
   return{result,reason};
 }
