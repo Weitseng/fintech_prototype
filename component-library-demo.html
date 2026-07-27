@@ -59,6 +59,30 @@
     <div id="screen-nsl-interactive" class="chat" style="padding:16px"></div>
   </div>
 
+  <!-- button/primary -->
+  <div class="demo-section">
+    <div class="demo-label">button/primary — default（滑鼠移上去看 hover，按著看 pressed）</div>
+    <div id="mount-btn-default" style="padding:24px;text-align:center"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">button/primary — disabled</div>
+    <div id="mount-btn-disabled" style="padding:24px;text-align:center"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">button/primary — 短文案（Hug 尺寸，預設情境下應為 188×53）</div>
+    <div id="mount-btn-short" style="padding:24px;text-align:center"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">button/primary — 長文案（測試 Hug 尺寸是否正常撐開）</div>
+    <div id="mount-btn-long" style="padding:24px;text-align:center"></div>
+  </div>
+
+  <!-- card/feedback-qr -->
+  <div class="demo-section">
+    <div class="demo-label">card/feedback-qr — 正常態（「立即申購」／「諮詢理專」共用結尾）</div>
+    <div id="screen-fbqr" class="chat" style="padding:16px"></div>
+  </div>
+
   <!-- down() 內部固定找 #screen 當捲動容器，這裡不需要真的捲動，放一個隱藏節點避免報錯 -->
   <div id="screen" style="display:none"></div>
 
@@ -114,6 +138,25 @@
       {id:'a',title:'選項 A',description:'點我試試看',onSelect:()=>{}},
       {id:'b',title:'選項 B',description:'點我試試看',onSelect:()=>{}}
     ]);
+
+    /* button/primary：純顯示型元件，不會自己掛進 chatBox，示範時手動 appendChild 到掛載點 */
+    document.getElementById('mount-btn-default').appendChild(
+      renderComponent('button/primary','按鈕文案',{onClick:()=>{log.textContent='button/primary clicked';}})
+    );
+    document.getElementById('mount-btn-disabled').appendChild(
+      renderComponent('button/primary','按鈕文案',{disabled:true})
+    );
+    document.getElementById('mount-btn-short').appendChild(
+      renderComponent('button/primary','送出')
+    );
+    document.getElementById('mount-btn-long').appendChild(
+      renderComponent('button/primary','這是一段用來測試按鈕文案較長時 Hug 尺寸是否正常撐開的文字')
+    );
+
+    /* card/feedback-qr：demo 頁沒有載入 flow.js，onRestart 不能用預設的 resetAll()（會找不到 stepA 報錯），
+       這裡改傳一個安全的示範用 callback */
+    chatBox=document.getElementById('screen-fbqr');
+    renderComponent('card/feedback-qr',{onRestart:()=>{log.textContent='card/feedback-qr：再體驗一次 clicked';}});
   </script>
 </body>
 </html>
