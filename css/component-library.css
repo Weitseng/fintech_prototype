@@ -81,7 +81,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:9px;background:tra
   padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .calc-emoji-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .calc-emoji{position:absolute;top:-10%;font-size:32px;line-height:1;will-change:transform,opacity;
-  animation:calcFall var(--dur,2.6s) var(--delay,0s) ease-in forwards}
+  animation:calcFall var(--dur,3s) var(--delay,0s) ease-in forwards}
 @keyframes calcFall{
   0%{transform:translateY(-20px) translateX(0) rotate(var(--rot-start,0deg));opacity:0}
   8%{opacity:.55}
@@ -103,3 +103,52 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:9px;background:tra
 .calc-toggle-icon{position:relative;z-index:1;flex:1;text-align:center;font-size:15px;line-height:24px;color:#fff}
 
 .calc-disclaimer{font-size:13px;line-height:1.5;color:#4c5466;width:100%}
+
+/* bar/chat-input（Figma node 215:872）底部輸入/對話列，含 Enable／Disable 兩種狀態，
+   兩狀態共用同一份 DOM（見 js/component-library.js renderInputChatBar），只切 class 避免版面跳動 */
+.icb{background:#fff;border-top:1px solid #e2e2e2;box-shadow:0 2px 12px rgba(0,68,173,.04);
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  padding:0 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0}
+.icb-row{display:flex;gap:12px;align-items:center;width:100%;padding:12px 0}
+.icb-input{flex:1;min-width:0;padding:12px;border-radius:3px;border:0;outline:none;
+  font-family:'Noto Sans TC',sans-serif;font-size:15px;line-height:1.5;font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:#f2f6ff;color:#041c43}
+.icb-input::placeholder{color:#8994a5}
+.icb-input:disabled{background:#f6f6f6;color:#a6a6a6;cursor:not-allowed}
+.icb-input:disabled::placeholder{color:#a6a6a6}
+.icb-send{flex-shrink:0;width:44px;height:44px;border-radius:50%;border:0;padding:0;
+  background:#0044ad;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.icb-send svg{width:24px;height:24px;display:block}
+.icb-send:disabled{background:#e2e2e2;cursor:not-allowed}
+.icb-disclaimer{width:100%;font-family:'Noto Sans TC',sans-serif;font-size:13px;line-height:1.5;
+  color:#4c5466;text-align:center}
+
+/* message/chat-bubble（Figma node 219:747）使用者發送訊息氣泡，靠右對齊；
+   系統回覆訊息（.ai-msg／.md-quote，見 css/style.css）是不同樣式，不要共用 */
+.mcb-row{display:flex;justify-content:flex-end;margin:16px 0;animation:fade .4s ease}
+.mcb{max-width:84%;background:#f2f6ff;border-radius:3px;padding:8px 16px;
+  font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:400;line-height:1.5;
+  color:#041c43;white-space:normal;overflow-wrap:break-word;word-break:break-word}
+
+/* list/next-step（Figma node 237:1191／240:898，Chat/next action／Chat/option）說明後的下一步選單，
+   標題 + 可變數量選項，項目間以分隔線區隔，最後一項不畫線。
+   Default／Hover／Pressed 三色皆依 Chat/option 節點還原（灰階背景，非品牌藍）；
+   Disabled 該節點無對應 variant，依規格文字描述（低對比灰階＋半透明）另行還原 */
+.nsl{width:100%;margin:16px 0;animation:fade .4s ease}
+.nsl-heading{font-family:'Noto Sans TC',sans-serif;font-weight:500;font-size:18px;line-height:1.6;
+  color:#041c43;margin-bottom:16px}
+.nsl-items{display:flex;flex-direction:column;width:100%}
+.nsl-item{display:flex;align-items:center;gap:8px;width:100%;padding:16px 0;margin:0;
+  background:transparent;border:0;border-bottom:1px solid #e2e2e2;border-radius:0;
+  cursor:pointer;text-align:left;font-family:inherit;transition:background .15s}
+.nsl-items .nsl-item:last-child{border-bottom:0}
+.nsl-item:hover{background:#f6f6f6}
+.nsl-item:active{background:#e8e8e8}
+.nsl-item:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.nsl-item:disabled{cursor:not-allowed;opacity:.5}
+.nsl-item:disabled:hover{background:transparent}
+.nsl-item-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.nsl-item-title{font-family:'Noto Sans TC',sans-serif;font-weight:400;font-size:16px;line-height:1.5;color:#041c43}
+.nsl-item-desc{font-family:'Noto Sans TC',sans-serif;font-weight:400;font-size:14px;line-height:1.5;color:#4c5466}
+.nsl-chevron{flex-shrink:0;width:20px;height:20px}

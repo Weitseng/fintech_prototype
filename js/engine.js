@@ -99,7 +99,7 @@ function aiAsk(question){
   chatBox.appendChild(m);down();
 }
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
-  const m=document.createElement('div');m.className='me-msg';m.innerHTML='<span>'+text+'</span>';chatBox.appendChild(m);down();}
+  renderComponent('message/chat-bubble',text);}
 function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('button');
   b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
   b.onclick=()=>onClick(b);
@@ -107,7 +107,7 @@ function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('b
   return b;}
 /* ---- 限縮式自由輸入引擎 ---- */
 function showInput(){const b=document.getElementById('inputbar');if(b)b.style.display='flex';}
-function hideInput(){const b=document.getElementById('inputbar');if(b)b.style.display='none';const ci=document.getElementById('chatInput');if(ci)ci.value='';}
+function hideInput(){const b=document.getElementById('inputbar');if(b){b.style.display='none';const ci=b.querySelector('.icb-input');if(ci)ci.value='';}}
 function matchChoices(text){const live=activeChoices.filter(c=>document.body.contains(c.el));
   for(const c of live){if((c.keywords||[]).some(k=>text.includes(k)))return c;}return null;}
 function clarify(){aiSay(["為了幫您快速聚焦，您的想法比較接近下方哪一個選項呢？您可以直接點選，或換個說法再告訴我。"]);}
@@ -132,24 +132,26 @@ function investRationale(tag){
 /* 試算卡（債券／基金／外匯定存 vs 活存）已改用 card/calculator 元件（js/component-library.js）呈現，
    見 flow.js 的 enterProductCalc() */
 
-/* 建議行動（藥丸狀小按鈕）：接在對話內容最後，非 sticky，不佔用底部固定控制列 */
-function renderSuggestedActions(actions){
-  const row=wrap();row.className='sugg-row';
-  actions.forEach(a=>{
-    const b=document.createElement('button');b.type='button';b.className='sugg-chip';
-    b.innerHTML='<span class="ic">✦</span>'+a.label;
-    b.onclick=()=>a.onClick(b);
-    if(a.keywords)activeChoices.push({el:b,keywords:a.keywords});
-    row.appendChild(b);
-  });
-  chatBox.appendChild(row);down();
-  return row;
-}
-function renderFinalCTA(){
-  renderSuggestedActions([
-    {label:'前往下單',onClick:()=>{meSay('前往下單');clearControls();finishFlow('order');},keywords:['下單','買','購買','下訂','前往','好','可以','下一步','ok','OK']},
-    {label:'諮詢理專',onClick:()=>{meSay('諮詢理專');clearControls();finishFlow('advisor');},keywords:['理專','諮詢','專員','問問題','找人','客服']}
-  ]);
+/* 說明後的下一步選單（list/next-step 元件）：呼叫端傳入 heading／items（可帶 keywords），
+   這裡包住每個 item 的 onSelect，負責「選好後」的對話流程業務邏輯：
+   1) 整組選單從畫面移除　2) 用 meSay() 補一個使用者訊息氣泡（內容為選到的標題）
+   3) 才呼叫原本要做的事。元件本身只單純呼叫 onSelect，不知道這些流程規則。
+   keywords 也接上 activeChoices 讓自由輸入能命中；按鈕一旦被移出畫面，
+   matchChoices() 的 document.body.contains 檢查會自然把它排除，不需要另外清理。 */
+function showNextSteps(heading,items){
+  let el;
+  const wrapped=items.map(item=>({
+    ...item,
+    onSelect:()=>{
+      el.remove();
+      meSay(item.title);
+      if(item.onSelect)item.onSelect();
+    }
+  }));
+  el=renderComponent('list/next-step',heading,wrapped);
+  const btns=el.querySelectorAll('.nsl-item');
+  items.forEach((item,i)=>{if(item.keywords)activeChoices.push({el:btns[i],keywords:item.keywords});});
+  return el;
 }
 /* ================= 完成（共用結尾流程） ================= */
 function finishFlow(action){
