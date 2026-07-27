@@ -200,14 +200,16 @@ function calcLabelFor(prod){return `查看${prod.tag}清單`;}
 function stageF(){
   const prod=PRODUCT_DATA[S.recoType];
   const calcLabel=calcLabelFor(prod);
-  aiSay(["> 了解這個方向之後，您想怎麼進行下一步呢？"],()=>{
-    const w=wrap();
-    if(S.path!=='supplement'){
-      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他','完整','他行','納入','資產']));
-    }
-    w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();S.path='accept';stageG();},['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK']));
-    setControls(w);
-  });
+  const items=[];
+  if(S.path!=='supplement'){
+    items.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
+      keywords:['補充','更多','其他','完整','他行','納入','資產'],
+      onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
+  }
+  items.push({id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
+    keywords:['試算','配置','查看','清單','商品','直接','接受','好','可以','沒問題','ok','OK'],
+    onSelect:()=>{clearControls();S.path='accept';stageG();}});
+  showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',items);
 }
 
 /* ================= 階段 G｜（路徑 1）直接媒合 =================
@@ -258,10 +260,14 @@ function enterProductDetail(p,items){
       :`- 申購方式：**${p.entry}**`
   ].join('\n');
   aiSay([lines],()=>{
-    const w=wrap();
-    w.appendChild(choiceBtn('試算這檔商品','看看這檔商品的年化報酬試算',()=>{meSay('試算這檔商品');clearControls();enterProductCalc(p,items);},['試算','算','好','可以','ok','OK']));
-    w.appendChild(choiceBtn('再看看其他產品','看看其他商品',()=>{meSay('再看看其他產品');clearControls();backToCatalogList(items);},['返回','清單','其他','上一步','回去']));
-    setControls(w);
+    showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
+      {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
+        keywords:['試算','算','好','可以','ok','OK'],
+        onSelect:()=>{clearControls();enterProductCalc(p,items);}},
+      {id:'back',title:'再看看其他產品',description:'看看其他商品',
+        keywords:['返回','清單','其他','上一步','回去'],
+        onSelect:()=>{clearControls();backToCatalogList(items);}}
+    ]);
   });
 }
 function backToCatalogList(items){
@@ -277,13 +283,23 @@ function enterProductCalc(p,items){
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
   aiSay([investRationale(tag)],()=>{
     renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});
-    renderFinalCTA();
-    const w=wrap();
-    w.appendChild(choiceBtn(backLabel,'回到清單看看別的選擇',()=>{meSay(backLabel);clearControls();backToCatalogList(items);},['查看','其他','清單','商品','天期','回去','返回']));
+    const nextItems=[
+      {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',
+        keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
+        onSelect:()=>{clearControls();finishFlow('order');}},
+      {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',
+        keywords:['理專','諮詢','專員','問問題','找人','客服'],
+        onSelect:()=>{clearControls();finishFlow('advisor');}},
+      {id:'back',title:backLabel,description:'回到清單看看別的選擇',
+        keywords:['查看','其他','清單','商品','天期','回去','返回'],
+        onSelect:()=>{clearControls();backToCatalogList(items);}}
+    ];
     if(S.path!=='supplement'){
-      w.appendChild(choiceBtn('納入他行資產，取得完整分析','讓建議更貼近您的整體配置',()=>{meSay('納入他行資產，取得完整分析');clearControls();S.path='supplement';stageH1();},['補充','更多','其他資產','完整','他行','納入','資產']));
+      nextItems.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
+        keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
+        onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
     }
-    setControls(w);
+    showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
   });
 }
 
@@ -389,9 +405,11 @@ function stageH3(){
     ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
     : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
   aiSay([recap,S.h2Reason,bridge],()=>{
-    const w=wrap();
-    w.appendChild(choiceBtn(calcLabel,'看看符合需求的商品，再從中試算',()=>{meSay(calcLabel);clearControls();stageH3List();},['試算','配置','查看','清單','商品','好','可以','ok','OK']));
-    setControls(w);
+    showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
+      {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
+        keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
+        onSelect:()=>{clearControls();stageH3List();}}
+    ]);
   });
 }
 /* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；

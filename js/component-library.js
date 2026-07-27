@@ -83,7 +83,8 @@ const CALC_CONFIG={
   depositRate:0.025,   // 活存 固定年利率，不隨 Tab 或滑桿變動
   drinkPrice:60,       // 一杯手搖飲
   dinnerPrice:800,     // 一次朋友聚會
-  maxEmoji:15          // 掉落 emoji 上限，避免畫面過亂
+  maxEmoji:50,         // 掉落 emoji 上限：數量直接對應換算結果，僅在超過 50 時才封頂，避免畫面過度擁擠
+  fallDurationMs:3000  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
 };
 function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   opts=opts||{};
@@ -95,7 +96,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   let mode='drink';
   const card=document.createElement('div');card.className='calc-card';
   card.innerHTML=`
-    <div class="calc-title">${asset.name}・年化報酬試算</div>
+    <div class="calc-title">多元資產組合年化報酬試算</div>
     ${showPeriodTabs?`<div class="calc-tabs">
       <button type="button" class="calc-tab sel" data-period="1y">投資1年</button>
       <button type="button" class="calc-tab" data-period="3y">投資3年</button>
@@ -157,11 +158,11 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
-    const n=Math.min(Math.max(count,1),CALC_CONFIG.maxEmoji);
+    const n=Math.min(count,CALC_CONFIG.maxEmoji);
     for(let i=0;i<n;i++){
       const s=document.createElement('span');s.className='calc-emoji';s.textContent=emoji;
       s.style.left=(5+Math.random()*90)+'%';
-      s.style.setProperty('--dur',(2+Math.random()*1.2).toFixed(2)+'s');
+      s.style.setProperty('--dur',(CALC_CONFIG.fallDurationMs/1000)+'s');
       s.style.setProperty('--delay',(Math.random()*0.8).toFixed(2)+'s');
       s.style.setProperty('--fall',Math.round(110+Math.random()*70)+'px');
       s.style.setProperty('--drift',Math.round((Math.random()-0.5)*60)+'px');
@@ -221,3 +222,100 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   return card;
 }
 COMPONENTS['card/calculator']={render:renderAssetVsDepositCalc};
+
+/* ---- bar/chat-input（Figma node 215:872）底部輸入/對話列 ----
+   共用的底部輸入列：白卡容器＋輸入框＋圓形送出鈕＋固定但書文字，含 enabled／disabled 兩種狀態。
+   disabled 用於特定流程限制期間（如展覽期間），此時輸入框僅顯示提示文字、不可互動。
+   兩狀態共用同一份 DOM，切換時只換 class／文字，不重建節點，避免版面跳動。
+   opts：{placeholder, disabledMessage, onSubmit, disclaimerText}，皆有預設值、可覆寫。 */
+const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M5.58759 20.4153V14.6131L12.1023 12.6791L5.58759 10.745V4.9428L21.0601 12.6791L5.58759 20.4153Z" fill="white"/>
+</svg>`;
+const ICB_DEFAULTS={
+  placeholder:'我想要找...',
+  disabledMessage:'展覽期間暫不開放。請點擊上方按鈕選項繼續操作',
+  disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
+};
+function renderInputChatBar(state,opts){
+  opts=opts||{};
+  const placeholder=opts.placeholder||ICB_DEFAULTS.placeholder;
+  const disabledMessage=opts.disabledMessage||ICB_DEFAULTS.disabledMessage;
+  const disclaimerText=opts.disclaimerText||ICB_DEFAULTS.disclaimerText;
+  const onSubmit=opts.onSubmit||function(){};
+
+  const bar=document.createElement('div');bar.className='icb';
+  bar.innerHTML=`<div class="icb-row">
+      <input class="icb-input" type="text" autocomplete="off">
+      <button type="button" class="icb-send" aria-label="送出">${ICB_ICON_SEND}</button>
+    </div>
+    <p class="icb-disclaimer">${disclaimerText}</p>`;
+  const input=bar.querySelector('.icb-input'),send=bar.querySelector('.icb-send');
+
+  function submit(){
+    const v=input.value.trim();if(!v)return;
+    input.value='';onSubmit(v);
+  }
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
+  send.onclick=submit;
+
+  function setState(next){
+    const isDisabled=next==='disabled';
+    input.disabled=isDisabled;
+    input.placeholder=isDisabled?disabledMessage:placeholder;
+    send.disabled=isDisabled;
+  }
+  bar.setState=setState;
+  setState(state||'enabled');
+  return bar;
+}
+COMPONENTS['bar/chat-input']={render:renderInputChatBar};
+
+/* ---- message/chat-bubble（Figma node 219:747）使用者發送訊息氣泡 ----
+   使用者自己送出的對話內容（靠右對齊），跟 aiSay()／aiAsk() 的系統回覆訊息（.ai-msg／.md-quote）
+   是不同樣式，此元件只對應使用者發送的這一種，不要拿去用在系統回覆上。
+   純顯示用元件，不含業務邏輯（如 echo 抑制），呼叫端自行決定何時呼叫。
+   opts：{className} 可疊加額外 class（例如客製化寬度）。 */
+function renderMessageChatBubble(content,opts){
+  opts=opts||{};
+  const row=document.createElement('div');row.className='mcb-row'+(opts.className?' '+opts.className:'');
+  const bubble=document.createElement('div');bubble.className='mcb';
+  bubble.textContent=content;
+  row.appendChild(bubble);
+  chatBox.appendChild(row);down();
+  return row;
+}
+COMPONENTS['message/chat-bubble']={render:renderMessageChatBubble};
+
+/* ---- list/next-step（Figma node 237:1191／240:898，Chat/next action／Chat/option）說明後的下一步選單 ----
+   標題 + 可變數量選項（每項：主標題／副說明／右側 chevron，項目間分隔線），整組嵌入聊天紀錄。
+   純顯示用元件，不寫死任何商品名稱／頁面文案，皆由呼叫端的 heading／items 傳入；
+   點擊只單純呼叫該項的 onSelect，元件本身不處理「選取後消失」或「產生訊息氣泡」——
+   那是對話流程的業務邏輯，交給呼叫端（見 engine.js 的 showNextSteps）決定。
+   item.state==='disabled' 時該列不可點擊（Figma 此節點本身沒有 disabled variant，
+   樣式依文字規格另行還原：低對比灰階＋半透明）。
+   items：[{id, title, description, state, onSelect}]；opts：{className}。 */
+const NSL_ICON_CHEVRON=`<svg class="nsl-chevron" viewBox="0 0 7.6011 13.4344" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0.883883 0.883883L6.71722 6.71722L0.883883 12.5505" stroke="#041C43" stroke-width="1.25" stroke-linecap="square"/>
+</svg>`;
+function renderNextStepList(heading,items,opts){
+  opts=opts||{};
+  const list=document.createElement('div');list.className='nsl'+(opts.className?' '+opts.className:'');
+  list.innerHTML=`<div class="nsl-heading"></div><div class="nsl-items"></div>`;
+  list.querySelector('.nsl-heading').textContent=heading;
+  const itemsEl=list.querySelector('.nsl-items');
+  (items||[]).forEach(item=>{
+    const btn=document.createElement('button');btn.type='button';btn.className='nsl-item';
+    btn.disabled=item.state==='disabled';
+    btn.innerHTML=`<span class="nsl-item-text">
+        <span class="nsl-item-title"></span>
+        <span class="nsl-item-desc"></span>
+      </span>${NSL_ICON_CHEVRON}`;
+    btn.querySelector('.nsl-item-title').textContent=item.title;
+    btn.querySelector('.nsl-item-desc').textContent=item.description;
+    btn.onclick=()=>{if(item.onSelect)item.onSelect();};
+    itemsEl.appendChild(btn);
+  });
+  chatBox.appendChild(list);down();
+  return list;
+}
+COMPONENTS['list/next-step']={render:renderNextStepList};

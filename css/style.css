@@ -1,7 +1,7 @@
 :root{
   --brand:#0044ad; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
   --ink:#1b1b19; --muted:#7a7f88; --line:#e9ebee; --bg:#ffffff;
-  --user-bg:#f2f6ff; --idle:#dfe4ee;
+  --idle:#dfe4ee;
 }
 html,body{height:100%}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -44,13 +44,11 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .ai-msg .md-ul{margin:2px 0 8px;padding-left:20px}
 .ai-msg .md-ul:last-child{margin-bottom:0}
 .ai-msg .md-ul li{margin:3px 0}
-.me-msg{display:flex;justify-content:flex-end;margin:16px 0;animation:fade .4s ease}
-.me-msg span{background:var(--user-bg);border-radius:6px;padding:10px 14px;font-size:15px;font-weight:600;max-width:84%;line-height:1.5}
+/* 使用者發送訊息氣泡已改用 message/chat-bubble 元件（css/component-library.css .mcb-*） */
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
-   跟一般敘述性 ai-msg 區分開，不用左側色塊或徽章，改用溫和的底色與圓角 */
-.md-quote{background:#f7f5f2;border-radius:12px;padding:14px 18px;margin:14px 0;
-  font-size:15.5px;font-weight:600;color:var(--ink);line-height:1.6;animation:fade .4s ease}
+   跟一般敘述性 ai-msg 區分開，不用底部色塊，改用跟標題相近的字級來凸顯 */
+.md-quote{font-size:17.5px;font-weight:600;color:var(--ink);line-height:1.4;margin:14px 0;animation:fade .4s ease}
 .ai-msg .md-quote{margin:6px 0}
 .typing{display:flex;gap:4px;margin:16px 0;align-items:center}
 .typing .d{width:7px;height:7px;border-radius:50%;background:#b8bfca;animation:blink 1.2s infinite}
@@ -76,23 +74,11 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .choice.checkopt.sel::after{content:'✓';position:absolute;left:16.5px;top:50%;transform:translateY(-50%);
   color:#fff;font-size:12px;font-weight:800;line-height:1}
 .choice:disabled{opacity:.4;cursor:not-allowed}
-/* 建議行動（前往下單／諮詢理專等）：接在對話最後的藥丸狀小按鈕，非 sticky，不佔用底部固定控制列 */
-.sugg-row{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;animation:fade .4s ease}
-.sugg-chip{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--brand-soft);color:var(--brand);
-  font-weight:700;font-size:13.5px;padding:10px 16px;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s}
-.sugg-chip:hover{background:#dde8ff}
-.sugg-chip .ic{font-size:11px;line-height:1}
+/* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
 .endcard{text-align:center;padding:22px 14px;background:#fff;border-radius:6px;margin:14px 0}
 .endcard .ic{font-size:40px}.endcard .t{font-size:17px;font-weight:800;margin:8px 0 4px}
 .endcard .d{font-size:13px;color:var(--muted);line-height:1.6}
 .summary{text-align:left;background:var(--brand-soft);border-radius:6px;padding:12px 14px;margin:14px 0 4px;font-size:13px;line-height:1.9}
 .summary b{color:var(--brand)}
-.inputbar{display:flex;gap:8px;align-items:center;background:#fff;border-top:1px solid var(--line);
-  padding:10px 14px calc(10px + env(safe-area-inset-bottom));flex-shrink:0}
-.inputbar input{flex:1;border:1.5px solid var(--line);border-radius:6px;padding:11px 16px;font-size:14.5px;outline:none;font-family:inherit}
-.inputbar input:focus{border-color:var(--brand)}
-.inputbar input:disabled{background:var(--bg);color:var(--muted);cursor:not-allowed}
-.inputbar button{width:42px;height:42px;border-radius:6px;border:0;background:var(--brand);color:#fff;font-size:15px;cursor:pointer;flex-shrink:0}
-.inputbar button:disabled{background:#c7cdda;cursor:not-allowed}
-.disclaimer{font-size:10.5px;color:var(--muted);text-align:center;padding:7px 16px;background:var(--bg)}
+/* 底部輸入列已改用 bar/chat-input 元件（css/component-library.css .icb-*） */
