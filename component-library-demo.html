@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>元件庫預覽 — Component Library</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/component-library.css">
+<style>
+  /* 僅供本預覽頁使用，不屬於元件庫本體 */
+  body{padding:24px;background:#f2f6ff}
+  .demo-section{max-width:480px;margin:0 auto 32px;background:#fff;border-radius:8px;overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .demo-label{padding:12px 16px;font-size:13px;font-weight:700;color:#4f607b;border-bottom:1px solid #e2e2e2}
+  .demo-log{max-width:480px;margin:0 auto 32px;font-size:13px;color:#4f607b;white-space:pre-wrap}
+</style>
+</head>
+<body>
+  <!-- bar/chat-input -->
+  <div class="demo-section">
+    <div class="demo-label">bar/chat-input — state: enabled</div>
+    <div id="mount-enabled"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">bar/chat-input — state: disabled</div>
+    <div id="mount-disabled"></div>
+  </div>
+  <div class="demo-log" id="log"></div>
+
+  <!-- message/chat-bubble -->
+  <div class="demo-section">
+    <div class="demo-label">message/chat-bubble — 短文字</div>
+    <div id="screen-short" class="chat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">message/chat-bubble — 長文字（換行）</div>
+    <div id="screen-long" class="chat" style="padding:16px"></div>
+  </div>
+
+  <!-- list/next-step -->
+  <div class="demo-section">
+    <div class="demo-label">list/next-step — 投資方向說明頁（2 個選項）</div>
+    <div id="screen-nsl-direction" class="chat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">list/next-step — card/calculator 基金 vs 定存情境（4 個選項）</div>
+    <div id="screen-nsl-fund" class="chat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">list/next-step — card/calculator 債券 vs 活存情境（4 個選項）</div>
+    <div id="screen-nsl-bond" class="chat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">list/next-step — item 狀態：default／disabled（滑鼠移到 default 項目上可看 hover／press 效果）</div>
+    <div id="screen-nsl-states" class="chat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section">
+    <div class="demo-label">list/next-step — 互動示意：點擊任一選項 → 選單消失 → 出現對應使用者氣泡（直接呼叫真正的 showNextSteps()，非另開一套 mock 邏輯）</div>
+    <div id="screen-nsl-interactive" class="chat" style="padding:16px"></div>
+  </div>
+
+  <!-- down() 內部固定找 #screen 當捲動容器，這裡不需要真的捲動，放一個隱藏節點避免報錯 -->
+  <div id="screen" style="display:none"></div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/component-library.js"></script>
+  <script>
+    const log=document.getElementById('log');
+    document.getElementById('mount-enabled').appendChild(
+      renderComponent('bar/chat-input','enabled',{onSubmit:v=>{log.textContent='onSubmit: '+v;}})
+    );
+    document.getElementById('mount-disabled').appendChild(
+      renderComponent('bar/chat-input','disabled',{})
+    );
+
+    /* message/chat-bubble、list/next-step 依賴 engine.js 的 chatBox／down()，示範時手動指定掛載目標 */
+    chatBox=document.getElementById('screen-short');
+    renderComponent('message/chat-bubble','幫我看看基金');
+    chatBox=document.getElementById('screen-long');
+    renderComponent('message/chat-bubble','這是一段用來測試長文字換行效果的訊息內容，確保氣泡在內容較長的時候仍然可以正常斷行，不會撐破容器或造成版面跑版，同時維持置右對齊、圓角與內距等視覺樣式一致。');
+
+    chatBox=document.getElementById('screen-nsl-direction');
+    renderComponent('list/next-step','了解這個方向之後，您想怎麼進行下一步呢？',[
+      {id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',onSelect:()=>{}},
+      {id:'accept',title:'查看基金清單',description:'看看符合需求的商品，再從中試算',onSelect:()=>{}}
+    ]);
+
+    chatBox=document.getElementById('screen-nsl-fund');
+    renderComponent('list/next-step','了解產品之後，您想怎麼進行下一步呢？',[
+      {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',onSelect:()=>{}},
+      {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',onSelect:()=>{}},
+      {id:'back',title:'查看其他產品',description:'回到清單看看別的選擇',onSelect:()=>{}},
+      {id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',onSelect:()=>{}}
+    ]);
+
+    chatBox=document.getElementById('screen-nsl-bond');
+    renderComponent('list/next-step','了解產品之後，您想怎麼進行下一步呢？',[
+      {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',onSelect:()=>{}},
+      {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',onSelect:()=>{}},
+      {id:'back',title:'查看其他產品',description:'回到清單看看別的選擇',onSelect:()=>{}},
+      {id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',onSelect:()=>{}}
+    ]);
+
+    /* item 狀態範例：default（可互動）／disabled（不可點擊、低對比半透明） */
+    chatBox=document.getElementById('screen-nsl-states');
+    renderComponent('list/next-step','範例：一個 default、一個 disabled',[
+      {id:'default-item',title:'一般可點擊選項',description:'default 狀態，可 hover／press',state:'default',onSelect:()=>{}},
+      {id:'disabled-item',title:'目前無法選擇的選項',description:'disabled 狀態，不可點擊',state:'disabled',onSelect:()=>{}}
+    ]);
+
+    /* 互動示意：直接呼叫正式的 showNextSteps()，驗證「選取後選單消失、改以 message/chat-bubble 顯示所選標題」這條真正的業務邏輯 */
+    chatBox=document.getElementById('screen-nsl-interactive');
+    showNextSteps('點我看看選單消失＋出現訊息氣泡的效果',[
+      {id:'a',title:'選項 A',description:'點我試試看',onSelect:()=>{}},
+      {id:'b',title:'選項 B',description:'點我試試看',onSelect:()=>{}}
+    ]);
+  </script>
+</body>
+</html>
