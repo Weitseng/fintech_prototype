@@ -319,3 +319,50 @@ function renderNextStepList(heading,items,opts){
   return list;
 }
 COMPONENTS['list/next-step']={render:renderNextStepList};
+
+/* ---- button/primary（Figma node 246:876）全站共用主要行動按鈕（CTA） ----
+   跟其他元件不同，這是通用型原子元件，不綁定聊天流程，不會自己 appendChild 到 chatBox——
+   呼叫端可能要放進 selpage 表單、chat 的 controls 區、或流程結尾畫面，由呼叫端自行決定掛載位置。
+   狀態只靠原生 <button disabled> + CSS :hover 即可，Figma 沒有為 Pressed 做出跟 Default 不同的視覺，
+   故不額外實作 :active 覆蓋。
+   純文字按鈕，不支援 icon：label 用 textContent 寫入，就算傳字串也只會當純文字顯示，不會渲染成圖示。
+   opts：{disabled, onClick, type, className} 皆可省略。 */
+function renderButtonPrimary(label,opts){
+  opts=opts||{};
+  const btn=document.createElement('button');
+  btn.type=opts.type||'button';
+  btn.className='btn-primary'+(opts.className?' '+opts.className:'');
+  btn.textContent=label;
+  btn.disabled=!!opts.disabled;
+  if(opts.onClick)btn.onclick=opts.onClick;
+  return btn;
+}
+COMPONENTS['button/primary']={render:renderButtonPrimary};
+
+/* ---- card/feedback-qr（Figma node 254:888，ai 投資助理_QR code 掃描）----
+   流程結尾的滿意度回饋卡：QR Code 區塊（圖＋標題＋說明）＋再體驗一次按鈕，「立即申購」／「諮詢理專」
+   兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
+   2026-07-27 依需求調整：移除條款提示文字，按鈕改放在說明文字下方（QR 區塊之後）。
+   底部的 disabled InputChatBar 不在這個元件裡渲染——那是掛在 #inputbar 的全站共用元件
+   （js/bootstrap.js 已經是 disabled 狀態），呼叫端不需要另外處理。
+   opts：{qrSrc, onRestart}，qrSrc 先用 placeholder 圖檔，之後有真實問卷連結的 QR 圖再替換路徑即可；
+   onRestart 預設呼叫 resetAll()，回到對話流程最初的開始體驗頁。 */
+const FBQR_DEFAULTS={qrSrc:'assets/qr-placeholder.svg'};
+function renderFeedbackQrCard(opts){
+  opts=opts||{};
+  const qrSrc=opts.qrSrc||FBQR_DEFAULTS.qrSrc;
+  const card=document.createElement('div');card.className='fbqr';
+  card.innerHTML=`
+    <div class="fbqr-qr">
+      <img class="fbqr-qr-img" src="${qrSrc}" alt="滿意度問卷 QR Code">
+      <div class="fbqr-qr-title">感謝您的體驗</div>
+      <div class="fbqr-qr-desc">您的寶貴意見是我們前進的動力！<br>誠摯邀請您掃描 QR Code 填寫滿意度問卷，凱基銀行感謝您的支持與配合。</div>
+    </div>
+    <div class="fbqr-btn-mount"></div>`;
+  card.querySelector('.fbqr-btn-mount').appendChild(
+    renderComponent('button/primary','再體驗一次',{onClick:opts.onRestart||resetAll})
+  );
+  chatBox.appendChild(card);down();
+  return card;
+}
+COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};

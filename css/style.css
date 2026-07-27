@@ -2,11 +2,53 @@
   --brand:#0044ad; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
   --ink:#1b1b19; --muted:#7a7f88; --line:#e9ebee; --bg:#ffffff;
   --idle:#dfe4ee;
+
+  /* 字級系統（智富管家字體規範表）：CN=思源黑體字重/行高，EN=Montserrat字重/行高，
+     數字或英文文字包在 .num 內會自動切換到對應的 EN 值，見下方 .type-* 規則 */
+  --font-cn:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-en:'Montserrat',sans-serif;
+
+  --type-title-size:21px;
+  --type-title-weight-cn:500; --type-title-weight-en:600;
+  --type-title-lh-cn:1.5; --type-title-lh-en:1.4;
+
+  --type-subtitle-size:18px; /* Figma「Subtitle-B」節點實測為 18px（原規範表誤植 17px，已依 Figma 校正，2026-07-27） */
+  --type-subtitle-b-weight-cn:500; --type-subtitle-b-weight-en:600;
+  --type-subtitle-r-weight-cn:400; --type-subtitle-r-weight-en:400;
+  --type-subtitle-lh-cn:1.6; --type-subtitle-lh-en:1.4;
+
+  --type-body-size:15px;
+  --type-body-b-weight-cn:500; --type-body-b-weight-en:600;
+  --type-body-r-weight-cn:400; --type-body-r-weight-en:400;
+  --type-body-lh-cn:1.5; --type-body-lh-en:1.4;
+
+  --type-caption-size:13px;
+  --type-caption-weight-cn:400; --type-caption-weight-en:400;
+  --type-caption-lh-cn:1.5; --type-caption-lh-en:1.4;
 }
 html,body{height:100%}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   background:var(--bg);color:var(--ink)}
+
+/* 字級系統工具類：套在任何區塊上即可套用對應層級；區塊內的數字/英文文字包一層 <span class="num">
+   會自動切成 Montserrat + 該層級的 EN 字重與行高（中英文分權重，比照規範表） */
+.type-title,.type-subtitle-b,.type-subtitle-r,.type-body-b,.type-body-r,.type-caption-r{font-family:var(--font-cn)}
+.type-title{--_w-en:var(--type-title-weight-en);--_lh-en:var(--type-title-lh-en);
+  font-size:var(--type-title-size);font-weight:var(--type-title-weight-cn);line-height:var(--type-title-lh-cn)}
+.type-subtitle-b{--_w-en:var(--type-subtitle-b-weight-en);--_lh-en:var(--type-subtitle-lh-en);
+  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn)}
+.type-subtitle-r{--_w-en:var(--type-subtitle-r-weight-en);--_lh-en:var(--type-subtitle-lh-en);
+  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);line-height:var(--type-subtitle-lh-cn)}
+.type-body-b{--_w-en:var(--type-body-b-weight-en);--_lh-en:var(--type-body-lh-en);
+  font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn)}
+.type-body-r{--_w-en:var(--type-body-r-weight-en);--_lh-en:var(--type-body-lh-en);
+  font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn)}
+.type-caption-r{--_w-en:var(--type-caption-weight-en);--_lh-en:var(--type-caption-lh-en);
+  font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn)}
+.type-title .num,.type-subtitle-b .num,.type-subtitle-r .num,
+.type-body-b .num,.type-body-r .num,.type-caption-r .num{
+  font-family:var(--font-en);font-weight:var(--_w-en);line-height:var(--_lh-en)}
 .app{width:100%;max-width:820px;margin:0 auto;height:100vh;height:100dvh;background:var(--bg);position:relative;
   display:flex;flex-direction:column}
 .reset{position:absolute;top:8px;right:14px;z-index:30;font-size:11px;
@@ -16,8 +58,9 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 
 /* 選擇頁 */
 .selpage{padding:26px 22px 22px}
-.selpage-hero{margin-bottom:24px}
+.selpage-hero{margin-bottom:36px}
 .selpage-hero-video{display:block;width:100%;height:auto}
+.selpage-intro{text-align:center}
 .selpage .kicker{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.05em}
 .selpage h1{font-size:23px;font-weight:800;margin:6px 0 4px;line-height:1.3}
 .selpage .lead{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
@@ -26,14 +69,10 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
   color:var(--ink);font-size:15px;font-weight:600;padding:15px 16px;border-radius:6px;margin:9px 0;cursor:pointer;transition:.15s}
 .opt:hover{border-color:var(--brand)}
 .opt.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
-.primary{display:block;width:auto;min-width:220px;margin:22px auto 0;background:#0044ad;color:#fff;border:0;font-size:16px;font-weight:700;
-  padding:16px 32px;border-radius:6px;cursor:pointer;text-align:center}
-.primary:hover{background:#003382}
-.primary:disabled{opacity:.35;cursor:not-allowed}
 
 /* Claude 風格對話 */
 .chat{padding:20px 20px 10px}
-.ai-msg{font-size:15.5px;line-height:1.75;color:var(--ink);margin:16px 0;animation:fade .4s ease}
+.ai-msg{font-size:15.5px;line-height:1.75;color:var(--ink);margin:24px 0;animation:fade .4s ease}
 .ai-msg b,.ai-msg strong{color:var(--brand);font-weight:800}
 .ai-msg em{font-style:normal;color:var(--brand-2);font-weight:700}
 .ai-msg .md-h1{font-size:17.5px;font-weight:800;margin:2px 0 8px;line-height:1.4}
@@ -48,9 +87,9 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
    跟一般敘述性 ai-msg 區分開，不用底部色塊，改用跟標題相近的字級來凸顯 */
-.md-quote{font-size:17.5px;font-weight:600;color:var(--ink);line-height:1.4;margin:14px 0;animation:fade .4s ease}
+.md-quote{font-size:17.5px;font-weight:600;color:var(--ink);line-height:1.4;margin:24px 0;animation:fade .4s ease}
 .ai-msg .md-quote{margin:6px 0}
-.typing{display:flex;gap:4px;margin:16px 0;align-items:center}
+.typing{display:flex;gap:4px;margin:24px 0;align-items:center}
 .typing .d{width:7px;height:7px;border-radius:50%;background:#b8bfca;animation:blink 1.2s infinite}
 .typing .d:nth-child(2){animation-delay:.2s}.typing .d:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
@@ -76,9 +115,5 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .choice:disabled{opacity:.4;cursor:not-allowed}
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
-.endcard{text-align:center;padding:22px 14px;background:#fff;border-radius:6px;margin:14px 0}
-.endcard .ic{font-size:40px}.endcard .t{font-size:17px;font-weight:800;margin:8px 0 4px}
-.endcard .d{font-size:13px;color:var(--muted);line-height:1.6}
-.summary{text-align:left;background:var(--brand-soft);border-radius:6px;padding:12px 14px;margin:14px 0 4px;font-size:13px;line-height:1.9}
-.summary b{color:var(--brand)}
+/* 流程結尾畫面：已改用 card/feedback-qr 元件（css/component-library.css .fbqr-*） */
 /* 底部輸入列已改用 bar/chat-input 元件（css/component-library.css .icb-*） */

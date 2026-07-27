@@ -1,0 +1,13 @@
+<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR Code 佔位圖，之後請替換為實際問卷連結">
+  <rect width="160" height="160" rx="6" fill="#f2f6ff"/>
+  <g fill="#041c43">
+    <path d="M16 16h34v34H16zM24 24v18h18V24z"/>
+    <path d="M110 16h34v34h-34zM118 24v18h18V24z"/>
+    <path d="M16 110h34v34H16zM24 118v18h18v-18z"/>
+    <rect x="30" y="30" width="6" height="6"/>
+    <rect x="124" y="30" width="6" height="6"/>
+    <rect x="30" y="124" width="6" height="6"/>
+  </g>
+  <text x="80" y="86" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#4f607b">QR Code</text>
+  <text x="80" y="102" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#8994a5">placeholder</text>
+</svg>

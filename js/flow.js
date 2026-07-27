@@ -23,12 +23,14 @@ function stepA(){
         <source src="assets/opening-animation.mp4" type="video/mp4">
       </video>
     </div>
-    <div class="kicker">凱基銀行 · 智富管家</div>
-    <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
-    <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
-    <button class="primary" id="startBtn">開始體驗 →</button>`;
+    <div class="selpage-intro">
+      <div class="kicker">凱基銀行 · 智富管家</div>
+      <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
+      <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
+    </div>
+    <div id="startBtnMount" style="text-align:center;margin-top:33px"></div>`;
   screen().innerHTML='';screen().appendChild(p);
-  p.querySelector('#startBtn').onclick=()=>stepB();
+  p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
 
 /* ================= 階段 B｜設定資產情境 ================= */
@@ -43,9 +45,11 @@ function stepB(){
     <div id="rangeOpts"></div>
     <div class="q">2. 其中隨時能動用的現金（活存／定存）大概占多少比例？</div>
     <div id="cashOpts"></div>
-    <button class="primary" id="startBtn" disabled>開啟智富管家分析 →</button>`;
+    <div id="startBtnMount" style="text-align:center;margin-top:22px"></div>`;
   screen().innerHTML='';screen().appendChild(p);
-  const ro=p.querySelector('#rangeOpts'),co=p.querySelector('#cashOpts'),startBtn=p.querySelector('#startBtn');
+  const ro=p.querySelector('#rangeOpts'),co=p.querySelector('#cashOpts');
+  const startBtn=renderComponent('button/primary','開啟智富管家分析',{disabled:true,onClick:()=>enterChat()});
+  p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
   ['100 萬以下','100 萬 – 200 萬','200 萬以上'].forEach(x=>{
     const b=document.createElement('button');b.className='opt';b.textContent=x;
@@ -59,7 +63,6 @@ function stepB(){
       b.classList.add('sel');S.cashRatio=x;checkReady();};
     co.appendChild(b);
   });
-  startBtn.onclick=()=>enterChat();
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */
@@ -376,18 +379,17 @@ function stageH2(){
       };
       w.appendChild(b);
     });
-    const confirmBtn=document.createElement('button');confirmBtn.className='choice';confirmBtn.style.textAlign='center';
-    confirmBtn.style.color='#fff';confirmBtn.style.background='var(--brand)';confirmBtn.style.borderColor='var(--brand)';
-    confirmBtn.textContent='確認送出';confirmBtn.disabled=true;
-    confirmBtn.onclick=()=>{
+    const confirmWrap=wrap();confirmWrap.style.textAlign='center';confirmWrap.style.marginTop='8px';
+    const confirmBtn=renderComponent('button/primary','確認送出',{disabled:true,onClick:()=>{
       const items=H2_OPTIONS.filter(o=>selected.has(o.key));
       const base=classifyH2(items.map(o=>o.key));
       const adj=adjustH2(base);
       S.h2Items=items.map(o=>o.label);S.h2Reason=adj.reason;S.recoTypeH=adj.result;
       meSay(items.length?items.map(o=>o.label).join('、'):'目前沒有投資');
       clearControls();stageH3();
-    };
-    w.appendChild(confirmBtn);
+    }});
+    confirmWrap.appendChild(confirmBtn);
+    w.appendChild(confirmWrap);
     setControls(w);
   });
 }
