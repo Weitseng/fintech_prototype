@@ -15,7 +15,7 @@
 
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
-  clearControls();hideInput();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="selpage-hero">
@@ -112,12 +112,12 @@ function stageC(){
            ['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']]
         ];
         opts.forEach(([label,ack,kw])=>w.appendChild(choiceBtn(label,null,()=>{
-          meSay(label);clearControls();aiSay([ack],()=>ch_d1());
+          meSay(label);clearControls();aiSay([ack],()=>ch_d1(),{label:'管家正在理解分析'});
         },kw)));
         setControls(w);
-      });
+      },{label:'為您分析資產配置中',heavy:true});
     },700);
-  });
+  },{label:'管家為您準備分析中'});
 }
 
 /* ================= 階段 D｜了解投資屬性（三題釐清） =================
@@ -137,21 +137,21 @@ function ch_d1(){
     ];
     o.forEach(([label,val,wt,kw])=>w.appendChild(choiceBtn(label,null,()=>{S.q1=val;S.depositWeight=wt;meSay(label);clearControls();
       const summary=val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
-      aiSay([`**${summary}**。`],()=>ch_d2());},kw)));
+      aiSay([`**${summary}**。`],()=>ch_d2(),{label:'管家正在理解分析'});},kw)));
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 function ch_d2(){
   aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
-      aiSay(['**這代表本金安全是您最優先的考量。**我會以「完全保本與高穩定」的商品為主，為您規劃方向。'],()=>resolveConservative());},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
+      aiSay(['**這代表本金安全是您最優先的考量。**我會以「完全保本與高穩定」的商品為主，為您規劃方向。'],()=>resolveConservative(),{label:'管家正在理解分析'});},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
     w.appendChild(choiceBtn('可以接受小幅波動（跌幅約 10%～30%）',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅波動（跌幅約 10%～30%）');clearControls();
-      aiSay(['**了解，您能接受一定程度的波動。**我們可以在維持資產穩健的前提下，適度搭配收益型商品。'],()=>ch_d3());},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
+      aiSay(['**了解，您能接受一定程度的波動。**我們可以在維持資產穩健的前提下，適度搭配收益型商品。'],()=>ch_d3(),{label:'管家正在理解分析'});},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
     w.appendChild(choiceBtn('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會');clearControls();
-      aiSay(['**了解，您能接受較大幅度的波動，以換取成長機會。**成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3());},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
+      aiSay(['**了解，您能接受較大幅度的波動，以換取成長機會。**成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3(),{label:'管家正在理解分析'});},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 function ch_d3(){
   aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您：","> 在投資型商品裡，您比較看重哪一種特質？"],()=>{
@@ -160,7 +160,7 @@ function ch_d3(){
     w.appendChild(choiceBtn('希望門檻較低、追求收益潛能',null,()=>{S.q3='想以較低門檻參與、追求收益潛能';meSay('希望門檻較低、追求收益潛能');clearControls();resolveAttribute('fund','A');},['低門檻','收益潛能','成長','基金','潛力']));
     w.appendChild(choiceBtn('兩者都可以，或想搭配著看',null,()=>{S.q3='都可以／想搭配';meSay('兩者都可以，或想搭配著看');clearControls();resolveAttribute('combo','AB');},['都可以','搭配','混合','都要','兩個都']));
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 function resolveConservative(){S.attribute='C';S.recoType='deposit';stageE();}
 function resolveAttribute(recoType,attr){
@@ -194,8 +194,8 @@ function stageE(){
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
-    aiSay([bridge],()=>stageF());
-  });
+    aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
+  },{label:'為您分析比較適合的方向中',heavy:true});
 }
 
 /* ================= 階段 F｜詢問下一步 ================= */
@@ -236,7 +236,7 @@ function stageGList(){
   }[S.recoType]||'依您剛才的回答，我幫您整理了幾檔符合需求的商品，您可以先看看商品詳情，或直接試算：';
   aiSay([intro],()=>{
     showCatalogCards(items);
-  });
+  },{label:'為您篩選商品中'});
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
@@ -271,10 +271,10 @@ function enterProductDetail(p,items){
         keywords:['返回','清單','其他','上一步','回去'],
         onSelect:()=>{clearControls();backToCatalogList(items);}}
     ]);
-  });
+  },{label:'為您整理商品資訊中'});
 }
 function backToCatalogList(items){
-  aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items));
+  aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items),{label:'管家整理中'});
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -303,7 +303,7 @@ function enterProductCalc(p,items){
         onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
     }
     showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
-  });
+  },{label:'為您試算中',heavy:true});
 }
 
 /* ================= 階段 H｜（路徑 2）補充更多資產資訊 ================= */
@@ -314,7 +314,7 @@ function stageH1(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Amt=x;meSay(x);clearControls();stageH1b();},[x]));
     });
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 function stageH1b(){
   aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：','> 這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
@@ -323,7 +323,7 @@ function stageH1b(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Ratio=x;meSay(x);clearControls();stageH2();},[x]));
     });
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 /* H-2：目前主要投資項目（可複選） */
 const H2_OPTIONS=[
@@ -364,7 +364,7 @@ function adjustH2(base){
 function stageH2(){
   if(S.h1Ratio==='0%'){
     S.h2Items=[];S.h2Reason='**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。';S.recoTypeH='deposit';
-    aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3());
+    aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
     return;
   }
   aiSay(['> 您目前主要有投資哪些項目呢？','可以複選，選好之後點一下「確認送出」。'],()=>{
@@ -391,7 +391,7 @@ function stageH2(){
     confirmWrap.appendChild(confirmBtn);
     w.appendChild(confirmWrap);
     setControls(w);
-  });
+  },{label:'管家準備中'});
 }
 
 /* ================= H-3 試算與轉入建議 =================
@@ -412,7 +412,7 @@ function stageH3(){
         keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
         onSelect:()=>{clearControls();stageH3List();}}
     ]);
-  });
+  },{label:'為您彙整資產資料中',heavy:true});
 }
 /* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
    資產樣貌已在 stageH3 呈現過，這裡只帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
@@ -426,5 +426,5 @@ function stageH3List(){
   }[S.recoTypeH];
   aiSay([intro],()=>{
     showCatalogCards(items);
-  });
+  },{label:'為您篩選商品中'});
 }

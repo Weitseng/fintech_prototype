@@ -36,14 +36,63 @@ const RECO_REASON={
 let S={};
 const screen=()=>document.getElementById('screen');
 const ctrls=()=>document.getElementById('controls');
-const down=()=>{const s=screen();s.scrollTop=s.scrollHeight;};
-function setControls(node){freeOverride=null;const c=ctrls();c.innerHTML='';if(node){c.appendChild(node);numberChoices(node);}down();}
-/* 單選題選項（.choice，經 choiceBtn() 產生）由上往下自動帶編號「1、2、3...」；
-   .choice.checkopt 是多選核取方塊樣式，不算這種「單選清單」，不編號 */
-function numberChoices(node){
-  node.querySelectorAll('.choice:not(.checkopt)').forEach((b,i)=>{b.prepend(`${i+1}、`);});
+/* 每次有新內容加入時，不要整頁捲到最底，而是把「剛新增的這則」捲到畫面最上方，
+   讓使用者看得到新資訊的開頭，其餘的自己往下滑。預設抓 chatBox 最後一個子節點當錨點，
+   絕大多數呼叫端都是「先 appendChild，再呼叫 down()」，所以這個預設值幾乎都正確，
+   不需要每個呼叫端自己傳錨點進來 */
+const SCROLL_TOP_OFFSET=12;
+const AT_BOTTOM_THRESHOLD=40;
+let scrollBtn=null,scrollSpacer=null;
+/* scrollSpacer：chatBox 之後、跟它同層的一塊空白墊高區，高度固定跟著 #screen 的 clientHeight 走。
+   沒有這塊墊高，當「最新一則訊息」本身很短、後面累積的內容還不夠多時，
+   瀏覽器的 scrollTop 會被夾在「內容自然結尾」，捲不到讓那則訊息頂到畫面最上方——
+   於是就會像使用者回報的那樣，捲動之後還是看得到上一輪的問答。
+   有了這塊墊高，永遠有「足夠多」可以捲的空間，任何一則訊息都能被頂到最上方，
+   墊高本身會被捲出視窗外，使用者不會意識到它的存在（只會感覺到「下面先留白，等新回覆補上來」，
+   這也是 Claude 官方 App 本身的捲動方式）。
+   判斷「是否已經在最底部」／「捲到底部」都刻意用 chatBox 實際內容的下緣去算，
+   而不是直接看 scrollHeight——否則這塊墊高會讓畫面永遠判斷成「還沒到底」。 */
+function syncSpacer(){
+  if(!scrollSpacer)return;
+  scrollSpacer.style.height=screen().clientHeight+'px';
 }
-function clearControls(){ctrls().innerHTML='';}
+function down(anchor){
+  const s=screen();
+  syncSpacer();
+  const el=anchor||(chatBox&&chatBox.lastElementChild);
+  if(el){
+    const cRect=s.getBoundingClientRect(),eRect=el.getBoundingClientRect();
+    s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
+  }else{
+    s.scrollTop=s.scrollHeight;
+  }
+  updateScrollBtn();
+}
+function isScreenAtBottom(){
+  if(!chatBox)return true;
+  const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
+  return chatRect.bottom-cRect.bottom<AT_BOTTOM_THRESHOLD;
+}
+function updateScrollBtn(){
+  if(!scrollBtn)return;
+  scrollBtn.classList.toggle('show',!isScreenAtBottom());
+}
+function scrollToBottom(){
+  const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
+  s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom));
+  updateScrollBtn();
+}
+/* 換上新按鈕後多做一次「強制重繪」：把 min-height 解除、換上新內容這一連串樣式變動，
+   在部分瀏覽器環境下版面計算是對的（DOM／CSSOM 都正確），但畫面沒有真的重繪，
+   新按鈕會變成看不見的「隱形」內容，要等使用者之後不相關的操作才會補繪出來。
+   用短暫切換 display 觸發一次同步 reflow，逼瀏覽器把這塊區域重新畫出來 */
+function forceRepaint(el){el.style.display='none';void el.offsetHeight;el.style.display='';}
+function setControls(node){freeOverride=null;const c=ctrls();c.style.minHeight='';c.style.display='';c.innerHTML='';if(node)c.appendChild(node);forceRepaint(c);down();}
+/* 清空按鈕時先把目前高度凍結成 min-height，不要讓 #controls 立刻塌陷——
+   否則 flex:1 的 #screen 會瞬間長高吃掉那塊空間，導致剛才 meSay() 算好要捲到「提問頂端」的位置整個失準
+   （版面高度變了，同一個 scrollTop 對應到的畫面完全不同）。等 setControls() 換上新按鈕時才解除凍結，
+   讓新內容自己決定高度（變高會撐開、變矮也不會在中途硬縮） */
+function clearControls(){const c=ctrls();c.style.minHeight=c.offsetHeight+'px';c.innerHTML='';}
 function wrap(){return document.createElement('div');}
 function assetMid(){return {'100 萬以下':800000,'100 萬 – 200 萬':1500000,'200 萬以上':3200000}[S.assetRange]||1000000;}
 
@@ -85,15 +134,38 @@ function mdToHtml(src){
 /* ================= 對話輔助（共用渲染工具） ================= */
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
 function enterChat(){showInput();activeChoices=[];const s=screen();s.innerHTML='';
-  chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);stageC();}
-function aiSay(msgs,done){
+  chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
+  scrollSpacer=document.createElement('div');scrollSpacer.className='scroll-spacer';s.appendChild(scrollSpacer);
+  const scrollWrap=document.createElement('div');scrollWrap.className='scroll-bottom-wrap';
+  scrollBtn=document.createElement('button');
+  scrollBtn.type='button';scrollBtn.className='scroll-bottom-btn';scrollBtn.setAttribute('aria-label','回到最下方');
+  scrollBtn.textContent='↓';scrollBtn.onclick=scrollToBottom;
+  scrollWrap.appendChild(scrollBtn);s.appendChild(scrollWrap);
+  syncSpacer();
+  s.onscroll=updateScrollBtn;
+  stageC();}
+/* opts.label：依情境自訂 loading 文字（保底預設「管家思考中」，理論上每個呼叫都該自帶 label，
+   保底值只是防呆，不該常態出現）；
+   opts.heavy：標記為「理論上較複雜」的任務（資產分析、彙整、試算……），loading 總長拉到 BASE_DELAY+HEAVY_EXTRA，
+   讓使用者感受到系統有在運算，即使回覆內容其實是預先寫好的。
+   即使沒標 heavy，單則訊息字數超過 LONG_MSG_LEN 也會自動視為複雜內容，一併加長 */
+const LONG_MSG_LEN=120;
+const BASE_DELAY=900;
+const HEAVY_EXTRA=1300;
+const MSG_GAP=400;
+function aiSay(msgs,done,opts){
+  opts=opts||{};
+  const label=opts.label||'管家思考中';
   let i=0;(function next(){
     if(i>=msgs.length){if(done)done();return;}
     const t=document.createElement('div');t.className='typing';
-    t.innerHTML='<span class="d"></span><span class="d"></span><span class="d"></span>';
-    chatBox.appendChild(t);down();
+    t.innerHTML=`<span class="typing-label">${label}</span><span class="typing-dots"><span class="d"></span><span class="d"></span><span class="d"></span></span>`;
+    /* 這裡故意不呼叫 down()：如果使用者才剛回答完問題，meSay() 已經把畫面捲到「提問＋回答」對齊頂端，
+       這裡如果又捲一次會把那組畫面往上推、蓋掉剛才特地留住的提問。等真正的訊息換上來才需要捲動。 */
+    chatBox.appendChild(t);
+    const heavy=opts.heavy||msgs[i].length>LONG_MSG_LEN;
     setTimeout(()=>{t.remove();const m=document.createElement('div');m.className='ai-msg';
-      m.innerHTML=mdToHtml(msgs[i]);chatBox.appendChild(m);down();i++;setTimeout(next,300);},620);
+      m.innerHTML=mdToHtml(msgs[i]);chatBox.appendChild(m);down();i++;setTimeout(next,MSG_GAP);},BASE_DELAY+(heavy?HEAVY_EXTRA:0));
   })();
 }
 /* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
@@ -103,8 +175,15 @@ function aiAsk(question){
   m.innerHTML=`<div class="md-quote">${mdInline(question)}</div>`;
   chatBox.appendChild(m);down();
 }
+/* 使用者送出回答後，畫面要捲到「使用者這則回答本身」的頂端（參考 Claude App 手機版的捲動方式）——
+   之前的提問／整段對話歷史捲出視窗外，不干擾閱讀；下面留白，AI 開始輸出新內容時再自然接續、
+   使用者也可以自己往下滑先看。這裡延到 requestAnimationFrame 才捲：呼叫端的慣例是
+   「meSay() 接著馬上 clearControls()」，#controls 清空的瞬間 #screen 版面會重新計算，
+   要等版面穩定之後才捲，才不會捲完又被版面變動蓋掉（見 clearControls()／setControls() 的說明）。 */
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
-  renderComponent('message/chat-bubble',text);}
+  const bubbleRow=renderComponent('message/chat-bubble',text);
+  requestAnimationFrame(()=>down(bubbleRow));
+}
 function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('button');
   b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
   b.onclick=()=>onClick(b);
@@ -115,7 +194,7 @@ function showInput(){const b=document.getElementById('inputbar');if(b)b.style.di
 function hideInput(){const b=document.getElementById('inputbar');if(b){b.style.display='none';const ci=b.querySelector('.icb-input');if(ci)ci.value='';}}
 function matchChoices(text){const live=activeChoices.filter(c=>document.body.contains(c.el));
   for(const c of live){if((c.keywords||[]).some(k=>text.includes(k)))return c;}return null;}
-function clarify(){aiSay(["為了幫您快速聚焦，您的想法比較接近下方哪一個選項呢？您可以直接點選，或換個說法再告訴我。"]);}
+function clarify(){aiSay(["為了幫您快速聚焦，您的想法比較接近下方哪一個選項呢？您可以直接點選，或換個說法再告訴我。"],null,{label:'管家確認中'});}
 function handleFree(text){
   if(freeOverride){meSay(text);const h=freeOverride;freeOverride=null;h(text);return;}
   const c=matchChoices(text);
@@ -139,8 +218,10 @@ function investRationale(tag){
 
 /* 說明後的下一步選單（list/next-step 元件）：呼叫端傳入 heading／items（可帶 keywords），
    這裡包住每個 item 的 onSelect，負責「選好後」的對話流程業務邏輯：
-   1) 整組選單從畫面移除　2) 用 meSay() 補一個使用者訊息氣泡（內容為選到的標題）
-   3) 才呼叫原本要做的事。元件本身只單純呼叫 onSelect，不知道這些流程規則。
+   1) 整組選單（標題＋選項）從畫面移除　2) 用 aiAsk() 把標題留下來，變成一則普通的提問訊息，
+      這樣才有東西可以讓 meSay() 之後捲動對齊（見 meSay() 的 questionEl 邏輯）
+   3) 用 meSay() 補一個使用者訊息氣泡（內容為選到的標題）
+   4) 才呼叫原本要做的事。元件本身只單純呼叫 onSelect，不知道這些流程規則。
    keywords 也接上 activeChoices 讓自由輸入能命中；按鈕一旦被移出畫面，
    matchChoices() 的 document.body.contains 檢查會自然把它排除，不需要另外清理。 */
 function showNextSteps(heading,items){
@@ -149,6 +230,7 @@ function showNextSteps(heading,items){
     ...item,
     onSelect:()=>{
       el.remove();
+      aiAsk(heading);
       meSay(item.title);
       if(item.onSelect)item.onSelect();
     }
