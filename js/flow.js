@@ -16,7 +16,7 @@
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
-  document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='none';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="selpage-hero">
@@ -25,11 +25,11 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <div class="kicker">凱基銀行 · 智富管家</div>
+      <div class="kicker">凱基銀行 AI 智富管家</div>
       <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
       <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     </div>
-    <div id="startBtnMount" style="text-align:center;margin-top:33px"></div>`;
+    <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   screen().innerHTML='';screen().appendChild(p);
   p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
@@ -37,20 +37,20 @@ function stepA(){
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
   clearControls();
-  document.querySelector('.reset').style.display='';
+  document.querySelector('.app-header').style.display='';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="kicker">開始之前</div>
-    <h1>開始前，需要先了解您在凱基銀行目前的資產狀況。</h1>
+    <h1>我們想先了解您在凱基銀行目前的資產狀況。</h1>
     <div class="lead">這些資訊僅用於本次試算，能協助我依您目前的情況提供較貼近現況的建議。</div>
     <div class="q">1. 您在本行的總資產，大約落在哪個級距？</div>
     <div id="rangeOpts"></div>
     <div class="q">2. 其中隨時能動用的現金（活存／定存）大概占多少比例？</div>
     <div id="cashOpts"></div>
-    <div id="startBtnMount" style="text-align:center;margin-top:22px"></div>`;
+    <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   screen().innerHTML='';screen().appendChild(p);
   const ro=p.querySelector('#rangeOpts'),co=p.querySelector('#cashOpts');
-  const startBtn=renderComponent('button/primary','開啟智富管家分析',{disabled:true,onClick:()=>enterChat()});
+  const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
   ['100 萬以下','100 萬 – 200 萬','200 萬以上'].forEach(x=>{
@@ -410,7 +410,7 @@ function stageH2(){
       };
       w.appendChild(b);
     });
-    const confirmWrap=wrap();confirmWrap.style.textAlign='center';confirmWrap.style.marginTop='8px';
+    const confirmWrap=wrap();confirmWrap.style.textAlign='center';confirmWrap.style.marginTop='var(--spacing-40)';
     const confirmBtn=renderComponent('button/primary','確認送出',{disabled:true,onClick:()=>{
       const items=H2_OPTIONS.filter(o=>selected.has(o.key));
       const base=classifyH2(items.map(o=>o.key));

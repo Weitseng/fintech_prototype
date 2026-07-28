@@ -16,13 +16,24 @@ function renderComponentRow(name,items,...args){
 }
 
 /* ---- chart/pie（Figma node 189:853）資產配置圓餅圖 ----
-   中心顯示現金留存百分比，圖例列出投資配置／現金留存金額；investedPct 為投資配置占比（0–100） */
+   中心顯示現金留存百分比，圖例列出投資配置／現金留存金額；investedPct 為投資配置占比（0–100）。
+   色塊間刻意留白（而非緊密貼合）：在每個色塊交界處插入一小段 transparent，露出 .pie-card
+   本身的背景色，視覺上形成間隔；0%/100% 交界（12 點鐘方向）要分別在漸層頭尾各留一小段
+   transparent 才會接成一個完整間隔。PIE_GAP_PCT 是每側留白的角度佔比（% of 360°），
+   目前只有兩個色塊、兩筆真實資料落點都遠離 0%／100%（見 flow.js stageC()：investedPct
+   實際範圍約 8–80），不會出現留白大於色塊本身的情況，故不另外處理極端值 clamp。 */
 function renderPieChart(investedPct,amount){
   const cashPct=100-investedPct;
   const inv=Math.round(amount*investedPct/100),cash=amount-inv;
+  const PIE_GAP_PCT=0.4;
+  const pieBg=`conic-gradient(transparent 0% ${PIE_GAP_PCT}%,`+
+    `#3773dc ${PIE_GAP_PCT}% ${investedPct-PIE_GAP_PCT}%,`+
+    `transparent ${investedPct-PIE_GAP_PCT}% ${investedPct+PIE_GAP_PCT}%,`+
+    `#55a784 ${investedPct+PIE_GAP_PCT}% ${100-PIE_GAP_PCT}%,`+
+    `transparent ${100-PIE_GAP_PCT}% 100%)`;
   const card=document.createElement('div');card.className='pie-card';
   card.innerHTML=`<div class="pie-overview">
-      <div class="pie-chart" style="background:conic-gradient(#3773dc 0 ${investedPct}%,#55a784 ${investedPct}% 100%)">
+      <div class="pie-chart" style="background:${pieBg}">
         <div class="pie-hole"><div><div class="pie-value">${cashPct}%</div><div class="pie-label">現金留存</div></div></div>
       </div>
       <div class="pie-legend">
@@ -233,7 +244,7 @@ const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http:
 </svg>`;
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
-  disabledMessage:'展覽期間暫不開放。請點擊上方按鈕選項繼續操作',
+  disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
   disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
 };
 function renderInputChatBar(state,opts){

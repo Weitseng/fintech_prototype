@@ -1,0 +1,1009 @@
+/**
+ * KGI MDS Foundation — Typography Design Tokens
+ * Source: Figma MDS_Foundation
+ *   標準字級 (standard):  node-id=15905-16334
+ *   標準/加大字級設定 (standard vs enlarged): node-id=16607-19617
+ *   已對照使用者提供的 Figma Tokens Plugin 匯出檔 (design-tokens.tokens.json) 校正
+ *   規範說明文件另見 kgi-typography-guideline.md
+ * Updated: 2026-07-27
+ *
+ * 結構 Structure: 依「字級角色」分組 (Display L/M/S、Headline、Title、
+ * Subtitle Bold/Regular、Body Bold/Regular、Caption),同一角色下依序列出
+ * Web / mWeb / iOS,並各自附上 TC / EN,方便跨平台比對同一角色的字級差異。
+ *
+ * 命名規則 Naming convention(完整規則與理由說明見 kgi-typography-guideline.md):
+ *   --kgi-font-{platform}-{level}-{lang}-{property}
+ *   platform: web | mweb | ios | auto
+ *   lang:     tc | en
+ *   property: family | size | size-rem | weight | line-height | letter-spacing
+ *
+ * 使用方式 Usage:
+ *   標準字級為預設值,寫在 :root。
+ *   加大字級 (KGI-大字級) 透過在 <html> 或最外層容器加上
+ *   data-kgi-text-scale="large" 屬性來覆寫對應的 CSS 變數,
+ *   不需要改動元件本身的 class 命名。
+ *
+ *   .headline-tc {
+ *     font-family: var(--kgi-font-auto-headline-tc-family);
+ *     font-size: var(--kgi-font-auto-headline-tc-size-rem);
+ *     font-weight: var(--kgi-font-auto-headline-tc-weight);
+ *     line-height: var(--kgi-font-auto-headline-tc-line-height);
+ *     letter-spacing: var(--kgi-font-auto-headline-tc-letter-spacing);
+ *   }
+ *   (Web/mWeb 用 --kgi-font-auto-*;若要強制指定單一平台,改用
+ *   --kgi-font-web-* 或 --kgi-font-mweb-*;iOS 原生開發不透過 CSS,
+ *   直接讀取本檔案數值對應到原生程式碼即可。)
+ */
+
+:root {
+  /* ---- Display - L ---- */
+  --kgi-font-web-display-l-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-l-tc-size: 72px;
+  --kgi-font-web-display-l-tc-size-rem: 4.5rem;  /* 1rem = 16px */
+  --kgi-font-web-display-l-tc-weight: 300;
+  --kgi-font-web-display-l-tc-line-height: 1.400;
+  --kgi-font-web-display-l-tc-letter-spacing: 0px;
+  --kgi-font-web-display-l-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-l-en-size: 72px;
+  --kgi-font-web-display-l-en-size-rem: 4.5rem;  /* 1rem = 16px */
+  --kgi-font-web-display-l-en-weight: 300;
+  --kgi-font-web-display-l-en-line-height: 1.200;
+  --kgi-font-web-display-l-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-l-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-l-tc-size: 64px;
+  --kgi-font-mweb-display-l-tc-size-rem: 4rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-l-tc-weight: 300;
+  --kgi-font-mweb-display-l-tc-line-height: 1.400;
+  --kgi-font-mweb-display-l-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-l-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-l-en-size: 64px;
+  --kgi-font-mweb-display-l-en-size-rem: 4rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-l-en-weight: 300;
+  --kgi-font-mweb-display-l-en-line-height: 1.200;
+  --kgi-font-mweb-display-l-en-letter-spacing: 0px;
+  --kgi-font-ios-display-l-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-l-tc-size: 64px;
+  --kgi-font-ios-display-l-tc-weight: 300;
+  --kgi-font-ios-display-l-tc-line-height: 1.400;
+  --kgi-font-ios-display-l-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-l-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-l-en-size: 65px;
+  --kgi-font-ios-display-l-en-weight: 274;
+  --kgi-font-ios-display-l-en-line-height: 1.200;
+  --kgi-font-ios-display-l-en-letter-spacing: 0px;
+
+  /* ---- Display - M ---- */
+  --kgi-font-web-display-m-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-m-tc-size: 60px;
+  --kgi-font-web-display-m-tc-size-rem: 3.75rem;  /* 1rem = 16px */
+  --kgi-font-web-display-m-tc-weight: 300;
+  --kgi-font-web-display-m-tc-line-height: 1.400;
+  --kgi-font-web-display-m-tc-letter-spacing: 0px;
+  --kgi-font-web-display-m-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-m-en-size: 60px;
+  --kgi-font-web-display-m-en-size-rem: 3.75rem;  /* 1rem = 16px */
+  --kgi-font-web-display-m-en-weight: 300;
+  --kgi-font-web-display-m-en-line-height: 1.200;
+  --kgi-font-web-display-m-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-m-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-m-tc-size: 48px;
+  --kgi-font-mweb-display-m-tc-size-rem: 3rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-m-tc-weight: 300;
+  --kgi-font-mweb-display-m-tc-line-height: 1.400;
+  --kgi-font-mweb-display-m-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-m-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-m-en-size: 48px;
+  --kgi-font-mweb-display-m-en-size-rem: 3rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-m-en-weight: 300;
+  --kgi-font-mweb-display-m-en-line-height: 1.300;
+  --kgi-font-mweb-display-m-en-letter-spacing: 0px;
+  --kgi-font-ios-display-m-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-m-tc-size: 48px;
+  --kgi-font-ios-display-m-tc-weight: 300;
+  --kgi-font-ios-display-m-tc-line-height: 1.400;
+  --kgi-font-ios-display-m-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-m-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-m-en-size: 49px;
+  --kgi-font-ios-display-m-en-weight: 274;
+  --kgi-font-ios-display-m-en-line-height: 1.300;
+  --kgi-font-ios-display-m-en-letter-spacing: 0px;
+
+  /* ---- Display - S ---- */
+  --kgi-font-web-display-s-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-s-tc-size: 48px;
+  --kgi-font-web-display-s-tc-size-rem: 3rem;  /* 1rem = 16px */
+  --kgi-font-web-display-s-tc-weight: 300;
+  --kgi-font-web-display-s-tc-line-height: 1.400;
+  --kgi-font-web-display-s-tc-letter-spacing: 0px;
+  --kgi-font-web-display-s-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-s-en-size: 48px;
+  --kgi-font-web-display-s-en-size-rem: 3rem;  /* 1rem = 16px */
+  --kgi-font-web-display-s-en-weight: 300;
+  --kgi-font-web-display-s-en-line-height: 1.200;
+  --kgi-font-web-display-s-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-s-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-s-tc-size: 40px;
+  --kgi-font-mweb-display-s-tc-size-rem: 2.5rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-s-tc-weight: 300;
+  --kgi-font-mweb-display-s-tc-line-height: 1.400;
+  --kgi-font-mweb-display-s-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-s-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-s-en-size: 40px;
+  --kgi-font-mweb-display-s-en-size-rem: 2.5rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-s-en-weight: 300;
+  --kgi-font-mweb-display-s-en-line-height: 1.300;
+  --kgi-font-mweb-display-s-en-letter-spacing: 0px;
+  --kgi-font-ios-display-s-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-s-tc-size: 40px;
+  --kgi-font-ios-display-s-tc-weight: 300;
+  --kgi-font-ios-display-s-tc-line-height: 1.400;
+  --kgi-font-ios-display-s-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-s-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-s-en-size: 41px;
+  --kgi-font-ios-display-s-en-weight: 274;
+  --kgi-font-ios-display-s-en-line-height: 1.300;
+  --kgi-font-ios-display-s-en-letter-spacing: 0px;
+
+  /* ---- Headline ---- */
+  --kgi-font-web-headline-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-headline-tc-size: 32px;
+  --kgi-font-web-headline-tc-size-rem: 2rem;  /* 1rem = 16px */
+  --kgi-font-web-headline-tc-weight: 400;
+  --kgi-font-web-headline-tc-line-height: 1.500;
+  --kgi-font-web-headline-tc-letter-spacing: 0px;
+  --kgi-font-web-headline-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-headline-en-size: 32px;
+  --kgi-font-web-headline-en-size-rem: 2rem;  /* 1rem = 16px */
+  --kgi-font-web-headline-en-weight: 500;
+  --kgi-font-web-headline-en-line-height: 1.400;
+  --kgi-font-web-headline-en-letter-spacing: 0px;
+  --kgi-font-mweb-headline-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-headline-tc-size: 26px;
+  --kgi-font-mweb-headline-tc-size-rem: 1.625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-headline-tc-weight: 400;
+  --kgi-font-mweb-headline-tc-line-height: 1.500;
+  --kgi-font-mweb-headline-tc-letter-spacing: 0px;
+  --kgi-font-mweb-headline-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-headline-en-size: 26px;
+  --kgi-font-mweb-headline-en-size-rem: 1.625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-headline-en-weight: 500;
+  --kgi-font-mweb-headline-en-line-height: 1.400;
+  --kgi-font-mweb-headline-en-letter-spacing: 0px;
+  --kgi-font-ios-headline-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-headline-tc-size: 26px;
+  --kgi-font-ios-headline-tc-weight: 400;
+  --kgi-font-ios-headline-tc-line-height: 1.500;
+  --kgi-font-ios-headline-tc-letter-spacing: 0px;
+  --kgi-font-ios-headline-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-headline-en-size: 27px;
+  --kgi-font-ios-headline-en-weight: 400;
+  --kgi-font-ios-headline-en-line-height: 1.400;
+  --kgi-font-ios-headline-en-letter-spacing: 0px;
+
+  /* ---- Title ---- */
+  --kgi-font-web-title-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-title-tc-size: 24px;
+  --kgi-font-web-title-tc-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-title-tc-weight: 500;
+  --kgi-font-web-title-tc-line-height: 1.500;
+  --kgi-font-web-title-tc-letter-spacing: 0px;
+  --kgi-font-web-title-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-title-en-size: 24px;
+  --kgi-font-web-title-en-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-title-en-weight: 600;
+  --kgi-font-web-title-en-line-height: 1.400;
+  --kgi-font-web-title-en-letter-spacing: 0px;
+  --kgi-font-mweb-title-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-title-tc-size: 21px;
+  --kgi-font-mweb-title-tc-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-title-tc-weight: 500;
+  --kgi-font-mweb-title-tc-line-height: 1.500;
+  --kgi-font-mweb-title-tc-letter-spacing: 0px;
+  --kgi-font-mweb-title-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-title-en-size: 21px;
+  --kgi-font-mweb-title-en-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-title-en-weight: 600;
+  --kgi-font-mweb-title-en-line-height: 1.400;
+  --kgi-font-mweb-title-en-letter-spacing: 0px;
+  --kgi-font-ios-title-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-title-tc-size: 21px;
+  --kgi-font-ios-title-tc-weight: 500;
+  --kgi-font-ios-title-tc-line-height: 1.500;
+  --kgi-font-ios-title-tc-letter-spacing: 0px;
+  --kgi-font-ios-title-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-title-en-size: 22px;
+  --kgi-font-ios-title-en-weight: 510;
+  --kgi-font-ios-title-en-line-height: 1.400;
+  --kgi-font-ios-title-en-letter-spacing: 0px;
+
+  /* ---- Subtitle - B ---- */
+  --kgi-font-web-subtitle-bold-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-subtitle-bold-tc-size: 21px;
+  --kgi-font-web-subtitle-bold-tc-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-bold-tc-weight: 500;
+  --kgi-font-web-subtitle-bold-tc-line-height: 1.500;
+  --kgi-font-web-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-web-subtitle-bold-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-subtitle-bold-en-size: 21px;
+  --kgi-font-web-subtitle-bold-en-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-bold-en-weight: 600;
+  --kgi-font-web-subtitle-bold-en-line-height: 1.400;
+  --kgi-font-web-subtitle-bold-en-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-bold-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-subtitle-bold-tc-size: 17px;
+  --kgi-font-mweb-subtitle-bold-tc-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-bold-tc-weight: 500;
+  --kgi-font-mweb-subtitle-bold-tc-line-height: 1.600;
+  --kgi-font-mweb-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-bold-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-subtitle-bold-en-size: 17px;
+  --kgi-font-mweb-subtitle-bold-en-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-bold-en-weight: 600;
+  --kgi-font-mweb-subtitle-bold-en-line-height: 1.400;
+  --kgi-font-mweb-subtitle-bold-en-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-bold-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-subtitle-bold-tc-size: 17px;
+  --kgi-font-ios-subtitle-bold-tc-weight: 500;
+  --kgi-font-ios-subtitle-bold-tc-line-height: 1.600;
+  --kgi-font-ios-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-bold-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-subtitle-bold-en-size: 18px;
+  --kgi-font-ios-subtitle-bold-en-weight: 510;
+  --kgi-font-ios-subtitle-bold-en-line-height: 1.300;
+  --kgi-font-ios-subtitle-bold-en-letter-spacing: 0px;
+
+  /* ---- Subtitle - R ---- */
+  --kgi-font-web-subtitle-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-subtitle-regular-tc-size: 21px;
+  --kgi-font-web-subtitle-regular-tc-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-regular-tc-weight: 400;
+  --kgi-font-web-subtitle-regular-tc-line-height: 1.500;
+  --kgi-font-web-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-subtitle-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-subtitle-regular-en-size: 21px;
+  --kgi-font-web-subtitle-regular-en-size-rem: 1.3125rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-regular-en-weight: 400;
+  --kgi-font-web-subtitle-regular-en-line-height: 1.400;
+  --kgi-font-web-subtitle-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-subtitle-regular-tc-size: 17px;
+  --kgi-font-mweb-subtitle-regular-tc-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-regular-tc-weight: 400;
+  --kgi-font-mweb-subtitle-regular-tc-line-height: 1.600;
+  --kgi-font-mweb-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-subtitle-regular-en-size: 17px;
+  --kgi-font-mweb-subtitle-regular-en-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-regular-en-weight: 400;
+  --kgi-font-mweb-subtitle-regular-en-line-height: 1.400;
+  --kgi-font-mweb-subtitle-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-subtitle-regular-tc-size: 17px;
+  --kgi-font-ios-subtitle-regular-tc-weight: 400;
+  --kgi-font-ios-subtitle-regular-tc-line-height: 1.600;
+  --kgi-font-ios-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-subtitle-regular-en-size: 18px;
+  --kgi-font-ios-subtitle-regular-en-weight: 400;
+  --kgi-font-ios-subtitle-regular-en-line-height: 1.300;
+  --kgi-font-ios-subtitle-regular-en-letter-spacing: 0px;
+
+  /* ---- Body - B ---- */
+  --kgi-font-web-body-bold-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-body-bold-tc-size: 17px;
+  --kgi-font-web-body-bold-tc-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-body-bold-tc-weight: 500;
+  --kgi-font-web-body-bold-tc-line-height: 1.600;
+  --kgi-font-web-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-web-body-bold-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-body-bold-en-size: 17px;
+  --kgi-font-web-body-bold-en-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-body-bold-en-weight: 600;
+  --kgi-font-web-body-bold-en-line-height: 1.400;
+  --kgi-font-web-body-bold-en-letter-spacing: 0px;
+  --kgi-font-mweb-body-bold-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-body-bold-tc-size: 15px;
+  --kgi-font-mweb-body-bold-tc-size-rem: 0.9375rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-bold-tc-weight: 500;
+  --kgi-font-mweb-body-bold-tc-line-height: 1.500;
+  --kgi-font-mweb-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-mweb-body-bold-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-body-bold-en-size: 15px;
+  --kgi-font-mweb-body-bold-en-size-rem: 0.9375rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-bold-en-weight: 600;
+  --kgi-font-mweb-body-bold-en-line-height: 1.400;
+  --kgi-font-mweb-body-bold-en-letter-spacing: 0px;
+  --kgi-font-ios-body-bold-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-body-bold-tc-size: 15px;
+  --kgi-font-ios-body-bold-tc-weight: 500;
+  --kgi-font-ios-body-bold-tc-line-height: 1.500;
+  --kgi-font-ios-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-ios-body-bold-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-body-bold-en-size: 16px;
+  --kgi-font-ios-body-bold-en-weight: 510;
+  --kgi-font-ios-body-bold-en-line-height: 1.300;
+  --kgi-font-ios-body-bold-en-letter-spacing: 0px;
+
+  /* ---- Body - R ---- */
+  --kgi-font-web-body-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-body-regular-tc-size: 17px;
+  --kgi-font-web-body-regular-tc-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-body-regular-tc-weight: 400;
+  --kgi-font-web-body-regular-tc-line-height: 1.600;
+  --kgi-font-web-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-body-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-body-regular-en-size: 17px;
+  --kgi-font-web-body-regular-en-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-body-regular-en-weight: 400;
+  --kgi-font-web-body-regular-en-line-height: 1.400;
+  --kgi-font-web-body-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-body-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-body-regular-tc-size: 15px;
+  --kgi-font-mweb-body-regular-tc-size-rem: 0.9375rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-regular-tc-weight: 400;
+  --kgi-font-mweb-body-regular-tc-line-height: 1.500;
+  --kgi-font-mweb-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-body-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-body-regular-en-size: 15px;
+  --kgi-font-mweb-body-regular-en-size-rem: 0.9375rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-regular-en-weight: 400;
+  --kgi-font-mweb-body-regular-en-line-height: 1.400;
+  --kgi-font-mweb-body-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-body-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-body-regular-tc-size: 15px;
+  --kgi-font-ios-body-regular-tc-weight: 400;
+  --kgi-font-ios-body-regular-tc-line-height: 1.500;
+  --kgi-font-ios-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-body-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-body-regular-en-size: 16px;
+  --kgi-font-ios-body-regular-en-weight: 400;
+  --kgi-font-ios-body-regular-en-line-height: 1.300;
+  --kgi-font-ios-body-regular-en-letter-spacing: 0px;
+
+  /* ---- Caption - R ---- */
+  --kgi-font-web-caption-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-caption-regular-tc-size: 14px;
+  --kgi-font-web-caption-regular-tc-size-rem: 0.875rem;  /* 1rem = 16px */
+  --kgi-font-web-caption-regular-tc-weight: 400;
+  --kgi-font-web-caption-regular-tc-line-height: 1.500;
+  --kgi-font-web-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-caption-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-caption-regular-en-size: 14px;
+  --kgi-font-web-caption-regular-en-size-rem: 0.875rem;  /* 1rem = 16px */
+  --kgi-font-web-caption-regular-en-weight: 400;
+  --kgi-font-web-caption-regular-en-line-height: 1.400;
+  --kgi-font-web-caption-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-caption-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-caption-regular-tc-size: 13px;
+  --kgi-font-mweb-caption-regular-tc-size-rem: 0.8125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-caption-regular-tc-weight: 400;
+  --kgi-font-mweb-caption-regular-tc-line-height: 1.500;
+  --kgi-font-mweb-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-caption-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-caption-regular-en-size: 13px;
+  --kgi-font-mweb-caption-regular-en-size-rem: 0.8125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-caption-regular-en-weight: 400;
+  --kgi-font-mweb-caption-regular-en-line-height: 1.400;
+  --kgi-font-mweb-caption-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-caption-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-caption-regular-tc-size: 13px;
+  --kgi-font-ios-caption-regular-tc-weight: 400;
+  --kgi-font-ios-caption-regular-tc-line-height: 1.500;
+  --kgi-font-ios-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-caption-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-caption-regular-en-size: 14px;
+  --kgi-font-ios-caption-regular-en-weight: 400;
+  --kgi-font-ios-caption-regular-en-line-height: 1.300;
+  --kgi-font-ios-caption-regular-en-letter-spacing: 0px;
+
+  /* ---- 響應式 auto tokens(預設 = Web desktop,> 768px)---- */
+  /* 依「字型轉換的 Breakpoint 判斷」:Web desktop: Width > 768、Mobile web: Width <= 768 */
+  --kgi-font-auto-display-l-tc-family: var(--kgi-font-web-display-l-tc-family);
+  --kgi-font-auto-display-l-tc-size: var(--kgi-font-web-display-l-tc-size);
+  --kgi-font-auto-display-l-tc-size-rem: var(--kgi-font-web-display-l-tc-size-rem);
+  --kgi-font-auto-display-l-tc-weight: var(--kgi-font-web-display-l-tc-weight);
+  --kgi-font-auto-display-l-tc-line-height: var(--kgi-font-web-display-l-tc-line-height);
+  --kgi-font-auto-display-l-tc-letter-spacing: var(--kgi-font-web-display-l-tc-letter-spacing);
+  --kgi-font-auto-display-l-en-family: var(--kgi-font-web-display-l-en-family);
+  --kgi-font-auto-display-l-en-size: var(--kgi-font-web-display-l-en-size);
+  --kgi-font-auto-display-l-en-size-rem: var(--kgi-font-web-display-l-en-size-rem);
+  --kgi-font-auto-display-l-en-weight: var(--kgi-font-web-display-l-en-weight);
+  --kgi-font-auto-display-l-en-line-height: var(--kgi-font-web-display-l-en-line-height);
+  --kgi-font-auto-display-l-en-letter-spacing: var(--kgi-font-web-display-l-en-letter-spacing);
+  --kgi-font-auto-display-m-tc-family: var(--kgi-font-web-display-m-tc-family);
+  --kgi-font-auto-display-m-tc-size: var(--kgi-font-web-display-m-tc-size);
+  --kgi-font-auto-display-m-tc-size-rem: var(--kgi-font-web-display-m-tc-size-rem);
+  --kgi-font-auto-display-m-tc-weight: var(--kgi-font-web-display-m-tc-weight);
+  --kgi-font-auto-display-m-tc-line-height: var(--kgi-font-web-display-m-tc-line-height);
+  --kgi-font-auto-display-m-tc-letter-spacing: var(--kgi-font-web-display-m-tc-letter-spacing);
+  --kgi-font-auto-display-m-en-family: var(--kgi-font-web-display-m-en-family);
+  --kgi-font-auto-display-m-en-size: var(--kgi-font-web-display-m-en-size);
+  --kgi-font-auto-display-m-en-size-rem: var(--kgi-font-web-display-m-en-size-rem);
+  --kgi-font-auto-display-m-en-weight: var(--kgi-font-web-display-m-en-weight);
+  --kgi-font-auto-display-m-en-line-height: var(--kgi-font-web-display-m-en-line-height);
+  --kgi-font-auto-display-m-en-letter-spacing: var(--kgi-font-web-display-m-en-letter-spacing);
+  --kgi-font-auto-display-s-tc-family: var(--kgi-font-web-display-s-tc-family);
+  --kgi-font-auto-display-s-tc-size: var(--kgi-font-web-display-s-tc-size);
+  --kgi-font-auto-display-s-tc-size-rem: var(--kgi-font-web-display-s-tc-size-rem);
+  --kgi-font-auto-display-s-tc-weight: var(--kgi-font-web-display-s-tc-weight);
+  --kgi-font-auto-display-s-tc-line-height: var(--kgi-font-web-display-s-tc-line-height);
+  --kgi-font-auto-display-s-tc-letter-spacing: var(--kgi-font-web-display-s-tc-letter-spacing);
+  --kgi-font-auto-display-s-en-family: var(--kgi-font-web-display-s-en-family);
+  --kgi-font-auto-display-s-en-size: var(--kgi-font-web-display-s-en-size);
+  --kgi-font-auto-display-s-en-size-rem: var(--kgi-font-web-display-s-en-size-rem);
+  --kgi-font-auto-display-s-en-weight: var(--kgi-font-web-display-s-en-weight);
+  --kgi-font-auto-display-s-en-line-height: var(--kgi-font-web-display-s-en-line-height);
+  --kgi-font-auto-display-s-en-letter-spacing: var(--kgi-font-web-display-s-en-letter-spacing);
+  --kgi-font-auto-headline-tc-family: var(--kgi-font-web-headline-tc-family);
+  --kgi-font-auto-headline-tc-size: var(--kgi-font-web-headline-tc-size);
+  --kgi-font-auto-headline-tc-size-rem: var(--kgi-font-web-headline-tc-size-rem);
+  --kgi-font-auto-headline-tc-weight: var(--kgi-font-web-headline-tc-weight);
+  --kgi-font-auto-headline-tc-line-height: var(--kgi-font-web-headline-tc-line-height);
+  --kgi-font-auto-headline-tc-letter-spacing: var(--kgi-font-web-headline-tc-letter-spacing);
+  --kgi-font-auto-headline-en-family: var(--kgi-font-web-headline-en-family);
+  --kgi-font-auto-headline-en-size: var(--kgi-font-web-headline-en-size);
+  --kgi-font-auto-headline-en-size-rem: var(--kgi-font-web-headline-en-size-rem);
+  --kgi-font-auto-headline-en-weight: var(--kgi-font-web-headline-en-weight);
+  --kgi-font-auto-headline-en-line-height: var(--kgi-font-web-headline-en-line-height);
+  --kgi-font-auto-headline-en-letter-spacing: var(--kgi-font-web-headline-en-letter-spacing);
+  --kgi-font-auto-title-tc-family: var(--kgi-font-web-title-tc-family);
+  --kgi-font-auto-title-tc-size: var(--kgi-font-web-title-tc-size);
+  --kgi-font-auto-title-tc-size-rem: var(--kgi-font-web-title-tc-size-rem);
+  --kgi-font-auto-title-tc-weight: var(--kgi-font-web-title-tc-weight);
+  --kgi-font-auto-title-tc-line-height: var(--kgi-font-web-title-tc-line-height);
+  --kgi-font-auto-title-tc-letter-spacing: var(--kgi-font-web-title-tc-letter-spacing);
+  --kgi-font-auto-title-en-family: var(--kgi-font-web-title-en-family);
+  --kgi-font-auto-title-en-size: var(--kgi-font-web-title-en-size);
+  --kgi-font-auto-title-en-size-rem: var(--kgi-font-web-title-en-size-rem);
+  --kgi-font-auto-title-en-weight: var(--kgi-font-web-title-en-weight);
+  --kgi-font-auto-title-en-line-height: var(--kgi-font-web-title-en-line-height);
+  --kgi-font-auto-title-en-letter-spacing: var(--kgi-font-web-title-en-letter-spacing);
+  --kgi-font-auto-subtitle-bold-tc-family: var(--kgi-font-web-subtitle-bold-tc-family);
+  --kgi-font-auto-subtitle-bold-tc-size: var(--kgi-font-web-subtitle-bold-tc-size);
+  --kgi-font-auto-subtitle-bold-tc-size-rem: var(--kgi-font-web-subtitle-bold-tc-size-rem);
+  --kgi-font-auto-subtitle-bold-tc-weight: var(--kgi-font-web-subtitle-bold-tc-weight);
+  --kgi-font-auto-subtitle-bold-tc-line-height: var(--kgi-font-web-subtitle-bold-tc-line-height);
+  --kgi-font-auto-subtitle-bold-tc-letter-spacing: var(--kgi-font-web-subtitle-bold-tc-letter-spacing);
+  --kgi-font-auto-subtitle-bold-en-family: var(--kgi-font-web-subtitle-bold-en-family);
+  --kgi-font-auto-subtitle-bold-en-size: var(--kgi-font-web-subtitle-bold-en-size);
+  --kgi-font-auto-subtitle-bold-en-size-rem: var(--kgi-font-web-subtitle-bold-en-size-rem);
+  --kgi-font-auto-subtitle-bold-en-weight: var(--kgi-font-web-subtitle-bold-en-weight);
+  --kgi-font-auto-subtitle-bold-en-line-height: var(--kgi-font-web-subtitle-bold-en-line-height);
+  --kgi-font-auto-subtitle-bold-en-letter-spacing: var(--kgi-font-web-subtitle-bold-en-letter-spacing);
+  --kgi-font-auto-subtitle-regular-tc-family: var(--kgi-font-web-subtitle-regular-tc-family);
+  --kgi-font-auto-subtitle-regular-tc-size: var(--kgi-font-web-subtitle-regular-tc-size);
+  --kgi-font-auto-subtitle-regular-tc-size-rem: var(--kgi-font-web-subtitle-regular-tc-size-rem);
+  --kgi-font-auto-subtitle-regular-tc-weight: var(--kgi-font-web-subtitle-regular-tc-weight);
+  --kgi-font-auto-subtitle-regular-tc-line-height: var(--kgi-font-web-subtitle-regular-tc-line-height);
+  --kgi-font-auto-subtitle-regular-tc-letter-spacing: var(--kgi-font-web-subtitle-regular-tc-letter-spacing);
+  --kgi-font-auto-subtitle-regular-en-family: var(--kgi-font-web-subtitle-regular-en-family);
+  --kgi-font-auto-subtitle-regular-en-size: var(--kgi-font-web-subtitle-regular-en-size);
+  --kgi-font-auto-subtitle-regular-en-size-rem: var(--kgi-font-web-subtitle-regular-en-size-rem);
+  --kgi-font-auto-subtitle-regular-en-weight: var(--kgi-font-web-subtitle-regular-en-weight);
+  --kgi-font-auto-subtitle-regular-en-line-height: var(--kgi-font-web-subtitle-regular-en-line-height);
+  --kgi-font-auto-subtitle-regular-en-letter-spacing: var(--kgi-font-web-subtitle-regular-en-letter-spacing);
+  --kgi-font-auto-body-bold-tc-family: var(--kgi-font-web-body-bold-tc-family);
+  --kgi-font-auto-body-bold-tc-size: var(--kgi-font-web-body-bold-tc-size);
+  --kgi-font-auto-body-bold-tc-size-rem: var(--kgi-font-web-body-bold-tc-size-rem);
+  --kgi-font-auto-body-bold-tc-weight: var(--kgi-font-web-body-bold-tc-weight);
+  --kgi-font-auto-body-bold-tc-line-height: var(--kgi-font-web-body-bold-tc-line-height);
+  --kgi-font-auto-body-bold-tc-letter-spacing: var(--kgi-font-web-body-bold-tc-letter-spacing);
+  --kgi-font-auto-body-bold-en-family: var(--kgi-font-web-body-bold-en-family);
+  --kgi-font-auto-body-bold-en-size: var(--kgi-font-web-body-bold-en-size);
+  --kgi-font-auto-body-bold-en-size-rem: var(--kgi-font-web-body-bold-en-size-rem);
+  --kgi-font-auto-body-bold-en-weight: var(--kgi-font-web-body-bold-en-weight);
+  --kgi-font-auto-body-bold-en-line-height: var(--kgi-font-web-body-bold-en-line-height);
+  --kgi-font-auto-body-bold-en-letter-spacing: var(--kgi-font-web-body-bold-en-letter-spacing);
+  --kgi-font-auto-body-regular-tc-family: var(--kgi-font-web-body-regular-tc-family);
+  --kgi-font-auto-body-regular-tc-size: var(--kgi-font-web-body-regular-tc-size);
+  --kgi-font-auto-body-regular-tc-size-rem: var(--kgi-font-web-body-regular-tc-size-rem);
+  --kgi-font-auto-body-regular-tc-weight: var(--kgi-font-web-body-regular-tc-weight);
+  --kgi-font-auto-body-regular-tc-line-height: var(--kgi-font-web-body-regular-tc-line-height);
+  --kgi-font-auto-body-regular-tc-letter-spacing: var(--kgi-font-web-body-regular-tc-letter-spacing);
+  --kgi-font-auto-body-regular-en-family: var(--kgi-font-web-body-regular-en-family);
+  --kgi-font-auto-body-regular-en-size: var(--kgi-font-web-body-regular-en-size);
+  --kgi-font-auto-body-regular-en-size-rem: var(--kgi-font-web-body-regular-en-size-rem);
+  --kgi-font-auto-body-regular-en-weight: var(--kgi-font-web-body-regular-en-weight);
+  --kgi-font-auto-body-regular-en-line-height: var(--kgi-font-web-body-regular-en-line-height);
+  --kgi-font-auto-body-regular-en-letter-spacing: var(--kgi-font-web-body-regular-en-letter-spacing);
+  --kgi-font-auto-caption-regular-tc-family: var(--kgi-font-web-caption-regular-tc-family);
+  --kgi-font-auto-caption-regular-tc-size: var(--kgi-font-web-caption-regular-tc-size);
+  --kgi-font-auto-caption-regular-tc-size-rem: var(--kgi-font-web-caption-regular-tc-size-rem);
+  --kgi-font-auto-caption-regular-tc-weight: var(--kgi-font-web-caption-regular-tc-weight);
+  --kgi-font-auto-caption-regular-tc-line-height: var(--kgi-font-web-caption-regular-tc-line-height);
+  --kgi-font-auto-caption-regular-tc-letter-spacing: var(--kgi-font-web-caption-regular-tc-letter-spacing);
+  --kgi-font-auto-caption-regular-en-family: var(--kgi-font-web-caption-regular-en-family);
+  --kgi-font-auto-caption-regular-en-size: var(--kgi-font-web-caption-regular-en-size);
+  --kgi-font-auto-caption-regular-en-size-rem: var(--kgi-font-web-caption-regular-en-size-rem);
+  --kgi-font-auto-caption-regular-en-weight: var(--kgi-font-web-caption-regular-en-weight);
+  --kgi-font-auto-caption-regular-en-line-height: var(--kgi-font-web-caption-regular-en-line-height);
+  --kgi-font-auto-caption-regular-en-letter-spacing: var(--kgi-font-web-caption-regular-en-letter-spacing);}
+
+@media (max-width: 768px) {
+  :root {
+    /* ---- 響應式 auto tokens 覆寫為 mWeb(<= 768px)---- */
+    --kgi-font-auto-display-l-tc-family: var(--kgi-font-mweb-display-l-tc-family);
+    --kgi-font-auto-display-l-tc-size: var(--kgi-font-mweb-display-l-tc-size);
+    --kgi-font-auto-display-l-tc-size-rem: var(--kgi-font-mweb-display-l-tc-size-rem);
+    --kgi-font-auto-display-l-tc-weight: var(--kgi-font-mweb-display-l-tc-weight);
+    --kgi-font-auto-display-l-tc-line-height: var(--kgi-font-mweb-display-l-tc-line-height);
+    --kgi-font-auto-display-l-tc-letter-spacing: var(--kgi-font-mweb-display-l-tc-letter-spacing);
+    --kgi-font-auto-display-l-en-family: var(--kgi-font-mweb-display-l-en-family);
+    --kgi-font-auto-display-l-en-size: var(--kgi-font-mweb-display-l-en-size);
+    --kgi-font-auto-display-l-en-size-rem: var(--kgi-font-mweb-display-l-en-size-rem);
+    --kgi-font-auto-display-l-en-weight: var(--kgi-font-mweb-display-l-en-weight);
+    --kgi-font-auto-display-l-en-line-height: var(--kgi-font-mweb-display-l-en-line-height);
+    --kgi-font-auto-display-l-en-letter-spacing: var(--kgi-font-mweb-display-l-en-letter-spacing);
+    --kgi-font-auto-display-m-tc-family: var(--kgi-font-mweb-display-m-tc-family);
+    --kgi-font-auto-display-m-tc-size: var(--kgi-font-mweb-display-m-tc-size);
+    --kgi-font-auto-display-m-tc-size-rem: var(--kgi-font-mweb-display-m-tc-size-rem);
+    --kgi-font-auto-display-m-tc-weight: var(--kgi-font-mweb-display-m-tc-weight);
+    --kgi-font-auto-display-m-tc-line-height: var(--kgi-font-mweb-display-m-tc-line-height);
+    --kgi-font-auto-display-m-tc-letter-spacing: var(--kgi-font-mweb-display-m-tc-letter-spacing);
+    --kgi-font-auto-display-m-en-family: var(--kgi-font-mweb-display-m-en-family);
+    --kgi-font-auto-display-m-en-size: var(--kgi-font-mweb-display-m-en-size);
+    --kgi-font-auto-display-m-en-size-rem: var(--kgi-font-mweb-display-m-en-size-rem);
+    --kgi-font-auto-display-m-en-weight: var(--kgi-font-mweb-display-m-en-weight);
+    --kgi-font-auto-display-m-en-line-height: var(--kgi-font-mweb-display-m-en-line-height);
+    --kgi-font-auto-display-m-en-letter-spacing: var(--kgi-font-mweb-display-m-en-letter-spacing);
+    --kgi-font-auto-display-s-tc-family: var(--kgi-font-mweb-display-s-tc-family);
+    --kgi-font-auto-display-s-tc-size: var(--kgi-font-mweb-display-s-tc-size);
+    --kgi-font-auto-display-s-tc-size-rem: var(--kgi-font-mweb-display-s-tc-size-rem);
+    --kgi-font-auto-display-s-tc-weight: var(--kgi-font-mweb-display-s-tc-weight);
+    --kgi-font-auto-display-s-tc-line-height: var(--kgi-font-mweb-display-s-tc-line-height);
+    --kgi-font-auto-display-s-tc-letter-spacing: var(--kgi-font-mweb-display-s-tc-letter-spacing);
+    --kgi-font-auto-display-s-en-family: var(--kgi-font-mweb-display-s-en-family);
+    --kgi-font-auto-display-s-en-size: var(--kgi-font-mweb-display-s-en-size);
+    --kgi-font-auto-display-s-en-size-rem: var(--kgi-font-mweb-display-s-en-size-rem);
+    --kgi-font-auto-display-s-en-weight: var(--kgi-font-mweb-display-s-en-weight);
+    --kgi-font-auto-display-s-en-line-height: var(--kgi-font-mweb-display-s-en-line-height);
+    --kgi-font-auto-display-s-en-letter-spacing: var(--kgi-font-mweb-display-s-en-letter-spacing);
+    --kgi-font-auto-headline-tc-family: var(--kgi-font-mweb-headline-tc-family);
+    --kgi-font-auto-headline-tc-size: var(--kgi-font-mweb-headline-tc-size);
+    --kgi-font-auto-headline-tc-size-rem: var(--kgi-font-mweb-headline-tc-size-rem);
+    --kgi-font-auto-headline-tc-weight: var(--kgi-font-mweb-headline-tc-weight);
+    --kgi-font-auto-headline-tc-line-height: var(--kgi-font-mweb-headline-tc-line-height);
+    --kgi-font-auto-headline-tc-letter-spacing: var(--kgi-font-mweb-headline-tc-letter-spacing);
+    --kgi-font-auto-headline-en-family: var(--kgi-font-mweb-headline-en-family);
+    --kgi-font-auto-headline-en-size: var(--kgi-font-mweb-headline-en-size);
+    --kgi-font-auto-headline-en-size-rem: var(--kgi-font-mweb-headline-en-size-rem);
+    --kgi-font-auto-headline-en-weight: var(--kgi-font-mweb-headline-en-weight);
+    --kgi-font-auto-headline-en-line-height: var(--kgi-font-mweb-headline-en-line-height);
+    --kgi-font-auto-headline-en-letter-spacing: var(--kgi-font-mweb-headline-en-letter-spacing);
+    --kgi-font-auto-title-tc-family: var(--kgi-font-mweb-title-tc-family);
+    --kgi-font-auto-title-tc-size: var(--kgi-font-mweb-title-tc-size);
+    --kgi-font-auto-title-tc-size-rem: var(--kgi-font-mweb-title-tc-size-rem);
+    --kgi-font-auto-title-tc-weight: var(--kgi-font-mweb-title-tc-weight);
+    --kgi-font-auto-title-tc-line-height: var(--kgi-font-mweb-title-tc-line-height);
+    --kgi-font-auto-title-tc-letter-spacing: var(--kgi-font-mweb-title-tc-letter-spacing);
+    --kgi-font-auto-title-en-family: var(--kgi-font-mweb-title-en-family);
+    --kgi-font-auto-title-en-size: var(--kgi-font-mweb-title-en-size);
+    --kgi-font-auto-title-en-size-rem: var(--kgi-font-mweb-title-en-size-rem);
+    --kgi-font-auto-title-en-weight: var(--kgi-font-mweb-title-en-weight);
+    --kgi-font-auto-title-en-line-height: var(--kgi-font-mweb-title-en-line-height);
+    --kgi-font-auto-title-en-letter-spacing: var(--kgi-font-mweb-title-en-letter-spacing);
+    --kgi-font-auto-subtitle-bold-tc-family: var(--kgi-font-mweb-subtitle-bold-tc-family);
+    --kgi-font-auto-subtitle-bold-tc-size: var(--kgi-font-mweb-subtitle-bold-tc-size);
+    --kgi-font-auto-subtitle-bold-tc-size-rem: var(--kgi-font-mweb-subtitle-bold-tc-size-rem);
+    --kgi-font-auto-subtitle-bold-tc-weight: var(--kgi-font-mweb-subtitle-bold-tc-weight);
+    --kgi-font-auto-subtitle-bold-tc-line-height: var(--kgi-font-mweb-subtitle-bold-tc-line-height);
+    --kgi-font-auto-subtitle-bold-tc-letter-spacing: var(--kgi-font-mweb-subtitle-bold-tc-letter-spacing);
+    --kgi-font-auto-subtitle-bold-en-family: var(--kgi-font-mweb-subtitle-bold-en-family);
+    --kgi-font-auto-subtitle-bold-en-size: var(--kgi-font-mweb-subtitle-bold-en-size);
+    --kgi-font-auto-subtitle-bold-en-size-rem: var(--kgi-font-mweb-subtitle-bold-en-size-rem);
+    --kgi-font-auto-subtitle-bold-en-weight: var(--kgi-font-mweb-subtitle-bold-en-weight);
+    --kgi-font-auto-subtitle-bold-en-line-height: var(--kgi-font-mweb-subtitle-bold-en-line-height);
+    --kgi-font-auto-subtitle-bold-en-letter-spacing: var(--kgi-font-mweb-subtitle-bold-en-letter-spacing);
+    --kgi-font-auto-subtitle-regular-tc-family: var(--kgi-font-mweb-subtitle-regular-tc-family);
+    --kgi-font-auto-subtitle-regular-tc-size: var(--kgi-font-mweb-subtitle-regular-tc-size);
+    --kgi-font-auto-subtitle-regular-tc-size-rem: var(--kgi-font-mweb-subtitle-regular-tc-size-rem);
+    --kgi-font-auto-subtitle-regular-tc-weight: var(--kgi-font-mweb-subtitle-regular-tc-weight);
+    --kgi-font-auto-subtitle-regular-tc-line-height: var(--kgi-font-mweb-subtitle-regular-tc-line-height);
+    --kgi-font-auto-subtitle-regular-tc-letter-spacing: var(--kgi-font-mweb-subtitle-regular-tc-letter-spacing);
+    --kgi-font-auto-subtitle-regular-en-family: var(--kgi-font-mweb-subtitle-regular-en-family);
+    --kgi-font-auto-subtitle-regular-en-size: var(--kgi-font-mweb-subtitle-regular-en-size);
+    --kgi-font-auto-subtitle-regular-en-size-rem: var(--kgi-font-mweb-subtitle-regular-en-size-rem);
+    --kgi-font-auto-subtitle-regular-en-weight: var(--kgi-font-mweb-subtitle-regular-en-weight);
+    --kgi-font-auto-subtitle-regular-en-line-height: var(--kgi-font-mweb-subtitle-regular-en-line-height);
+    --kgi-font-auto-subtitle-regular-en-letter-spacing: var(--kgi-font-mweb-subtitle-regular-en-letter-spacing);
+    --kgi-font-auto-body-bold-tc-family: var(--kgi-font-mweb-body-bold-tc-family);
+    --kgi-font-auto-body-bold-tc-size: var(--kgi-font-mweb-body-bold-tc-size);
+    --kgi-font-auto-body-bold-tc-size-rem: var(--kgi-font-mweb-body-bold-tc-size-rem);
+    --kgi-font-auto-body-bold-tc-weight: var(--kgi-font-mweb-body-bold-tc-weight);
+    --kgi-font-auto-body-bold-tc-line-height: var(--kgi-font-mweb-body-bold-tc-line-height);
+    --kgi-font-auto-body-bold-tc-letter-spacing: var(--kgi-font-mweb-body-bold-tc-letter-spacing);
+    --kgi-font-auto-body-bold-en-family: var(--kgi-font-mweb-body-bold-en-family);
+    --kgi-font-auto-body-bold-en-size: var(--kgi-font-mweb-body-bold-en-size);
+    --kgi-font-auto-body-bold-en-size-rem: var(--kgi-font-mweb-body-bold-en-size-rem);
+    --kgi-font-auto-body-bold-en-weight: var(--kgi-font-mweb-body-bold-en-weight);
+    --kgi-font-auto-body-bold-en-line-height: var(--kgi-font-mweb-body-bold-en-line-height);
+    --kgi-font-auto-body-bold-en-letter-spacing: var(--kgi-font-mweb-body-bold-en-letter-spacing);
+    --kgi-font-auto-body-regular-tc-family: var(--kgi-font-mweb-body-regular-tc-family);
+    --kgi-font-auto-body-regular-tc-size: var(--kgi-font-mweb-body-regular-tc-size);
+    --kgi-font-auto-body-regular-tc-size-rem: var(--kgi-font-mweb-body-regular-tc-size-rem);
+    --kgi-font-auto-body-regular-tc-weight: var(--kgi-font-mweb-body-regular-tc-weight);
+    --kgi-font-auto-body-regular-tc-line-height: var(--kgi-font-mweb-body-regular-tc-line-height);
+    --kgi-font-auto-body-regular-tc-letter-spacing: var(--kgi-font-mweb-body-regular-tc-letter-spacing);
+    --kgi-font-auto-body-regular-en-family: var(--kgi-font-mweb-body-regular-en-family);
+    --kgi-font-auto-body-regular-en-size: var(--kgi-font-mweb-body-regular-en-size);
+    --kgi-font-auto-body-regular-en-size-rem: var(--kgi-font-mweb-body-regular-en-size-rem);
+    --kgi-font-auto-body-regular-en-weight: var(--kgi-font-mweb-body-regular-en-weight);
+    --kgi-font-auto-body-regular-en-line-height: var(--kgi-font-mweb-body-regular-en-line-height);
+    --kgi-font-auto-body-regular-en-letter-spacing: var(--kgi-font-mweb-body-regular-en-letter-spacing);
+    --kgi-font-auto-caption-regular-tc-family: var(--kgi-font-mweb-caption-regular-tc-family);
+    --kgi-font-auto-caption-regular-tc-size: var(--kgi-font-mweb-caption-regular-tc-size);
+    --kgi-font-auto-caption-regular-tc-size-rem: var(--kgi-font-mweb-caption-regular-tc-size-rem);
+    --kgi-font-auto-caption-regular-tc-weight: var(--kgi-font-mweb-caption-regular-tc-weight);
+    --kgi-font-auto-caption-regular-tc-line-height: var(--kgi-font-mweb-caption-regular-tc-line-height);
+    --kgi-font-auto-caption-regular-tc-letter-spacing: var(--kgi-font-mweb-caption-regular-tc-letter-spacing);
+    --kgi-font-auto-caption-regular-en-family: var(--kgi-font-mweb-caption-regular-en-family);
+    --kgi-font-auto-caption-regular-en-size: var(--kgi-font-mweb-caption-regular-en-size);
+    --kgi-font-auto-caption-regular-en-size-rem: var(--kgi-font-mweb-caption-regular-en-size-rem);
+    --kgi-font-auto-caption-regular-en-weight: var(--kgi-font-mweb-caption-regular-en-weight);
+    --kgi-font-auto-caption-regular-en-line-height: var(--kgi-font-mweb-caption-regular-en-line-height);
+    --kgi-font-auto-caption-regular-en-letter-spacing: var(--kgi-font-mweb-caption-regular-en-letter-spacing);  }
+}
+
+/* 加大字級 Enlarged scale — 於 <html data-kgi-text-scale="large"> 時覆寫 */
+/* --kgi-font-auto-* 會透過 var() 自動一併套用加大字級數值,不需另外覆寫 */
+[data-kgi-text-scale="large"] {
+  /* ---- Display - L ---- */
+  --kgi-font-web-display-l-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-l-tc-size: 75px;
+  --kgi-font-web-display-l-tc-size-rem: 4.6875rem;  /* 1rem = 16px */
+  --kgi-font-web-display-l-tc-weight: 300;
+  --kgi-font-web-display-l-tc-line-height: 1.400;
+  --kgi-font-web-display-l-tc-letter-spacing: 0px;
+  --kgi-font-web-display-l-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-l-en-size: 75px;
+  --kgi-font-web-display-l-en-size-rem: 4.6875rem;  /* 1rem = 16px */
+  --kgi-font-web-display-l-en-weight: 300;
+  --kgi-font-web-display-l-en-line-height: 1.200;
+  --kgi-font-web-display-l-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-l-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-l-tc-size: 67px;
+  --kgi-font-mweb-display-l-tc-size-rem: 4.1875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-l-tc-weight: 300;
+  --kgi-font-mweb-display-l-tc-line-height: 1.400;
+  --kgi-font-mweb-display-l-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-l-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-l-en-size: 67px;
+  --kgi-font-mweb-display-l-en-size-rem: 4.1875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-l-en-weight: 300;
+  --kgi-font-mweb-display-l-en-line-height: 1.200;
+  --kgi-font-mweb-display-l-en-letter-spacing: 0px;
+  --kgi-font-ios-display-l-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-l-tc-size: 67px;
+  --kgi-font-ios-display-l-tc-weight: 300;
+  --kgi-font-ios-display-l-tc-line-height: 1.400;
+  --kgi-font-ios-display-l-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-l-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-l-en-size: 68px;
+  --kgi-font-ios-display-l-en-weight: 274;
+  --kgi-font-ios-display-l-en-line-height: 1.200;
+  --kgi-font-ios-display-l-en-letter-spacing: 0px;
+
+  /* ---- Display - M ---- */
+  --kgi-font-web-display-m-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-m-tc-size: 63px;
+  --kgi-font-web-display-m-tc-size-rem: 3.9375rem;  /* 1rem = 16px */
+  --kgi-font-web-display-m-tc-weight: 300;
+  --kgi-font-web-display-m-tc-line-height: 1.400;
+  --kgi-font-web-display-m-tc-letter-spacing: 0px;
+  --kgi-font-web-display-m-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-m-en-size: 63px;
+  --kgi-font-web-display-m-en-size-rem: 3.9375rem;  /* 1rem = 16px */
+  --kgi-font-web-display-m-en-weight: 300;
+  --kgi-font-web-display-m-en-line-height: 1.200;
+  --kgi-font-web-display-m-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-m-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-m-tc-size: 51px;
+  --kgi-font-mweb-display-m-tc-size-rem: 3.1875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-m-tc-weight: 300;
+  --kgi-font-mweb-display-m-tc-line-height: 1.400;
+  --kgi-font-mweb-display-m-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-m-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-m-en-size: 51px;
+  --kgi-font-mweb-display-m-en-size-rem: 3.1875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-m-en-weight: 300;
+  --kgi-font-mweb-display-m-en-line-height: 1.300;
+  --kgi-font-mweb-display-m-en-letter-spacing: 0px;
+  --kgi-font-ios-display-m-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-m-tc-size: 51px;
+  --kgi-font-ios-display-m-tc-weight: 300;
+  --kgi-font-ios-display-m-tc-line-height: 1.400;
+  --kgi-font-ios-display-m-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-m-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-m-en-size: 52px;
+  --kgi-font-ios-display-m-en-weight: 274;
+  --kgi-font-ios-display-m-en-line-height: 1.300;
+  --kgi-font-ios-display-m-en-letter-spacing: 0px;
+
+  /* ---- Display - S ---- */
+  --kgi-font-web-display-s-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-display-s-tc-size: 51px;
+  --kgi-font-web-display-s-tc-size-rem: 3.1875rem;  /* 1rem = 16px */
+  --kgi-font-web-display-s-tc-weight: 300;
+  --kgi-font-web-display-s-tc-line-height: 1.400;
+  --kgi-font-web-display-s-tc-letter-spacing: 0px;
+  --kgi-font-web-display-s-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-display-s-en-size: 51px;
+  --kgi-font-web-display-s-en-size-rem: 3.1875rem;  /* 1rem = 16px */
+  --kgi-font-web-display-s-en-weight: 300;
+  --kgi-font-web-display-s-en-line-height: 1.200;
+  --kgi-font-web-display-s-en-letter-spacing: 0px;
+  --kgi-font-mweb-display-s-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-display-s-tc-size: 43px;
+  --kgi-font-mweb-display-s-tc-size-rem: 2.6875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-s-tc-weight: 300;
+  --kgi-font-mweb-display-s-tc-line-height: 1.400;
+  --kgi-font-mweb-display-s-tc-letter-spacing: 0px;
+  --kgi-font-mweb-display-s-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-display-s-en-size: 43px;
+  --kgi-font-mweb-display-s-en-size-rem: 2.6875rem;  /* 1rem = 16px */
+  --kgi-font-mweb-display-s-en-weight: 300;
+  --kgi-font-mweb-display-s-en-line-height: 1.300;
+  --kgi-font-mweb-display-s-en-letter-spacing: 0px;
+  --kgi-font-ios-display-s-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-display-s-tc-size: 43px;
+  --kgi-font-ios-display-s-tc-weight: 300;
+  --kgi-font-ios-display-s-tc-line-height: 1.400;
+  --kgi-font-ios-display-s-tc-letter-spacing: 0px;
+  --kgi-font-ios-display-s-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-display-s-en-size: 44px;
+  --kgi-font-ios-display-s-en-weight: 274;
+  --kgi-font-ios-display-s-en-line-height: 1.300;
+  --kgi-font-ios-display-s-en-letter-spacing: 0px;
+
+  /* ---- Headline ---- */
+  --kgi-font-web-headline-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-headline-tc-size: 35px;
+  --kgi-font-web-headline-tc-size-rem: 2.1875rem;  /* 1rem = 16px */
+  --kgi-font-web-headline-tc-weight: 400;
+  --kgi-font-web-headline-tc-line-height: 1.500;
+  --kgi-font-web-headline-tc-letter-spacing: 0px;
+  --kgi-font-web-headline-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-headline-en-size: 35px;
+  --kgi-font-web-headline-en-size-rem: 2.1875rem;  /* 1rem = 16px */
+  --kgi-font-web-headline-en-weight: 500;
+  --kgi-font-web-headline-en-line-height: 1.400;
+  --kgi-font-web-headline-en-letter-spacing: 0px;
+  --kgi-font-mweb-headline-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-headline-tc-size: 29px;
+  --kgi-font-mweb-headline-tc-size-rem: 1.8125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-headline-tc-weight: 400;
+  --kgi-font-mweb-headline-tc-line-height: 1.500;
+  --kgi-font-mweb-headline-tc-letter-spacing: 0px;
+  --kgi-font-mweb-headline-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-headline-en-size: 29px;
+  --kgi-font-mweb-headline-en-size-rem: 1.8125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-headline-en-weight: 500;
+  --kgi-font-mweb-headline-en-line-height: 1.400;
+  --kgi-font-mweb-headline-en-letter-spacing: 0px;
+  --kgi-font-ios-headline-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-headline-tc-size: 29px;
+  --kgi-font-ios-headline-tc-weight: 400;
+  --kgi-font-ios-headline-tc-line-height: 1.500;
+  --kgi-font-ios-headline-tc-letter-spacing: 0px;
+  --kgi-font-ios-headline-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-headline-en-size: 30px;
+  --kgi-font-ios-headline-en-weight: 400;
+  --kgi-font-ios-headline-en-line-height: 1.400;
+  --kgi-font-ios-headline-en-letter-spacing: 0px;
+
+  /* ---- Title ---- */
+  --kgi-font-web-title-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-title-tc-size: 27px;
+  --kgi-font-web-title-tc-size-rem: 1.6875rem;  /* 1rem = 16px */
+  --kgi-font-web-title-tc-weight: 500;
+  --kgi-font-web-title-tc-line-height: 1.500;
+  --kgi-font-web-title-tc-letter-spacing: 0px;
+  --kgi-font-web-title-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-title-en-size: 27px;
+  --kgi-font-web-title-en-size-rem: 1.6875rem;  /* 1rem = 16px */
+  --kgi-font-web-title-en-weight: 600;
+  --kgi-font-web-title-en-line-height: 1.400;
+  --kgi-font-web-title-en-letter-spacing: 0px;
+  --kgi-font-mweb-title-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-title-tc-size: 24px;
+  --kgi-font-mweb-title-tc-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-mweb-title-tc-weight: 500;
+  --kgi-font-mweb-title-tc-line-height: 1.500;
+  --kgi-font-mweb-title-tc-letter-spacing: 0px;
+  --kgi-font-mweb-title-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-title-en-size: 24px;
+  --kgi-font-mweb-title-en-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-mweb-title-en-weight: 600;
+  --kgi-font-mweb-title-en-line-height: 1.400;
+  --kgi-font-mweb-title-en-letter-spacing: 0px;
+  --kgi-font-ios-title-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-title-tc-size: 24px;
+  --kgi-font-ios-title-tc-weight: 500;
+  --kgi-font-ios-title-tc-line-height: 1.500;
+  --kgi-font-ios-title-tc-letter-spacing: 0px;
+  --kgi-font-ios-title-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-title-en-size: 25px;
+  --kgi-font-ios-title-en-weight: 510;
+  --kgi-font-ios-title-en-line-height: 1.400;
+  --kgi-font-ios-title-en-letter-spacing: 0px;
+
+  /* ---- Subtitle - B ---- */
+  --kgi-font-web-subtitle-bold-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-subtitle-bold-tc-size: 24px;
+  --kgi-font-web-subtitle-bold-tc-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-bold-tc-weight: 500;
+  --kgi-font-web-subtitle-bold-tc-line-height: 1.500;
+  --kgi-font-web-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-web-subtitle-bold-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-subtitle-bold-en-size: 24px;
+  --kgi-font-web-subtitle-bold-en-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-bold-en-weight: 600;
+  --kgi-font-web-subtitle-bold-en-line-height: 1.400;
+  --kgi-font-web-subtitle-bold-en-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-bold-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-subtitle-bold-tc-size: 20px;
+  --kgi-font-mweb-subtitle-bold-tc-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-bold-tc-weight: 500;
+  --kgi-font-mweb-subtitle-bold-tc-line-height: 1.600;
+  --kgi-font-mweb-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-bold-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-subtitle-bold-en-size: 20px;
+  --kgi-font-mweb-subtitle-bold-en-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-bold-en-weight: 600;
+  --kgi-font-mweb-subtitle-bold-en-line-height: 1.400;
+  --kgi-font-mweb-subtitle-bold-en-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-bold-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-subtitle-bold-tc-size: 20px;
+  --kgi-font-ios-subtitle-bold-tc-weight: 500;
+  --kgi-font-ios-subtitle-bold-tc-line-height: 1.600;
+  --kgi-font-ios-subtitle-bold-tc-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-bold-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-subtitle-bold-en-size: 21px;
+  --kgi-font-ios-subtitle-bold-en-weight: 510;
+  --kgi-font-ios-subtitle-bold-en-line-height: 1.300;
+  --kgi-font-ios-subtitle-bold-en-letter-spacing: 0px;
+
+  /* ---- Subtitle - R ---- */
+  --kgi-font-web-subtitle-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-subtitle-regular-tc-size: 24px;
+  --kgi-font-web-subtitle-regular-tc-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-regular-tc-weight: 400;
+  --kgi-font-web-subtitle-regular-tc-line-height: 1.500;
+  --kgi-font-web-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-subtitle-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-subtitle-regular-en-size: 24px;
+  --kgi-font-web-subtitle-regular-en-size-rem: 1.5rem;  /* 1rem = 16px */
+  --kgi-font-web-subtitle-regular-en-weight: 400;
+  --kgi-font-web-subtitle-regular-en-line-height: 1.400;
+  --kgi-font-web-subtitle-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-subtitle-regular-tc-size: 20px;
+  --kgi-font-mweb-subtitle-regular-tc-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-regular-tc-weight: 400;
+  --kgi-font-mweb-subtitle-regular-tc-line-height: 1.600;
+  --kgi-font-mweb-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-subtitle-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-subtitle-regular-en-size: 20px;
+  --kgi-font-mweb-subtitle-regular-en-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-mweb-subtitle-regular-en-weight: 400;
+  --kgi-font-mweb-subtitle-regular-en-line-height: 1.400;
+  --kgi-font-mweb-subtitle-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-subtitle-regular-tc-size: 20px;
+  --kgi-font-ios-subtitle-regular-tc-weight: 400;
+  --kgi-font-ios-subtitle-regular-tc-line-height: 1.600;
+  --kgi-font-ios-subtitle-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-subtitle-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-subtitle-regular-en-size: 21px;
+  --kgi-font-ios-subtitle-regular-en-weight: 400;
+  --kgi-font-ios-subtitle-regular-en-line-height: 1.300;
+  --kgi-font-ios-subtitle-regular-en-letter-spacing: 0px;
+
+  /* ---- Body - B ---- */
+  --kgi-font-web-body-bold-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-body-bold-tc-size: 20px;
+  --kgi-font-web-body-bold-tc-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-web-body-bold-tc-weight: 500;
+  --kgi-font-web-body-bold-tc-line-height: 1.600;
+  --kgi-font-web-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-web-body-bold-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-body-bold-en-size: 20px;
+  --kgi-font-web-body-bold-en-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-web-body-bold-en-weight: 600;
+  --kgi-font-web-body-bold-en-line-height: 1.400;
+  --kgi-font-web-body-bold-en-letter-spacing: 0px;
+  --kgi-font-mweb-body-bold-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-body-bold-tc-size: 18px;
+  --kgi-font-mweb-body-bold-tc-size-rem: 1.125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-bold-tc-weight: 500;
+  --kgi-font-mweb-body-bold-tc-line-height: 1.500;
+  --kgi-font-mweb-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-mweb-body-bold-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-body-bold-en-size: 18px;
+  --kgi-font-mweb-body-bold-en-size-rem: 1.125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-bold-en-weight: 600;
+  --kgi-font-mweb-body-bold-en-line-height: 1.400;
+  --kgi-font-mweb-body-bold-en-letter-spacing: 0px;
+  --kgi-font-ios-body-bold-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-body-bold-tc-size: 18px;
+  --kgi-font-ios-body-bold-tc-weight: 500;
+  --kgi-font-ios-body-bold-tc-line-height: 1.500;
+  --kgi-font-ios-body-bold-tc-letter-spacing: 0px;
+  --kgi-font-ios-body-bold-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-body-bold-en-size: 19px;
+  --kgi-font-ios-body-bold-en-weight: 510;
+  --kgi-font-ios-body-bold-en-line-height: 1.300;
+  --kgi-font-ios-body-bold-en-letter-spacing: 0px;
+
+  /* ---- Body - R ---- */
+  --kgi-font-web-body-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-body-regular-tc-size: 20px;
+  --kgi-font-web-body-regular-tc-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-web-body-regular-tc-weight: 400;
+  --kgi-font-web-body-regular-tc-line-height: 1.600;
+  --kgi-font-web-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-body-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-body-regular-en-size: 20px;
+  --kgi-font-web-body-regular-en-size-rem: 1.25rem;  /* 1rem = 16px */
+  --kgi-font-web-body-regular-en-weight: 400;
+  --kgi-font-web-body-regular-en-line-height: 1.400;
+  --kgi-font-web-body-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-body-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-body-regular-tc-size: 18px;
+  --kgi-font-mweb-body-regular-tc-size-rem: 1.125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-regular-tc-weight: 400;
+  --kgi-font-mweb-body-regular-tc-line-height: 1.500;
+  --kgi-font-mweb-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-body-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-body-regular-en-size: 18px;
+  --kgi-font-mweb-body-regular-en-size-rem: 1.125rem;  /* 1rem = 16px */
+  --kgi-font-mweb-body-regular-en-weight: 400;
+  --kgi-font-mweb-body-regular-en-line-height: 1.400;
+  --kgi-font-mweb-body-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-body-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-body-regular-tc-size: 18px;
+  --kgi-font-ios-body-regular-tc-weight: 400;
+  --kgi-font-ios-body-regular-tc-line-height: 1.500;
+  --kgi-font-ios-body-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-body-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-body-regular-en-size: 19px;
+  --kgi-font-ios-body-regular-en-weight: 400;
+  --kgi-font-ios-body-regular-en-line-height: 1.300;
+  --kgi-font-ios-body-regular-en-letter-spacing: 0px;
+
+  /* ---- Caption - R ---- */
+  --kgi-font-web-caption-regular-tc-family: "Noto Sans TC";  /* Web · TC */
+  --kgi-font-web-caption-regular-tc-size: 17px;
+  --kgi-font-web-caption-regular-tc-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-caption-regular-tc-weight: 400;
+  --kgi-font-web-caption-regular-tc-line-height: 1.500;
+  --kgi-font-web-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-web-caption-regular-en-family: "Montserrat";  /* Web · EN */
+  --kgi-font-web-caption-regular-en-size: 17px;
+  --kgi-font-web-caption-regular-en-size-rem: 1.0625rem;  /* 1rem = 16px */
+  --kgi-font-web-caption-regular-en-weight: 400;
+  --kgi-font-web-caption-regular-en-line-height: 1.400;
+  --kgi-font-web-caption-regular-en-letter-spacing: 0px;
+  --kgi-font-mweb-caption-regular-tc-family: "Noto Sans TC";  /* mWeb · TC */
+  --kgi-font-mweb-caption-regular-tc-size: 16px;
+  --kgi-font-mweb-caption-regular-tc-size-rem: 1rem;  /* 1rem = 16px */
+  --kgi-font-mweb-caption-regular-tc-weight: 400;
+  --kgi-font-mweb-caption-regular-tc-line-height: 1.500;
+  --kgi-font-mweb-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-mweb-caption-regular-en-family: "Montserrat";  /* mWeb · EN */
+  --kgi-font-mweb-caption-regular-en-size: 16px;
+  --kgi-font-mweb-caption-regular-en-size-rem: 1rem;  /* 1rem = 16px */
+  --kgi-font-mweb-caption-regular-en-weight: 400;
+  --kgi-font-mweb-caption-regular-en-line-height: 1.400;
+  --kgi-font-mweb-caption-regular-en-letter-spacing: 0px;
+  --kgi-font-ios-caption-regular-tc-family: "PingFang TC";  /* iOS · TC */
+  --kgi-font-ios-caption-regular-tc-size: 16px;
+  --kgi-font-ios-caption-regular-tc-weight: 400;
+  --kgi-font-ios-caption-regular-tc-line-height: 1.500;
+  --kgi-font-ios-caption-regular-tc-letter-spacing: 0px;
+  --kgi-font-ios-caption-regular-en-family: "SF Pro";  /* iOS · EN */
+  --kgi-font-ios-caption-regular-en-size: 17px;
+  --kgi-font-ios-caption-regular-en-weight: 400;
+  --kgi-font-ios-caption-regular-en-line-height: 1.300;
+  --kgi-font-ios-caption-regular-en-letter-spacing: 0px;
+}

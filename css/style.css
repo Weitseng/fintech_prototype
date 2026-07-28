@@ -1,60 +1,98 @@
 :root{
-  --brand:#0044ad; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
-  --ink:#1b1b19; --muted:#7a7f88; --line:#e9ebee; --bg:#ffffff;
-  --idle:#dfe4ee;
+  /* 品牌互動色／中性色：直接對應 One KGI Design Guideline 的 Semantic Color Tokens
+     （css/tokens/colors.css），不再另外定義色票。--brand／--idle 仍保留變數名稱
+     是因為 js/app.js、js/component-library.js 有直接以 inline style 讀取這兩個
+     變數（甜甜圈圖、圓點圖例），其餘舊變數（--brand-2/--brand-soft/--ink/--muted/
+     --line/--bg）已改為在各選取器上直接引用對應的 guideline token。 */
+  --brand: var(--color-container-general-active-primary);
+  --idle: var(--color-container-general-divider);
+
   /* .t-shimmer（見下方 .typing-label）：淡出色需跟它所在的背景一致，
-     這裡背景固定是 --bg（白色），如果之後 .typing-label 換到別的背景上，
+     這裡背景固定是 Surface White，如果之後 .typing-label 換到別的背景上，
      這裡要跟著改 */
   --shimmer-dur:1100ms; --shimmer-band:400%; --shimmer-ease:linear;
-  --shimmer-base:#0044AD; --shimmer-fade:rgba(255,255,255,.92);
+  --shimmer-base: var(--color-container-general-active-primary);
+  --shimmer-fade: rgba(255,255,255,.92);
 
-  /* 字級系統（智富管家字體規範表）：CN=思源黑體字重/行高，EN=Montserrat字重/行高，
-     數字或英文文字包在 .num 內會自動切換到對應的 EN 值，見下方 .type-* 規則 */
-  --font-cn:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
-  --font-en:'Montserrat',sans-serif;
+  /* 字級系統：直接對應 One KGI Typography Tokens 的 auto（Web/mWeb 依螢幕寬度
+     自動切換）token，數字或英文文字包在 .num 內會自動切換到對應的 EN 值，
+     見下方 .type-* 規則。
+     字級一律採用 kgi-typography-guideline.md 規定的 *-size-rem（而非 *-size 的 px
+     版本）——guideline 原文：「網頁端開發」優先採用 rem 單位，其官方使用範例
+     （kgi-typography-guideline.md 開頭的 .headline-tc 範例）也是接 size-rem。
+     letter-spacing 雖然目前十個層級的值都是 0px，仍照命名規則/使用範例完整接上，
+     避免之後 Guideline 更新 letter-spacing 數值時，這裡漏接。 */
+  /* fallback 直接烤進變數值本身（比照舊版 --font-cn/--font-en 的作法），
+     這樣任何地方單獨寫 font-family:var(--font-cn) 都會拿到完整的 fallback 鏈，
+     不用每個套用點都手動補一次 */
+  --font-cn: var(--kgi-font-auto-body-regular-tc-family), "Microsoft JhengHei", system-ui, sans-serif;
+  --font-en: var(--kgi-font-auto-body-regular-en-family), sans-serif;
 
-  --type-title-size:21px;
-  --type-title-weight-cn:500; --type-title-weight-en:600;
-  --type-title-lh-cn:1.5; --type-title-lh-en:1.4;
+  --type-headline-size: var(--kgi-font-auto-headline-tc-size-rem);
+  --type-headline-weight-cn: var(--kgi-font-auto-headline-tc-weight);
+  --type-headline-lh-cn: var(--kgi-font-auto-headline-tc-line-height);
+  --type-headline-ls-cn: var(--kgi-font-auto-headline-tc-letter-spacing);
 
-  --type-subtitle-size:18px; /* Figma「Subtitle-B」節點實測為 18px（原規範表誤植 17px，已依 Figma 校正，2026-07-27） */
-  --type-subtitle-b-weight-cn:500; --type-subtitle-b-weight-en:600;
-  --type-subtitle-r-weight-cn:400; --type-subtitle-r-weight-en:400;
-  --type-subtitle-lh-cn:1.6; --type-subtitle-lh-en:1.4;
+  --type-title-size: var(--kgi-font-auto-title-tc-size-rem);
+  --type-title-weight-cn: var(--kgi-font-auto-title-tc-weight);
+  --type-title-weight-en: var(--kgi-font-auto-title-en-weight);
+  --type-title-lh-cn: var(--kgi-font-auto-title-tc-line-height);
+  --type-title-lh-en: var(--kgi-font-auto-title-en-line-height);
+  --type-title-ls-cn: var(--kgi-font-auto-title-tc-letter-spacing);
+  --type-title-ls-en: var(--kgi-font-auto-title-en-letter-spacing);
 
-  --type-body-size:15px;
-  --type-body-b-weight-cn:500; --type-body-b-weight-en:600;
-  --type-body-r-weight-cn:400; --type-body-r-weight-en:400;
-  --type-body-lh-cn:1.5; --type-body-lh-en:1.4;
+  --type-subtitle-size: var(--kgi-font-auto-subtitle-bold-tc-size-rem);
+  --type-subtitle-b-weight-cn: var(--kgi-font-auto-subtitle-bold-tc-weight);
+  --type-subtitle-b-weight-en: var(--kgi-font-auto-subtitle-bold-en-weight);
+  --type-subtitle-r-weight-cn: var(--kgi-font-auto-subtitle-regular-tc-weight);
+  --type-subtitle-r-weight-en: var(--kgi-font-auto-subtitle-regular-en-weight);
+  --type-subtitle-lh-cn: var(--kgi-font-auto-subtitle-bold-tc-line-height);
+  --type-subtitle-lh-en: var(--kgi-font-auto-subtitle-bold-en-line-height);
+  --type-subtitle-ls-cn: var(--kgi-font-auto-subtitle-bold-tc-letter-spacing);
+  --type-subtitle-ls-en: var(--kgi-font-auto-subtitle-bold-en-letter-spacing);
 
-  --type-caption-size:13px;
-  --type-caption-weight-cn:400; --type-caption-weight-en:400;
-  --type-caption-lh-cn:1.5; --type-caption-lh-en:1.4;
+  --type-body-size: var(--kgi-font-auto-body-bold-tc-size-rem);
+  --type-body-b-weight-cn: var(--kgi-font-auto-body-bold-tc-weight);
+  --type-body-b-weight-en: var(--kgi-font-auto-body-bold-en-weight);
+  --type-body-r-weight-cn: var(--kgi-font-auto-body-regular-tc-weight);
+  --type-body-r-weight-en: var(--kgi-font-auto-body-regular-en-weight);
+  --type-body-lh-cn: var(--kgi-font-auto-body-bold-tc-line-height);
+  --type-body-lh-en: var(--kgi-font-auto-body-bold-en-line-height);
+  --type-body-ls-cn: var(--kgi-font-auto-body-bold-tc-letter-spacing);
+  --type-body-ls-en: var(--kgi-font-auto-body-bold-en-letter-spacing);
+
+  --type-caption-size: var(--kgi-font-auto-caption-regular-tc-size-rem);
+  --type-caption-weight-cn: var(--kgi-font-auto-caption-regular-tc-weight);
+  --type-caption-weight-en: var(--kgi-font-auto-caption-regular-en-weight);
+  --type-caption-lh-cn: var(--kgi-font-auto-caption-regular-tc-line-height);
+  --type-caption-lh-en: var(--kgi-font-auto-caption-regular-en-line-height);
+  --type-caption-ls-cn: var(--kgi-font-auto-caption-regular-tc-letter-spacing);
+  --type-caption-ls-en: var(--kgi-font-auto-caption-regular-en-letter-spacing);
 }
 html,body{height:100%}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
-  background:var(--bg);color:var(--ink)}
+body{font-family:var(--font-cn);
+  background:var(--color-surface-white);color:var(--color-content-general-primary)}
 
 /* 字級系統工具類：套在任何區塊上即可套用對應層級；區塊內的數字/英文文字包一層 <span class="num">
    會自動切成 Montserrat + 該層級的 EN 字重與行高（中英文分權重，比照規範表） */
 .type-title,.type-subtitle-b,.type-subtitle-r,.type-body-b,.type-body-r,.type-caption-r{font-family:var(--font-cn)}
-.type-title{--_w-en:var(--type-title-weight-en);--_lh-en:var(--type-title-lh-en);
-  font-size:var(--type-title-size);font-weight:var(--type-title-weight-cn);line-height:var(--type-title-lh-cn)}
-.type-subtitle-b{--_w-en:var(--type-subtitle-b-weight-en);--_lh-en:var(--type-subtitle-lh-en);
-  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn)}
-.type-subtitle-r{--_w-en:var(--type-subtitle-r-weight-en);--_lh-en:var(--type-subtitle-lh-en);
-  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);line-height:var(--type-subtitle-lh-cn)}
-.type-body-b{--_w-en:var(--type-body-b-weight-en);--_lh-en:var(--type-body-lh-en);
-  font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn)}
-.type-body-r{--_w-en:var(--type-body-r-weight-en);--_lh-en:var(--type-body-lh-en);
-  font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn)}
-.type-caption-r{--_w-en:var(--type-caption-weight-en);--_lh-en:var(--type-caption-lh-en);
-  font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn)}
+.type-title{--_w-en:var(--type-title-weight-en);--_lh-en:var(--type-title-lh-en);--_ls-en:var(--type-title-ls-en);
+  font-size:var(--type-title-size);font-weight:var(--type-title-weight-cn);line-height:var(--type-title-lh-cn);letter-spacing:var(--type-title-ls-cn)}
+.type-subtitle-b{--_w-en:var(--type-subtitle-b-weight-en);--_lh-en:var(--type-subtitle-lh-en);--_ls-en:var(--type-subtitle-ls-en);
+  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+.type-subtitle-r{--_w-en:var(--type-subtitle-r-weight-en);--_lh-en:var(--type-subtitle-lh-en);--_ls-en:var(--type-subtitle-ls-en);
+  font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+.type-body-b{--_w-en:var(--type-body-b-weight-en);--_lh-en:var(--type-body-lh-en);--_ls-en:var(--type-body-ls-en);
+  font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
+.type-body-r{--_w-en:var(--type-body-r-weight-en);--_lh-en:var(--type-body-lh-en);--_ls-en:var(--type-body-ls-en);
+  font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
+.type-caption-r{--_w-en:var(--type-caption-weight-en);--_lh-en:var(--type-caption-lh-en);--_ls-en:var(--type-caption-ls-en);
+  font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn)}
 .type-title .num,.type-subtitle-b .num,.type-subtitle-r .num,
 .type-body-b .num,.type-body-r .num,.type-caption-r .num{
-  font-family:var(--font-en);font-weight:var(--_w-en);line-height:var(--_lh-en)}
-.app{width:100%;max-width:820px;margin:0 auto;height:100vh;height:100dvh;background:var(--bg);position:relative;
+  font-family:var(--font-en);font-weight:var(--_w-en);line-height:var(--_lh-en);letter-spacing:var(--_ls-en)}
+.app{width:100%;max-width:820px;margin:0 auto;height:100vh;height:100dvh;background:var(--color-surface-white);position:relative;
   display:flex;flex-direction:column}
 /* 頂部標題列：改成一般 flex 排版（不再是蓋在畫面上的 position:absolute），
   跟 #screen／#controls 一樣是 .app 的正常流內子項，佔掉的高度會自動反映在
@@ -62,11 +100,15 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
   標題用 position:absolute + left:50% 置中，不受右邊按鈕寬度影響，
   保證「文字置中、按鈕貼右」同時成立，不用算兩邊寬度是否對稱 */
 .app-header{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;
-  padding:12px 14px;border-bottom:1px solid var(--line)}
+  padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider)}
 .app-header-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  font-size:16px;font-weight:800;color:var(--ink);white-space:nowrap}
-.reset{flex-shrink:0;font-size:11px;
-  background:rgba(0,0,0,.06);border:0;color:#333;padding:6px 10px;border-radius:6px;cursor:pointer}
+  font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
+  color:var(--color-content-general-primary);white-space:nowrap}
+.reset{flex-shrink:0;font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);
+  background:var(--color-container-general-filter-inactive-grey);border:0;color:var(--color-content-general-secondary);
+  padding:6px 10px;border-radius:var(--radius-medium);cursor:pointer}
 .screen{flex:1;overflow-y:auto} /* 故意不加 scroll-behavior:smooth：部分瀏覽器環境下，動畫捲動未必會實際套用，
   導致 down() 用 getBoundingClientRect 算出的位置跟實際捲動狀態對不上，改用即時捲動確保位置永遠準確 */
 .screen::-webkit-scrollbar{width:0}
@@ -79,39 +121,50 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
    否則「是否已在最底部」的判斷永遠會被按鈕自己的高度誤判成「還沒到底」 */
 .scroll-bottom-wrap{height:0;overflow:visible;position:sticky;bottom:16px;z-index:5}
 .scroll-bottom-btn{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-  width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line);
-  box-shadow:0 4px 14px rgba(0,0,0,.16);align-items:center;justify-content:center;
-  font-size:18px;line-height:1;color:var(--brand);cursor:pointer}
+  width:40px;height:40px;border-radius:50%;background:var(--color-surface-white);border:1px solid var(--color-container-general-divider);
+  box-shadow:var(--shadow-popover);align-items:center;justify-content:center;
+  font-size:18px;line-height:1;color:var(--color-content-general-active);cursor:pointer}
 .scroll-bottom-btn.show{display:flex}
-.scroll-bottom-btn:hover{background:var(--brand-soft)}
+.scroll-bottom-btn:hover{background:var(--color-container-general-light-active-blue)}
 
 /* 選擇頁 */
 .selpage{padding:26px 22px 22px}
 .selpage-hero{margin-bottom:36px}
 .selpage-hero-video{display:block;width:100%;height:auto}
 .selpage-intro{text-align:center}
-.selpage .kicker{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.05em}
-.selpage h1{font-size:23px;font-weight:800;margin:6px 0 4px;line-height:1.3}
-.selpage .lead{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
-.selpage .q{font-size:14px;font-weight:700;margin:22px 0 10px}
-.opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);
-  color:var(--ink);font-size:15px;font-weight:600;padding:15px 16px;border-radius:6px;margin:9px 0;cursor:pointer;transition:.15s}
-.opt:hover{border-color:var(--brand)}
-.opt.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.selpage .kicker{font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-active)}
+.selpage h1{font-family:var(--font-cn);font-size:var(--type-headline-size);font-weight:var(--type-headline-weight-cn);
+  margin:6px 0 4px;line-height:var(--type-headline-lh-cn);letter-spacing:var(--type-headline-ls-cn)}
+.selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
+  color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
+.selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+.opt{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1.5px solid var(--color-container-general-divider);
+  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
+  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
+  padding:15px 16px;border-radius:var(--radius-medium);margin:9px 0;cursor:pointer;transition:.15s}
+.opt:hover{border-color:var(--color-content-general-active)}
+.opt.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
 
 /* Claude 風格對話 */
-.chat{padding:20px 20px 10px}
+.chat{padding:var(--spacing-20) var(--spacing-20) 10px}
 /* .turn：一輪對話（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，由 js/engine.js 的
    startTurn()／appendToChat() 建立與掛載內容，讓 down() 能把整輪當一個單位捲動、
    一起判斷要不要頂到畫面最上緣（理由見 engine.js down() 上方的註解）。
    不疊加任何視覺樣式（無 padding/margin/border/min-height），避免影響裡面訊息原本的排版。 */
 .turn{display:block}
-.ai-msg{font-size:15.5px;line-height:1.75;color:var(--ink);margin:16px 0;animation:fade .4s ease}
-.ai-msg b,.ai-msg strong{color:var(--brand);font-weight:800}
-.ai-msg em{font-style:normal;color:var(--brand-2);font-weight:700}
-.ai-msg .md-h1{font-size:17.5px;font-weight:800;margin:2px 0 8px;line-height:1.4}
-.ai-msg .md-h2{font-size:17.5px;font-weight:800;margin:2px 0 6px;line-height:1.4}
-.ai-msg .md-h3{font-size:17.5px;font-weight:700;margin:2px 0 6px;line-height:1.4}
+.ai-msg{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
+  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
+  color:var(--color-content-general-primary);margin:16px 0;animation:fade .4s ease}
+.ai-msg b,.ai-msg strong{color:var(--color-content-general-active);font-weight:var(--type-body-b-weight-cn)}
+.ai-msg em{font-style:normal;color:var(--color-content-tag-highlight);font-weight:var(--type-body-b-weight-cn)}
+.ai-msg .md-h1{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  margin:2px 0 8px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+.ai-msg .md-h2{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  margin:2px 0 6px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+.ai-msg .md-h3{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  margin:2px 0 6px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
 .ai-msg .md-p{margin:0 0 8px}
 .ai-msg .md-p:last-child{margin-bottom:0}
 .ai-msg .md-ul{margin:2px 0 8px;padding-left:20px}
@@ -121,10 +174,13 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
    跟一般敘述性 ai-msg 區分開，不用底部色塊，改用跟標題相近的字級來凸顯 */
-.md-quote{font-size:17.5px;font-weight:600;color:var(--ink);line-height:1.4;margin:24px 0;animation:fade .4s ease}
+.md-quote{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  color:var(--color-content-general-primary);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
+  margin:24px 0;animation:fade .4s ease}
 .ai-msg .md-quote{margin:6px 0}
 .typing{display:flex;flex-direction:row;align-items:center;gap:8px;margin:16px 0}
-.typing-label{font-size:14px;font-weight:600}
+.typing-label{font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn)}
 .typing-orb{display:flex;flex:none}
 
 /* Blue shimmer text — reversed sweep（來源：thinking-orbs demo/shimmer-blue.css）。
@@ -144,30 +200,33 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 /* 資產配置圓餅圖：已改用 chart/pie 元件（css/component-library.css） */
 
 /* 控制區 */
-.controls{padding:8px 20px calc(18px + env(safe-area-inset-bottom));flex-shrink:0;
-  background:linear-gradient(rgba(255,255,255,.8),var(--bg));max-height:54%;overflow-y:auto;counter-reset:choice-num}
+.controls{padding:var(--spacing-8) var(--spacing-20) calc(18px + env(safe-area-inset-bottom));flex-shrink:0;
+  background:linear-gradient(rgba(255,255,255,.8),var(--color-surface-white));max-height:54%;overflow-y:auto;counter-reset:choice-num}
 /* 這裡故意不用 .controls:empty{display:none}：對話中途按鈕被清空的空檔，
    高度由 engine.js 的 clearControls()/setControls() 用 min-height 凍結／解除控制，
    如果讓 :empty 直接 display:none，會蓋掉那個凍結高度，害 #screen 瞬間長高、捲動位置跟著跑掉。
    開場的 stepA／stepB 頁面不使用 #controls，改由 JS 直接設 display:none 隱藏（見 flow.js stepA()） */
-.choice{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);
-  color:var(--ink);font-size:15px;font-weight:600;padding:13px 15px;border-radius:6px;margin:8px 0;cursor:pointer;transition:.15s}
-.choice:hover{border-color:var(--brand)}
-.choice small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
-.choice.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
-.choice.sel small{color:var(--brand)}
+.choice{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1.5px solid var(--color-container-general-divider);
+  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
+  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
+  padding:13px 15px;border-radius:var(--radius-medium);margin:8px 0;cursor:pointer;transition:.15s}
+.choice:hover{border-color:var(--color-content-general-active)}
+.choice small{display:block;font-family:var(--font-cn);font-weight:var(--type-caption-weight-cn);font-size:var(--type-caption-size);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);margin-top:2px}
+.choice.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
+.choice.sel small{color:var(--color-content-general-active)}
 /* 非 checkopt（純選項按鈕，如首頁的問卷選項）依 DOM 順序由上往下自動編號；
    checkopt（多選核取方塊樣式）維持原本的勾選框，不疊加編號 */
 .choice:not(.checkopt){position:relative;padding-left:42px;counter-increment:choice-num}
 .choice:not(.checkopt)::before{content:counter(choice-num)'.';position:absolute;left:15px;top:50%;
-  transform:translateY(-50%);font-weight:700;color:var(--muted)}
-.choice:not(.checkopt).sel::before{color:var(--brand)}
+  transform:translateY(-50%);font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-secondary)}
+.choice:not(.checkopt).sel::before{color:var(--color-content-general-active)}
 .choice.checkopt{position:relative;padding-left:42px}
 .choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);background:#fff;transition:.15s}
-.choice.checkopt.sel::before{background:var(--brand);border-color:var(--brand)}
+  width:18px;height:18px;border-radius:var(--radius-small);border:1.5px solid var(--color-container-general-divider);background:var(--color-surface-white);transition:.15s}
+.choice.checkopt.sel::before{background:var(--color-container-general-active-primary);border-color:var(--color-container-general-active-primary)}
 .choice.checkopt.sel::after{content:'✓';position:absolute;left:16.5px;top:50%;transform:translateY(-50%);
-  color:#fff;font-size:12px;font-weight:800;line-height:1}
+  color:var(--color-content-general-light-active);font-size:12px;font-weight:800;line-height:1}
 .choice:disabled{opacity:.4;cursor:not-allowed}
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
