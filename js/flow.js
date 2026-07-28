@@ -288,7 +288,13 @@ function enterProductCalc(p,items){
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
   aiSay([investRationale(tag)],()=>{
     renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});
-    const nextItems=[
+    const nextItems=[];
+    if(S.path!=='supplement'){
+      nextItems.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
+        keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
+        onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
+    }
+    nextItems.push(
       {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',
         keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
         onSelect:()=>{clearControls();finishFlow('order');}},
@@ -298,12 +304,7 @@ function enterProductCalc(p,items){
       {id:'back',title:backLabel,description:'回到清單看看別的選擇',
         keywords:['查看','其他','清單','商品','天期','回去','返回'],
         onSelect:()=>{clearControls();backToCatalogList(items);}}
-    ];
-    if(S.path!=='supplement'){
-      nextItems.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
-        keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
-        onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
-    }
+    );
     showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
   },{label:'為您試算中',heavy:true});
 }
