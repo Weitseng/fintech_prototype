@@ -2,6 +2,11 @@
   --brand:#0044ad; --brand-2:#3b74f0; --brand-soft:#eaf1ff;
   --ink:#1b1b19; --muted:#7a7f88; --line:#e9ebee; --bg:#ffffff;
   --idle:#dfe4ee;
+  /* .t-shimmer（見下方 .typing-label）：淡出色需跟它所在的背景一致，
+     這裡背景固定是 --bg（白色），如果之後 .typing-label 換到別的背景上，
+     這裡要跟著改 */
+  --shimmer-dur:1100ms; --shimmer-band:400%; --shimmer-ease:linear;
+  --shimmer-base:#0044AD; --shimmer-fade:rgba(255,255,255,.92);
 
   /* 字級系統（智富管家字體規範表）：CN=思源黑體字重/行高，EN=Montserrat字重/行高，
      數字或英文文字包在 .num 內會自動切換到對應的 EN 值，見下方 .type-* 規則 */
@@ -116,17 +121,28 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .md-quote{font-size:17.5px;font-weight:600;color:var(--ink);line-height:1.4;margin:24px 0;animation:fade .4s ease}
 .ai-msg .md-quote{margin:6px 0}
 .typing{display:flex;flex-direction:row;align-items:center;gap:8px;margin:16px 0}
-.typing-label{font-size:14px;font-weight:600;color:var(--brand-2)}
-.typing-dots{display:flex;align-items:center;gap:4px;flex:none}
-.typing-dots .d{width:7px;height:7px;border-radius:50%;background:var(--brand-2);animation:blink 1.2s infinite}
-.typing-dots .d:nth-child(2){animation-delay:.2s}.typing-dots .d:nth-child(3){animation-delay:.4s}
-@keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.typing-label{font-size:14px;font-weight:600}
+.typing-orb{display:flex;flex:none}
+
+/* Blue shimmer text — reversed sweep（來源：thinking-orbs demo/shimmer-blue.css）。
+   套用在「管家思考/分析中」的 .typing-label 上：底色是實色 --shimmer-base，
+   一條跟背景同色的半透明色帶由左至右掃過，讓文字看起來像「被掃到的那一截淡出成透明」，
+   而不是常見的「暗底＋亮高光」那種 shimmer。元素必須同時有實際文字內容跟一樣文字的
+   data-text 屬性，::before 才能疊出移動漸層。 */
+.t-shimmer{position:relative;display:inline-block;color:var(--shimmer-base)}
+.t-shimmer::before{content:attr(data-text);position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(90deg,transparent 0%,transparent 40%,var(--shimmer-fade) 50%,transparent 60%,transparent 100%);
+  background-size:var(--shimmer-band) 100%;background-repeat:no-repeat;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:t-shimmer var(--shimmer-dur) var(--shimmer-ease) infinite}
+@keyframes t-shimmer{0%{background-position:100% 0}100%{background-position:0% 0}}
+@media (prefers-reduced-motion: reduce){.t-shimmer::before{animation:none!important}}
 
 /* 資產配置圓餅圖：已改用 chart/pie 元件（css/component-library.css） */
 
 /* 控制區 */
 .controls{padding:8px 20px calc(18px + env(safe-area-inset-bottom));flex-shrink:0;
-  background:linear-gradient(rgba(255,255,255,.8),var(--bg));max-height:54%;overflow-y:auto}
+  background:linear-gradient(rgba(255,255,255,.8),var(--bg));max-height:54%;overflow-y:auto;counter-reset:choice-num}
 /* 這裡故意不用 .controls:empty{display:none}：對話中途按鈕被清空的空檔，
    高度由 engine.js 的 clearControls()/setControls() 用 min-height 凍結／解除控制，
    如果讓 :empty 直接 display:none，會蓋掉那個凍結高度，害 #screen 瞬間長高、捲動位置跟著跑掉。
@@ -137,6 +153,12 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .choice small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .choice.sel{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
 .choice.sel small{color:var(--brand)}
+/* 非 checkopt（純選項按鈕，如首頁的問卷選項）依 DOM 順序由上往下自動編號；
+   checkopt（多選核取方塊樣式）維持原本的勾選框，不疊加編號 */
+.choice:not(.checkopt){position:relative;padding-left:42px;counter-increment:choice-num}
+.choice:not(.checkopt)::before{content:counter(choice-num)'.';position:absolute;left:15px;top:50%;
+  transform:translateY(-50%);font-weight:700;color:var(--muted)}
+.choice:not(.checkopt).sel::before{color:var(--brand)}
 .choice.checkopt{position:relative;padding-left:42px}
 .choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
   width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);background:#fff;transition:.15s}
