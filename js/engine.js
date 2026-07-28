@@ -41,22 +41,48 @@ const ctrls=()=>document.getElementById('controls');
    子節點當錨點，絕大多數呼叫端都是「先 appendChild，再呼叫 down()」，所以這個預設值幾乎都正確，
    不需要每個呼叫端自己傳錨點進來。
 
-   這裡故意不額外撐墊高區來「保證捲得到頂」：曾經試過用一塊會動態撐到全螢幕高的空白
-   （min-height／墊高區）確保任何錨點都能被頂到最上緣，但那個機制有兩個代價——
-   一是回覆內容比一個畫面短時，提問跟下方按鈕之間會多出一大塊沒有意義的空白；
-   二是等到之後把那塊墊高收掉時（不收就永遠留著死區），捲動位置會在同一瞬間被瀏覽器
-   夾回真正的內容範圍，使用者會看到明顯的一次跳動，操作幾輪下來就像在「來回閃爍」。
-   兩個問題都是「人為撐出不存在的空間」這個做法本身造成的。
+   這裡曾經試過完全不撐墊高區、直接交給瀏覽器原生的 scrollTop 夾限：內容夠長時夾限不會生效，
+   錨點能如預期貼齊畫面最上緣；但內容還很短、或畫面本身很高（例如平板橫向）時，夾限會提早生效，
+   導致捲不上去——這一輪連同它前面好幾輪還沒問完的舊對話會一起塞在畫面裡，使用者要在一堆
+   已經答完的舊問答中自己找出「現在真正該看的是哪一句」，畫面越高（可視範圍能塞進的歷史越多）
+   這個問題越明顯，跟這裡想做到的「新一輪一定從最上面開始」互相矛盾。
 
-   改成完全交給瀏覽器原生的 scrollTop 夾限（assign 超出範圍的值，瀏覽器會自動夾到
-   [0, scrollHeight-clientHeight]）：內容夠長（通常是已經累積了不少歷史對話）時，
-   夾限不會生效，錨點就會如預期貼齊畫面最上緣；內容還很短（例如對話剛開始沒多久）時，
-   夾限會自然生效，畫面改成「儘量往上、貼著目前最新內容的實際結尾」，也就是多帶一點
-   上一輪的尾巴把畫面填滿——不是精確頂到最上緣，但沒有死區、也不需要事後再修正一次
-   造成跳動，兩種情況都是瀏覽器一次到位算出來的最終位置。 */
+   改回用 scrollSpacer 撐出足夠的捲動空間（見 syncSpacer()），確保任何一輪都能被真的頂到最上緣，
+   把前面的舊回合整個推出可視範圍——代價是這一輪內容比一個畫面短時，最下面會多出一段空白
+   （直到下一輪開始前都會存在），换来的是使用者永遠不用在畫面上大海撈針找「現在是哪一句」。
+   這裡不會有舊版擔心的「事後收掉墊高造成跳動」問題：spacer 高度固定跟著 #screen.clientHeight走，
+   下一輪 startTurn() 換手、down() 重新計算時，捲動位置是「重新算一次貼齊新錨點頂端」，
+   不是「收掉墊高、被動夾回」，所以不會有那次額外的跳動。 */
 const SCROLL_TOP_OFFSET=12;
 const AT_BOTTOM_THRESHOLD=40;
-let scrollBtn=null;
+let scrollBtn=null,scrollSpacer=null;
+/* maxScrollTop：使用者手動捲動（滑鼠滾輪／觸控）目前允許捲到的最深位置，由 down() 每次
+   算完「這一輪該停在哪」之後同步更新。scrollSpacer 會刻意撐出比實際內容更多的捲動空間
+   （見 syncSpacer()），讓 down() 能把新一輪頂到最上緣；但那塊多出來的空間本身是空白的，
+   如果不設上限，使用者自己往下滑就會滑進那塊空白，畫面變成整頁空白只剩下面的選項——
+   這裡把「手動捲動」跟「down() 算好的停留位置」分開處理：down() 可以自由把 scrollTop
+   設到需要的位置（包含借用 spacer 的空間），但使用者自己往下滑時，一旦超過 down() 算好
+   的這個位置就沒有意義了（後面全是空白），所以用 clampScroll() 擋下來，不擋往上滑
+   （往上重讀歷史對話還是要能自由捲動）。開場的資產初步分析（currentTurnEl 還不存在時）
+   不套用這個上限——那段本來就不會借用 spacer（見 down() 開頭），維持瀏覽器原生捲動範圍即可。 */
+let maxScrollTop=Infinity;
+function clampScroll(){
+  const s=screen();
+  if(s.scrollTop>maxScrollTop)s.scrollTop=maxScrollTop;
+  updateScrollBtn();
+}
+/* scrollSpacer：chatBox 之後、跟它同層的一塊空白墊高區，高度固定跟著 #screen 的 clientHeight 走
+   （見 down() 開頭呼叫的 syncSpacer()）。沒有這塊墊高，當「最新一輪」本身很短、或 #screen
+   可視高度很高（畫面能塞進的歷史夠多）時，scrollTop 會被瀏覽器夾在「內容自然結尾」，捲不到讓
+   這一輪頂到畫面最上方——於是舊回合會一直跟新的一起擠在畫面裡。有了這塊墊高，永遠有「足夠多」
+   可以捲的空間，任何一輪都能被頂到最上方；墊高本身會被捲出視窗外，使用者不會意識到它的存在
+   （只會感覺到「這輪比較短時，下面先留白」）。判斷「是否已經在最底部」／「捲到底部」都刻意用
+   chatBox 實際內容的下緣去算，而不是直接看 scrollHeight——否則這塊墊高會讓畫面永遠判斷成
+   「還沒到底」。 */
+function syncSpacer(){
+  if(!scrollSpacer)return;
+  scrollSpacer.style.height=screen().clientHeight+'px';
+}
 /* currentTurnEl：目前「這一輪對話」（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，
    由 startTurn() 建立、由 appendToChat() 當作新內容的掛載點，直到下一輪 startTurn() 換手。
    down() 預設把「這個容器」當錨點（見上方 chatBox.lastElementChild），
@@ -90,15 +116,45 @@ function appendToChat(el){
   (currentTurnEl||chatBox).appendChild(el);
   return el;
 }
+/* 錨點（通常是 currentTurnEl）比 #screen 可視高度還高時，把它的頂端硬頂到畫面最上緣，
+   只會讓使用者看到這一輪最開頭的說明文字，真正要看的東西——結尾的提問句、試算卡、
+   下一步清單——反而被擠到可視範圍以下，要使用者自己往下滑才找得到，跟這裡想做到的
+   「新資訊一律不用手動捲就看得到」互相矛盾。改成：裝得下就頂到頂端（維持原本「從頭開始讀」
+   的體驗）；裝不下時改成貼齊底部，讓這一輪目前最新、使用者接下來要處理的內容一定在可視
+   範圍內，代價是使用者得自己往上捲才能重讀這一輪開頭——這個取捨跟一般聊天介面「內容太長
+   就跟著最新內容」的預期一致，好過看不到新資訊。 */
+const SCROLL_BOTTOM_PAD=16;
 function down(anchor){
   const s=screen();
+  /* 一開始的資產初步分析（stageC()：問候語＋圓餅圖＋現金分析＋第一題）都還在 currentTurnEl
+     建立之前——這一段是使用者進來後第一次看到的畫面，本身就是由上往下一段段長出來的單一整體，
+     不是「新一輪把舊一輪推出畫面」的情境，不需要、也不該每跳出一句新訊息就把畫面重新頂到頂端
+     （那樣反而會把使用者才剛看到的圓餅圖推出畫面上緣）。這裡直接維持原生 scrollTop（=0，
+     還沒被捲過），讓內容照順序疊在固定畫面上即可；等使用者選了第一題、startTurn() 建立
+     currentTurnEl 之後，才開始套用「新一輪頂到最上緣」的邏輯（見下方）。 */
+  if(!currentTurnEl){maxScrollTop=Infinity;updateScrollBtn();return;}
+  syncSpacer();
   const el=anchor||(chatBox&&chatBox.lastElementChild);
   if(el){
     const cRect=s.getBoundingClientRect(),eRect=el.getBoundingClientRect();
-    s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
+    if(eRect.height<=s.clientHeight){
+      s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
+    }else{
+      /* 貼齊底部時故意用 chatBox（而非錨點自己）的下緣去算：錨點是 chatBox 最後一個子節點，
+         它的下緣跟 chatBox 的下緣之間還隔著 .chat 的 padding-bottom，如果拿錨點自己的下緣
+         去貼齊畫面下緣，會少貼那段 padding，導致貼完之後 isScreenAtBottom()（本來就是拿
+         chatBox 下緣去判斷）以為「還沒到底」，讓「回到最下方」按鈕跟著冒出來，剛好蓋在
+         剛貼齊畫面下緣的選項上——用同一顆 chatBox 下緣去算，兩邊判斷基準才會一致 */
+      const chatRect=chatBox.getBoundingClientRect();
+      s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-SCROLL_BOTTOM_PAD);
+    }
   }else{
     s.scrollTop=s.scrollHeight;
   }
+  /* down() 算完就是這一輪該停留的最深位置——再往下全是 scrollSpacer 借來的空白，同步成
+     maxScrollTop，讓使用者自己往下滑時會被 clampScroll() 擋在這裡，不會滑進空白裡（見上方
+     maxScrollTop 宣告處的說明） */
+  maxScrollTop=s.scrollTop;
   updateScrollBtn();
 }
 function isScreenAtBottom(){
@@ -113,6 +169,7 @@ function updateScrollBtn(){
 function scrollToBottom(){
   const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
   s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom));
+  maxScrollTop=Math.max(maxScrollTop,s.scrollTop);
   updateScrollBtn();
 }
 /* 換上新按鈕後多做一次「強制重繪」：把 min-height 解除、換上新內容這一連串樣式變動，
@@ -173,14 +230,15 @@ function mdToHtml(src){
 
 /* ================= 對話輔助（共用渲染工具） ================= */
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
-function enterChat(){showInput();activeChoices=[];currentTurnEl=null;const s=screen();s.innerHTML='';
+function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;const s=screen();s.innerHTML='';
   chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
+  scrollSpacer=document.createElement('div');scrollSpacer.className='scroll-spacer';s.appendChild(scrollSpacer);
   const scrollWrap=document.createElement('div');scrollWrap.className='scroll-bottom-wrap';
   scrollBtn=document.createElement('button');
   scrollBtn.type='button';scrollBtn.className='scroll-bottom-btn';scrollBtn.setAttribute('aria-label','回到最下方');
   scrollBtn.textContent='↓';scrollBtn.onclick=scrollToBottom;
   scrollWrap.appendChild(scrollBtn);s.appendChild(scrollWrap);
-  s.onscroll=updateScrollBtn;
+  s.onscroll=clampScroll;
   stageC();}
 /* opts.label：依情境自訂 loading 文字（保底預設「管家思考中」，理論上每個呼叫都該自帶 label，
    保底值只是防呆，不該常態出現）；
