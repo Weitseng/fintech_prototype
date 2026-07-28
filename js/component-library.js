@@ -244,7 +244,7 @@ const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http:
 </svg>`;
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
-  disabledMessage:'展覽期間暫不開放。請點擊上方按鈕選項繼續操作',
+  disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
   disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
 };
 function renderInputChatBar(state,opts){
