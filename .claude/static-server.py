@@ -1,7 +1,7 @@
 import http.server
 import os
 
-PORT = 8734
+PORT = int(os.environ.get('PORT', 8734))
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 
 

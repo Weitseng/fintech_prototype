@@ -5,7 +5,8 @@
       "name": "static-server",
       "runtimeExecutable": "python3",
       "runtimeArgs": [".claude/static-server.py"],
-      "port": 8734
+      "port": 8734,
+      "autoPort": true
     }
   ]
 }
