@@ -264,7 +264,13 @@ function enterProductDetail(p,items){
       :p.cat==='deposit'?`- 存款天期：**${p.tenor}**｜計息方式：**機動利率、到期領息**`
       :`- 申購方式：**${p.entry}**`
   ].join('\n');
-  aiSay([lines],()=>{
+  const messages=[lines];
+  if(p.cat==='bond'&&p.issuerInfo){
+    messages.push(`**關於發行機構**\n${p.issuerInfo}\n\n${BOND_ISSUER_DISCLAIMER}`);
+  }else if(p.cat==='fund'&&p.managerInfo){
+    messages.push(`**關於這檔基金**\n${p.managerInfo}`);
+  }
+  aiSay(messages,()=>{
     showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
       {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
         keywords:['試算','算','好','可以','ok','OK'],
