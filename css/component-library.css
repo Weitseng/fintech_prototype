@@ -165,7 +165,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    Figma 的 Pressed 背景色跟 Default 完全相同（container-general-active-primary），未做按下的視覺回饋，此處忠實依樣，不額外加深。
    純文字按鈕，不支援 icon（沒有 icon 插槽/before-after 圖示位），需要 icon+文字的按鈕請另建元件，不要疊加在這個 class 上。 */
 .btn-primary{display:flex;width:100%;align-items:center;justify-content:center;
-  padding:var(--spacing-12) var(--spacing-24);border:0;border-radius:var(--radius-small);background:var(--color-container-general-active-primary);color:var(--color-content-general-light-active);
+  padding:var(--spacing-12) var(--spacing-24);border:0;border-radius:var(--radius-none);background:var(--color-container-general-active-primary);color:var(--color-content-general-light-active);
   font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);
   text-align:center;cursor:pointer;transition:background .15s}
@@ -176,7 +176,10 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    「立即申購」／「諮詢理專」共用同一份。底部的 disabled InputChatBar 不在這裡渲染——
    那是全站共用、掛在 #inputbar 的既有元件（js/bootstrap.js），本來就會顯示，不用重複建立。
    字級對應：標題套 Subtitle-B、說明文字套 Body-R，皆用專案既有 --type-* token。 */
-.fbqr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-24);width:100%;margin:var(--spacing-24) 0}
+/* .fbqr 只有 .fbqr-qr／.fbqr-btn-mount 兩個子元素，gap 即為按鈕與上方 QR 說明區塊的間距，
+   依需求固定為 40px（--spacing-40），與 btn-primary 在其他頁面（stepA/stepB/H2 確認送出）
+   跟上方物件的距離保持一致 */
+.fbqr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-40);width:100%;margin:var(--spacing-24) 0}
 .fbqr-qr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-16);width:100%}
 /* .fbqr 用 align-items:center，子元素預設是 hug 寬度；這裡明寫 width:100%，
    讓 .btn-primary（width:100%）撐滿到跟上面 .fbqr-qr-desc 說明文字同寬，而不是被
