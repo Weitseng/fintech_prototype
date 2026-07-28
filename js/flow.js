@@ -246,8 +246,8 @@ function showCatalogCards(items){
   if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{
-    chatBox.appendChild(renderComponent('card/product',items[0],onDetail,onCalc));
-    down();
+    appendToChat(renderComponent('card/product',items[0],onDetail,onCalc));
+    down();settleTurn();
   }
 }
 function enterProductDetail(p,items){

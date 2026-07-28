@@ -30,7 +30,7 @@ function renderPieChart(investedPct,amount){
         <div class="pie-legend-item"><span class="pie-dot" style="background:#55a784"></span><span class="pie-legend-text">現金留存 <span class="pie-amt">$${cash.toLocaleString()}</span></span></div>
       </div>
     </div>`;
-  chatBox.appendChild(card);down();
+  appendToChat(card);down();
   return card;
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
@@ -65,8 +65,8 @@ function renderProductCardDisplay(p,onDetail,onCalc){
 function renderProductCardDisplayRow(items,onDetail,onCalc){
   const holder=document.createElement('div');holder.className='pcard-row';
   items.forEach(p=>holder.appendChild(renderProductCardDisplay(p,onDetail,onCalc)));
-  chatBox.appendChild(holder);
-  down();
+  appendToChat(holder);
+  down();settleTurn();
   return holder;
 }
 COMPONENTS['card/product']={render:renderProductCardDisplay,renderRow:renderProductCardDisplayRow};
@@ -218,7 +218,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   };
 
   refresh(true);
-  chatBox.appendChild(card);down();
+  appendToChat(card);down();
   return card;
 }
 COMPONENTS['card/calculator']={render:renderAssetVsDepositCalc};
@@ -281,7 +281,7 @@ function renderMessageChatBubble(content,opts){
   const bubble=document.createElement('div');bubble.className='mcb';
   bubble.textContent=content;
   row.appendChild(bubble);
-  chatBox.appendChild(row);down();
+  appendToChat(row);down();
   return row;
 }
 COMPONENTS['message/chat-bubble']={render:renderMessageChatBubble};
@@ -315,7 +315,7 @@ function renderNextStepList(heading,items,opts){
     btn.onclick=()=>{if(item.onSelect)item.onSelect();};
     itemsEl.appendChild(btn);
   });
-  chatBox.appendChild(list);down();
+  appendToChat(list);down();settleTurn();
   return list;
 }
 COMPONENTS['list/next-step']={render:renderNextStepList};
