@@ -1,0 +1,464 @@
+/**
+ * MDS_Foundation — Color Design Tokens
+ * 更新時間：2026-07-27
+ * 來源：Figma Variables 匯出（Light Mode.tokens.json / Dark Mode.tokens.json）
+ * 命名規則：沿用 Figma Variable 命名，slug 化為 kebab-case
+ * 架構：Base Palette（原始色票）→ Semantic Tokens（Surface / Content / Container / Chart，逐層引用 Base）
+ * 切換模式：預設 Light Mode 寫在 :root；Dark Mode 對應值完整列在 [data-theme="dark"]（與 Light 相同者會加註記）
+ *
+ * 狀態色規則：
+ *   - Hover：不建立獨立色票，由容器/文字色的原始色值以 HSB Brightness 運算得出。
+ *     運算邏輯為 JS/TS 函式（getHoverColor），獨立放在同目錄的 color-state-utils.ts，
+ *     與本檔一起視為「Color 規範」的一組配套檔案。
+ *   - Disabled：容器色與文字色統一使用 Content/General/Disabled 與 Container/General/Disabled。
+ *
+ * Chart 色規則：
+ *   - 使用範圍：各式圖表佔比色（圓餅圖、長條圖等）。
+ *   - 色票依照顯示排序，成組使用配對顏色（1st → 6th 依序疊加使用）。
+ *   - Overview（總覽）用色：使用 color-chart-overview 1st~8th。
+ */
+
+/* ======================================================================
+   PART 1 · BASE PALETTE 原始色票（Light / Dark 兩檔數值完全一致，共用）
+   ====================================================================== */
+:root {
+
+  /* ---- Navy ---- */
+  --color-navy-0: #E5E8ED;
+  --color-navy-100: #D0D6DE;
+  --color-navy-100d: #BEC6D3;
+  --color-navy-200: #8994A5;
+  --color-navy-300: #5F6980;
+  --color-navy-200d: #98A4B7;
+  --color-navy-400: #4C5466;
+  --color-navy-400d: #272D3D;
+  --color-navy-500: #041C43;
+  --color-navy-500d: #15202B;
+  --color-navy-600d: #030616;
+  --color-navy-600d-75: #030616;
+
+  /* ---- Grey ---- */
+  --color-grey-0: #FFFFFF;
+  --color-grey-0-80: #FFFFFF;
+  --color-grey-0-30: #FFFFFF;
+  --color-grey-100: #F6F6F6;
+  --color-grey-200: #E2E2E2;
+  --color-grey-400: #A6A6A6;
+  --color-grey-500: #808080;
+  --color-grey-600: #626364;
+  --color-grey-600d: #313845;
+  --color-grey-700: #434343;
+  --color-grey-700d: #393B3C;
+
+  /* ---- Sky Blue ---- */
+  --color-sky-blue-0: #F2F6FF;
+  --color-sky-blue-0-75: #F2F6FF;
+  --color-sky-blue-100: #E5F1FC;
+  --color-sky-blue-200: #CAE4FD;
+  --color-sky-blue-300: #96C8FA;
+  --color-sky-blue-400: #4E97FF;
+  --color-sky-blue-500: #3773DC;
+  --color-sky-blue-600: #0044AD;
+
+  /* ---- Blue ---- */
+  --color-blue-0: #DCEAFF;
+  --color-blue-100: #B8CCE4;
+  --color-blue-200d: #729FEF;
+  --color-blue-300d: #1877FF;
+  --color-blue-500: #04327A;
+  --color-blue-600: #1F304D;
+  --color-blue-600-80: #1F304D;
+
+  /* ---- Orange ---- */
+  --color-orange-0: #FEF8F1;
+  --color-orange-100: #FFDEAE;
+  --color-orange-300: #FFBB8B;
+  --color-orange-400: #FF833E;
+  --color-orange-500: #FF4400;
+  --color-orange-600: #E74622;
+  --color-orange-700: #B55221;
+
+  /* ---- Indigo ---- */
+  --color-indigo-0: #E5E9F6;
+  --color-indigo-100: #CCD9EF;
+  --color-indigo-200: #8CA2DB;
+  --color-indigo-300: #5C7BCA;
+  --color-indigo-400: #3555C8;
+  --color-indigo-400d: #688FF3;
+  --color-indigo-500: #2130B1;
+  --color-indigo-600: #020069;
+  --color-indigo-700d: #4F6294;
+  --color-indigo-700d-50: #4F6294;
+
+  /* ---- Red ---- */
+  --color-red-0: #FBEDE7;
+  --color-red-100: #F6D4C5;
+  --color-red-200: #FAAE97;
+  --color-red-300: #E57C5C;
+  --color-red-400: #DD4F2C;
+  --color-red-300d: #FF7461;
+  --color-red-500: #D42300;
+  --color-red-500d: #EE2626;
+  --color-red-600: #B01700;
+  --color-red-600d: #BD0000;
+  --color-red-700: #8D0E00;
+
+  /* ---- Green ---- */
+  --color-green-0: #EDF9EC;
+  --color-green-100: #D0F0D3;
+  --color-green-200: #A4E1AC;
+  --color-green-300: #7DD189;
+  --color-green-400: #5AC26B;
+  --color-green-500: #29A840;
+  --color-green-500d: #2EC44B;
+  --color-green-600: #309543;
+  --color-green-700: #09751C;
+
+  /* ---- Teal ---- */
+  --color-teal-0: #F3FAF6;
+  --color-teal-100: #DDF4E8;
+  --color-teal-200: #BCE9D3;
+  --color-teal-300: #9EDEC0;
+  --color-teal-400d: #6AE6AC;
+  --color-teal-500: #68C89E;
+  --color-teal-600: #55A784;
+  --color-teal-700: #378566;
+  --color-teal-800: #316450;
+  --color-teal-900: #204336;
+
+  /* ---- Yellow ---- */
+  --color-yellow-0: #FFF7E1;
+  --color-yellow-100: #FFFACD;
+  --color-yellow-200: #FFF29B;
+  --color-yellow-300: #FFE669;
+  --color-yellow-400: #FFD737;
+  --color-yellow-500: #FFC505;
+  --color-yellow-600: #D59902;
+  --color-yellow-700: #AA7200;
+}
+
+/* ======================================================================
+   PART 2 · SEMANTIC TOKENS — Light Mode（預設值，寫在 :root）
+   ====================================================================== */
+:root {
+
+  /* ============ Surface 背景色 ============ */
+
+  /* -- Surface / Surface -- */
+  /* 主要背景 */
+  --color-surface-white: var(--color-grey-0);
+  /* 次要背景、網頁 Footer */
+  --color-surface-grey: var(--color-grey-100);
+  /* 次要背景 */
+  --color-surface-yellow: var(--color-orange-0);
+  /* 主要背景 */
+  --color-surface-blue: var(--color-sky-blue-0);
+  /* 遮罩背景(透明度 50%) */
+  --color-surface-blue-75: var(--color-sky-blue-0-75);
+
+  /* ============ Content 文字/圖示色 ============ */
+
+  /* -- Content / General -- */
+  /* 主標、主要文字 */
+  --color-content-general-primary: var(--color-navy-500);
+  /* 副標、次要文字 */
+  --color-content-general-secondary: var(--color-navy-400);
+  /* Placeholder */
+  --color-content-general-tertiary: var(--color-navy-200);
+  /* Text Button、文字型 Tab */
+  --color-content-general-active: var(--color-sky-blue-600);
+  /* 膠囊型按鈕內文字、膠囊型 Tab 被選中文字 */
+  --color-content-general-active-button-capsule: var(--color-sky-blue-600);
+  /* 複合型篩選被選中文字 */
+  --color-content-general-active-multi-filter: var(--color-sky-blue-600);
+  /* 條件展開篩選器被選中文字（僅限於單一篩選條件時使用） */
+  --color-content-general-active-single-filter: var(--color-sky-blue-600);
+  /* 深色容器內文字 */
+  --color-content-general-light-active: var(--color-grey-0);
+  /* 一般使用 */
+  --color-content-general-disabled: var(--color-grey-400);
+
+  /* -- Content / Semantic -- */
+  /* 成功狀態文字 */
+  --color-content-semantic-positive: var(--color-green-500);
+  /* 警告狀態文字 */
+  --color-content-semantic-warning: var(--color-orange-500);
+  /* 錯誤狀態文字 */
+  --color-content-semantic-negative: var(--color-red-500);
+  /* 跌幅狀態文字 */
+  --color-content-semantic-descend: var(--color-green-600);
+  /* 漲幅狀態文字 */
+  --color-content-semantic-ascend: var(--color-red-400);
+  /* 持平狀態文字 */
+  --color-content-semantic-default: var(--color-navy-400);
+
+  /* -- Content / Tag -- */
+  /* 特別強調 */
+  --color-content-tag-highlight: var(--color-sky-blue-500);
+  /* 一般狀態一般狀態 */
+  --color-content-tag-default: var(--color-navy-400);
+  /* 警告狀態 */
+  --color-content-tag-warning: var(--color-orange-500);
+  /* 錯誤警示 */
+  --color-content-tag-error: var(--color-red-500);
+  /* 成功狀態 */
+  --color-content-tag-success: var(--color-green-500);
+
+  /* ============ Container 容器色 ============ */
+
+  /* -- Container / General -- */
+  /* 主要按鈕 */
+  --color-container-general-active-primary: var(--color-sky-blue-600);
+  /* 膠囊型按鈕、次級資訊元件 */
+  --color-container-general-active-secondary: var(--color-blue-0);
+  /* 官網主要按鈕用色 */
+  --color-container-general-active-corporate: var(--color-blue-500);
+  /* 分隔內容線段、輸入型欄位底線 */
+  --color-container-general-divider: var(--color-grey-200);
+  /* 複合型篩選器、膠囊型 Tab（用於「未選擇」的項目） */
+  --color-container-general-filter-active-blue: var(--color-blue-0);
+  /* 禁用狀態（用於按鈕、輸入型欄位底線） */
+  --color-container-general-disabled: var(--color-grey-200);
+  /* 膠囊型 Tab（用於「已選擇」的項目） */
+  --color-container-general-light-active: var(--color-grey-0);
+  /* 條件展開篩選器「未選擇」之背景（僅限於單一篩選條件時使用） */
+  --color-container-general-filter-inactive-white: var(--color-grey-0);
+  /* 進階篩選條件（用於「未選擇」之選項，僅限用於白背景上） */
+  --color-container-general-filter-inactive-grey: var(--color-grey-100);
+  /* 深色底卡片用選擇器 (例如：Account Picker) */
+  --color-container-general-picker-bg-30: var(--color-grey-0-30);
+  /* 深色底卡片用選擇器 (例如：Account Picker) */
+  --color-container-general-btn-bg-80: var(--color-grey-0-80);
+  /* 第三層使用元件（例如：卡片展開按鈕）、進階篩選條件 & 條件展開篩選器「已選擇」之背景（僅限於單一篩選條件時使用） */
+  --color-container-general-light-active-blue: var(--color-blue-0);
+  /* 選項被選擇的背景底掃色（例如：Action Sheet 複選選項） */
+  --color-container-general-default-tab-blue: var(--color-sky-blue-0);
+  /* 用於特別標註錯誤、警示相關訊息的區塊底部顏色（例如：維持率不足） */
+  --color-container-general-light-active-red: var(--color-red-0);
+
+  /* -- Container / Semantic -- */
+  /* 成功狀態元件、類別標籤 */
+  --color-container-semantic-positive: var(--color-green-500);
+  /* 警告/特殊提示用元件、類別標籤 */
+  --color-container-semantic-warning: var(--color-orange-500);
+  /* 失敗用元件、類別標籤 */
+  --color-container-semantic-negative: var(--color-red-500);
+  /* 漲幅用元件、類別標籤 */
+  --color-container-semantic-ascend: var(--color-red-400);
+  /* 一般說明用元件、類別標籤 */
+  --color-container-semantic-default: var(--color-navy-400);
+  /* 跌幅用元件、類別標籤 */
+  --color-container-semantic-descend: var(--color-green-600);
+
+  /* -- Container / Card -- */
+  /* 一般卡片的背景用色 */
+  --color-container-card-white: var(--color-grey-0);
+  /* 一般卡片的背景用色 */
+  --color-container-card-blue: var(--color-sky-blue-0);
+  /* 一般卡片的背景用色 */
+  --color-container-card-yellow: var(--color-orange-0);
+  /* 一般卡片的背景用色 */
+  --color-container-card-grey: var(--color-grey-100);
+}
+
+/* ======================================================================
+   PART 3 · CHART TOKENS 圖表色 — Light Mode（預設值，寫在 :root）
+   每組 1st~6th 依顯示排序成對使用；Overview 為總覽主色（見檔頭規則說明）
+   ====================================================================== */
+:root {
+
+  /* -- Chart / Blue -- */
+  --color-chart-blue-1st: var(--color-sky-blue-600);
+  --color-chart-blue-2nd: var(--color-sky-blue-500);
+  --color-chart-blue-3rd: var(--color-sky-blue-400);
+  --color-chart-blue-4th: var(--color-sky-blue-300);
+  --color-chart-blue-5th: var(--color-sky-blue-200);
+  --color-chart-blue-6th: var(--color-navy-500);
+
+  /* -- Chart / Teal -- */
+  --color-chart-teal-1st: var(--color-teal-700);
+  --color-chart-teal-2nd: var(--color-teal-600);
+  --color-chart-teal-3rd: var(--color-teal-500);
+  --color-chart-teal-4th: var(--color-teal-300);
+  --color-chart-teal-5th: var(--color-teal-200);
+  --color-chart-teal-6th: var(--color-teal-900);
+
+  /* -- Chart / Oragne -- */
+  --color-chart-orange-1st: var(--color-orange-600);
+  --color-chart-orange-2nd: var(--color-orange-500);
+  --color-chart-orange-3rd: var(--color-orange-400);
+  --color-chart-orange-4th: var(--color-orange-300);
+  --color-chart-orange-5th: var(--color-orange-100);
+  --color-chart-orange-6th: var(--color-orange-700);
+
+  /* -- Chart / Yellow -- */
+  --color-chart-yellow-1st: var(--color-yellow-600);
+  --color-chart-yellow-2nd: var(--color-yellow-500);
+  --color-chart-yellow-3rd: var(--color-yellow-400);
+  --color-chart-yellow-4th: var(--color-yellow-300);
+  --color-chart-yellow-5th: var(--color-yellow-200);
+  --color-chart-yellow-6th: var(--color-yellow-700);
+
+  /* -- Chart / Green -- */
+  --color-chart-green-1st: var(--color-green-600);
+  --color-chart-green-2nd: var(--color-green-500);
+  --color-chart-green-3rd: var(--color-green-400);
+  --color-chart-green-4th: var(--color-green-300);
+  --color-chart-green-5th: var(--color-green-200);
+  --color-chart-green-6th: var(--color-green-700);
+
+  /* -- Chart / Red -- */
+  --color-chart-red-1st: var(--color-red-600);
+  --color-chart-red-2nd: var(--color-red-500);
+  --color-chart-red-3rd: var(--color-red-400);
+  --color-chart-red-4th: var(--color-red-300);
+  --color-chart-red-5th: var(--color-red-200);
+  --color-chart-red-6th: var(--color-red-700);
+
+  /* -- Chart / Navy -- */
+  --color-chart-navy-1st: var(--color-navy-400);
+  --color-chart-navy-2nd: var(--color-navy-300);
+  --color-chart-navy-3rd: var(--color-navy-200);
+  --color-chart-navy-4th: var(--color-navy-100d);
+  --color-chart-navy-5th: var(--color-navy-100);
+  --color-chart-navy-6th: var(--color-navy-500);
+
+  /* -- Chart / Indigo -- */
+  --color-chart-indigo-1st: var(--color-indigo-500);
+  --color-chart-indigo-2nd: var(--color-indigo-400);
+  --color-chart-indigo-3rd: var(--color-indigo-300);
+  --color-chart-indigo-4th: var(--color-indigo-200);
+  --color-chart-indigo-5th: var(--color-indigo-100);
+  --color-chart-indigo-6th: var(--color-indigo-600);
+
+  /* -- Chart / Overview -- */
+  --color-chart-overview-1st: var(--color-sky-blue-400);
+  --color-chart-overview-2nd: var(--color-orange-400);
+  --color-chart-overview-3rd: var(--color-teal-500);
+  --color-chart-overview-4th: var(--color-yellow-400);
+  --color-chart-overview-5th: var(--color-green-300);
+  --color-chart-overview-6th: var(--color-red-400);
+  --color-chart-overview-7th: var(--color-navy-200);
+  --color-chart-overview-8th: var(--color-indigo-300);
+}
+
+/* ======================================================================
+   PART 4 · SEMANTIC + CHART TOKENS — Dark Mode 對應值
+   用法：在根節點加 [data-theme="dark"]（例如 <html data-theme="dark">）
+   完整列出所有 token 對應的 Dark Mode 色票；標註「與 Light Mode 相同」者代表兩模式共用同一色票
+   ====================================================================== */
+[data-theme="dark"] {
+
+  /* ============ Surface 背景色 ============ */
+  --color-surface-white: var(--color-navy-600d);
+  --color-surface-grey: var(--color-blue-600);
+  --color-surface-yellow: var(--color-blue-600);
+  --color-surface-blue: var(--color-navy-600d);
+  --color-surface-blue-75: var(--color-navy-600d-75);
+
+  /* ============ Content 文字/圖示色 ============ */
+  --color-content-general-primary: var(--color-grey-0);
+  --color-content-general-secondary: var(--color-navy-100);
+  --color-content-general-tertiary: var(--color-navy-200d);
+  --color-content-general-active: var(--color-sky-blue-400);
+  --color-content-general-active-button-capsule: var(--color-grey-0);
+  --color-content-general-active-multi-filter: var(--color-sky-blue-400);
+  --color-content-general-active-single-filter: var(--color-grey-0);
+  --color-content-general-light-active: var(--color-grey-0);  /* 與 Light Mode 相同 */
+  --color-content-general-disabled: var(--color-navy-300);
+  --color-content-semantic-positive: var(--color-green-500d);
+  --color-content-semantic-warning: var(--color-orange-500);  /* 與 Light Mode 相同 */
+  --color-content-semantic-negative: var(--color-red-500d);
+  --color-content-semantic-descend: var(--color-green-500d);
+  --color-content-semantic-ascend: var(--color-red-500d);
+  --color-content-semantic-default: var(--color-navy-100);
+  --color-content-tag-highlight: var(--color-sky-blue-400);
+  --color-content-tag-default: var(--color-navy-100);
+  --color-content-tag-warning: var(--color-orange-500);  /* 與 Light Mode 相同 */
+  --color-content-tag-error: var(--color-red-500d);
+  --color-content-tag-success: var(--color-green-500d);
+
+  /* ============ Container 容器色 ============ */
+  --color-container-general-active-primary: var(--color-blue-300d);
+  --color-container-general-active-secondary: var(--color-blue-300d);
+  --color-container-general-active-corporate: var(--color-sky-blue-500);
+  --color-container-general-divider: var(--color-indigo-700d);
+  --color-container-general-filter-active-blue: var(--color-blue-600);
+  --color-container-general-disabled: var(--color-grey-600d);
+  --color-container-general-light-active: var(--color-indigo-700d);
+  --color-container-general-filter-inactive-white: var(--color-blue-600);
+  --color-container-general-filter-inactive-grey: var(--color-indigo-700d-50);
+  --color-container-general-picker-bg-30: var(--color-grey-0-30);  /* 與 Light Mode 相同 */
+  --color-container-general-btn-bg-80: var(--color-blue-600-80);
+  --color-container-general-light-active-blue: var(--color-indigo-700d);
+  --color-container-general-default-tab-blue: var(--color-indigo-700d-50);
+  --color-container-general-light-active-red: var(--color-red-0);  /* 與 Light Mode 相同 */
+  --color-container-semantic-positive: var(--color-green-500);  /* 與 Light Mode 相同 */
+  --color-container-semantic-warning: var(--color-orange-500);  /* 與 Light Mode 相同 */
+  --color-container-semantic-negative: var(--color-red-500);  /* 與 Light Mode 相同 */
+  --color-container-semantic-ascend: var(--color-red-500);
+  --color-container-semantic-default: var(--color-navy-100d);
+  --color-container-semantic-descend: var(--color-green-500);
+  --color-container-card-white: var(--color-blue-600);
+  --color-container-card-blue: var(--color-blue-600);
+  --color-container-card-yellow: var(--color-blue-600);
+  --color-container-card-grey: var(--color-blue-600);
+
+  /* ============ Chart 圖表色 ============ */
+  --color-chart-blue-1st: var(--color-blue-300d);
+  --color-chart-blue-2nd: var(--color-sky-blue-500);  /* 與 Light Mode 相同 */
+  --color-chart-blue-3rd: var(--color-sky-blue-400);  /* 與 Light Mode 相同 */
+  --color-chart-blue-4th: var(--color-sky-blue-300);  /* 與 Light Mode 相同 */
+  --color-chart-blue-5th: var(--color-sky-blue-200);  /* 與 Light Mode 相同 */
+  --color-chart-blue-6th: var(--color-sky-blue-100);
+  --color-chart-teal-1st: var(--color-teal-700);  /* 與 Light Mode 相同 */
+  --color-chart-teal-2nd: var(--color-teal-600);  /* 與 Light Mode 相同 */
+  --color-chart-teal-3rd: var(--color-teal-500);  /* 與 Light Mode 相同 */
+  --color-chart-teal-4th: var(--color-teal-300);  /* 與 Light Mode 相同 */
+  --color-chart-teal-5th: var(--color-teal-200);  /* 與 Light Mode 相同 */
+  --color-chart-teal-6th: var(--color-teal-100);
+  --color-chart-orange-1st: var(--color-red-500d);
+  --color-chart-orange-2nd: var(--color-orange-500);  /* 與 Light Mode 相同 */
+  --color-chart-orange-3rd: var(--color-orange-400);  /* 與 Light Mode 相同 */
+  --color-chart-orange-4th: var(--color-orange-300);  /* 與 Light Mode 相同 */
+  --color-chart-orange-5th: var(--color-orange-100);  /* 與 Light Mode 相同 */
+  --color-chart-orange-6th: var(--color-orange-0);
+  --color-chart-yellow-1st: var(--color-yellow-600);  /* 與 Light Mode 相同 */
+  --color-chart-yellow-2nd: var(--color-yellow-500);  /* 與 Light Mode 相同 */
+  --color-chart-yellow-3rd: var(--color-yellow-400);  /* 與 Light Mode 相同 */
+  --color-chart-yellow-4th: var(--color-yellow-300);  /* 與 Light Mode 相同 */
+  --color-chart-yellow-5th: var(--color-yellow-200);  /* 與 Light Mode 相同 */
+  --color-chart-yellow-6th: var(--color-yellow-100);
+  --color-chart-green-1st: var(--color-green-600);  /* 與 Light Mode 相同 */
+  --color-chart-green-2nd: var(--color-green-500);  /* 與 Light Mode 相同 */
+  --color-chart-green-3rd: var(--color-green-400);  /* 與 Light Mode 相同 */
+  --color-chart-green-4th: var(--color-green-300);  /* 與 Light Mode 相同 */
+  --color-chart-green-5th: var(--color-green-200);  /* 與 Light Mode 相同 */
+  --color-chart-green-6th: var(--color-green-100);
+  --color-chart-red-1st: var(--color-red-600);  /* 與 Light Mode 相同 */
+  --color-chart-red-2nd: var(--color-red-500);  /* 與 Light Mode 相同 */
+  --color-chart-red-3rd: var(--color-red-400);  /* 與 Light Mode 相同 */
+  --color-chart-red-4th: var(--color-red-300);  /* 與 Light Mode 相同 */
+  --color-chart-red-5th: var(--color-red-200);  /* 與 Light Mode 相同 */
+  --color-chart-red-6th: var(--color-red-100);
+  --color-chart-navy-1st: var(--color-navy-300);
+  --color-chart-navy-2nd: var(--color-navy-200);
+  --color-chart-navy-3rd: var(--color-navy-100d);
+  --color-chart-navy-4th: var(--color-navy-100);
+  --color-chart-navy-5th: var(--color-navy-0);
+  --color-chart-navy-6th: var(--color-grey-0);
+  --color-chart-indigo-1st: var(--color-indigo-400d);
+  --color-chart-indigo-2nd: var(--color-sky-blue-400);
+  --color-chart-indigo-3rd: var(--color-indigo-300);  /* 與 Light Mode 相同 */
+  --color-chart-indigo-4th: var(--color-indigo-200);  /* 與 Light Mode 相同 */
+  --color-chart-indigo-5th: var(--color-indigo-100);  /* 與 Light Mode 相同 */
+  --color-chart-indigo-6th: var(--color-indigo-0);
+  --color-chart-overview-1st: var(--color-sky-blue-400);  /* 與 Light Mode 相同 */
+  --color-chart-overview-2nd: var(--color-orange-400);  /* 與 Light Mode 相同 */
+  --color-chart-overview-3rd: var(--color-teal-500);  /* 與 Light Mode 相同 */
+  --color-chart-overview-4th: var(--color-yellow-300);
+  --color-chart-overview-5th: var(--color-green-300);  /* 與 Light Mode 相同 */
+  --color-chart-overview-6th: var(--color-red-400);  /* 與 Light Mode 相同 */
+  --color-chart-overview-7th: var(--color-navy-100d);
+  --color-chart-overview-8th: var(--color-indigo-300);  /* 與 Light Mode 相同 */
+}
