@@ -16,6 +16,7 @@
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="selpage-hero">
@@ -36,6 +37,7 @@ function stepA(){
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
   clearControls();
+  document.querySelector('.reset').style.display='';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="kicker">開始之前</div>

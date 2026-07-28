@@ -65,6 +65,9 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,san
 .screen{flex:1;overflow-y:auto} /* 故意不加 scroll-behavior:smooth：部分瀏覽器環境下，動畫捲動未必會實際套用，
   導致 down() 用 getBoundingClientRect 算出的位置跟實際捲動狀態對不上，改用即時捲動確保位置永遠準確 */
 .screen::-webkit-scrollbar{width:0}
+/* 讓任何一輪都能被捲到畫面最上方用的墊高區，高度由 engine.js syncSpacer() 動態同步為
+   #screen 的 clientHeight；使用者不會直接看到它，只會感覺到「這一輪比較短時，下面先留白」 */
+.scroll-spacer{width:100%;pointer-events:none}
 /* 新訊息出現時捲到「該則訊息的頂端」而非最底部，讓使用者從頭讀起，不強迫捲到底；
    這顆按鈕只在使用者不在最底部時浮現，點擊後捲到底部並自動消失（見 engine.js down()/updateScrollBtn()）。
    外層 wrap 高度固定為 0（sticky 但不佔版面），避免按鈕自己的高度被算進 #screen 的 scrollHeight，
