@@ -240,23 +240,12 @@ function showNextSteps(heading,items){
   items.forEach((item,i)=>{if(item.keywords)activeChoices.push({el:btns[i],keywords:item.keywords});});
   return el;
 }
-/* ================= 完成（共用結尾流程） ================= */
+/* ================= 完成（共用結尾流程） =================
+   「立即申購」／「諮詢理專」共用同一個結尾：QR Code 滿意度回饋卡（card/feedback-qr，見
+   js/component-library.js），不再各自顯示商品摘要小卡或前導訊息，直接呈現回饋卡。
+   action 參數目前沒有拿來分流文案，先保留簽章以維持呼叫端相容，之後若兩條路要顯示不同內容再用。 */
 function finishFlow(action){
-  const recoType=S.path==='supplement'?S.recoTypeH:S.recoType;
-  const prod=S.selectedProductCode?catalogItem(S.selectedProductCode):PRODUCT_DATA[recoType];
-  const isOrder=action==='order';
-  aiSay([isOrder?'好的，已經為您準備好下單資訊。':'好的，已經為您安排理專諮詢管道。'],()=>{
-    const end=document.createElement('div');end.className='endcard';
-    end.innerHTML=`<div class="ic" style="color:#1f9d57">✓</div><div class="t">${isOrder?'下單資訊已備妥':'理專諮詢已安排'}</div>
-      <div class="summary">
-        本行資產級距：<b>${S.assetRange||'—'}</b>／現金比例：<b>${S.cashRatio||'—'}</b><br>
-        資金用途時間：<b>${S.q1||'—'}</b>／風險承受度：<b>${S.q2||'完全不能接受本金波動'}</b><br>
-        建議轉入方向：<b>${prod.name}</b>
-      </div>
-      <div class="d">${isOrder?'請至下單頁完成最後確認，如有任何疑問也歡迎隨時洽詢專員。':'專員將盡快與您聯繫，協助您完成後續轉入／開戶事宜。'}<br>以上是根據您剛才的回答所做的初步參考分析，並非正式投資建議，實際申購仍需以商品說明書及專員說明為準。</div>`;
-    chatBox.appendChild(end);down();
-    const w=wrap();const b=document.createElement('button');b.className='primary';b.style.marginTop='4px';
-    b.textContent='重新開始';b.onclick=resetAll;w.appendChild(b);setControls(w);
-    freeOverride=()=>aiSay(["本次分析已完成，如需重新開始，請點選下方按鈕。"]);
-  },{label:'管家為您準備中'});
+  renderComponent('card/feedback-qr');
+  clearControls();
+  freeOverride=()=>aiSay(["本次分析已完成，如需重新開始，請點選上方的「再體驗一次」按鈕。"]);
 }
