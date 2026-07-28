@@ -359,14 +359,36 @@ function adjustH2(base){
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
     result='fund';reason='**您的資金規模充足，投資風格也偏積極。**可以進一步搭配基金組合，讓資金有更大的空間發揮成長潛力。';
   }
+  ({result,reason}=reconcileWithOriginal({result,reason}));
   if(result==='bond'&&S.q1==='一年內'){
     result='fund';reason='**這筆資金一年內就可能會用到，而債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息。**若中途提前賣出，可能無法拿回全部本金，因此這裡改為規劃彈性較高的基金，兼顧收益與資金運用的靈活度。';
   }
   return{result,reason};
 }
+/* 綜合行內／行外依據：H-2 目前只依他行資產資訊判斷方向，完全沒參考行內三題（Q2風險承受度／Q3債券基金偏好）已得出的 S.recoType，
+   等於使用者剛剛的回答被整套換掉。這裡用 S.recoType 當基準，他行資訊最多只能把結果往上或往下調整一個層級（定存↔債券↔基金），
+   避免行內已明確表達的風險承受度被他行資產一次跳兩級蓋掉 */
+const RECOTYPE_RANK={deposit:1,bond:2,fund:3};
+const RANK_RECOTYPE=['deposit','bond','fund'];
+function reconcileWithOriginal(adjusted){
+  let{result,reason}=adjusted;
+  const origRank=RECOTYPE_RANK[S.recoType]||RECOTYPE_RANK.bond;
+  const hRank=RECOTYPE_RANK[result];
+  const diff=hRank-origRank;
+  if(diff>=2){
+    result=RANK_RECOTYPE[origRank];
+    reason='**行內原本的風險評估偏保守，但他行資產顯示您已具備豐富的多元投資經驗。**因此在原本的判斷基礎上調高一個層級，同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
+  }else if(diff<=-2){
+    result=RANK_RECOTYPE[origRank-2];
+    reason='**行內原本的風險評估偏積極，但他行資產顯示您目前的投資經驗或占比仍偏保守。**因此在原本的判斷基礎上調低一個層級，先以較穩健的方向打好基礎，之後可以再逐步調整。';
+  }
+  return{result,reason};
+}
 function stageH2(){
   if(S.h1Ratio==='0%'){
-    S.h2Items=[];S.h2Reason='**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。';S.recoTypeH='deposit';
+    const base={result:'deposit',reason:'**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+    const adj=reconcileWithOriginal(base);
+    S.h2Items=[];S.h2Reason=adj.reason;S.recoTypeH=adj.result;
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
     return;
   }
