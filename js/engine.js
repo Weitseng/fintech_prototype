@@ -255,7 +255,12 @@ function aiSay(msgs,done,opts){
   let i=0;(function next(){
     if(i>=msgs.length){if(done)done();return;}
     const t=document.createElement('div');t.className='typing';
-    t.innerHTML=`<span class="typing-label">${label}</span><span class="typing-dots"><span class="d"></span><span class="d"></span><span class="d"></span></span>`;
+    const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
+    const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
+    const labelText=label+'...';
+    const labelEl=document.createElement('span');labelEl.className='typing-label t-shimmer';
+    labelEl.textContent=labelText;labelEl.setAttribute('data-text',labelText);
+    t.appendChild(labelEl);
     /* 這裡故意不呼叫 down()：如果使用者才剛回答完問題，meSay() 已經把畫面捲到「提問＋回答」對齊頂端，
        這裡如果又捲一次會把那組畫面往上推、蓋掉剛才特地留住的提問。等真正的訊息換上來才需要捲動。 */
     appendToChat(t);
@@ -272,7 +277,7 @@ function aiSay(msgs,done,opts){
          重複呼叫只是算出同一個位置，不會有任何跳動——這跟舊版「每則訊息各自當錨點」
          不一樣，那樣才會把使用者正在讀的前一段推到畫面外，這裡因為錨點永遠是同一個容器，
          不會有這個問題。 */
-      t.remove();const m=document.createElement('div');m.className='ai-msg';
+      orb.destroy();t.remove();const m=document.createElement('div');m.className='ai-msg';
       m.innerHTML=mdToHtml(msgs[i]);appendToChat(m);
       down();
       i++;setTimeout(next,MSG_GAP);
