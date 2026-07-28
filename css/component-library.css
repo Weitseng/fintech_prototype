@@ -157,11 +157,14 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .nsl-chevron{flex-shrink:0;width:20px;height:20px}
 
 /* button/primary（Figma node 246:876）全站共用主要行動按鈕（CTA），4 個 variant：Default／Hover／Pressed／disable。
-   寬高皆為 Hug（依內容＋padding 自動撐開），非寫死尺寸；預設情境文案「按鈕文案」下量測結果為 188×53，符合已知規格。
+   寬度改為與上方文字內容等寬（撐滿掛載容器），高度仍為 Hug（依內容＋padding 自動撐開）；
+   掛載端（flow.js／component-library.js 的 #startBtnMount、confirmWrap、.fbqr-btn-mount）
+   本身寬度都等於同一層文字區塊（h1/lead/選項清單/QR 說明文字）的寬度，按鈕撐滿掛載容器
+   即可與上方文字等寬，不需要呼叫端額外指定寬度。
    文字套用 Subtitle-B 文字樣式 token（--type-subtitle-*），不寫死字級數值。
    Figma 的 Pressed 背景色跟 Default 完全相同（container-general-active-primary），未做按下的視覺回饋，此處忠實依樣，不額外加深。
    純文字按鈕，不支援 icon（沒有 icon 插槽/before-after 圖示位），需要 icon+文字的按鈕請另建元件，不要疊加在這個 class 上。 */
-.btn-primary{display:inline-flex;align-items:center;justify-content:center;
+.btn-primary{display:flex;width:100%;align-items:center;justify-content:center;
   padding:var(--spacing-12) var(--spacing-24);border:0;border-radius:var(--radius-small);background:var(--color-container-general-active-primary);color:var(--color-content-general-light-active);
   font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);
@@ -175,6 +178,10 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    字級對應：標題套 Subtitle-B、說明文字套 Body-R，皆用專案既有 --type-* token。 */
 .fbqr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-24);width:100%;margin:var(--spacing-24) 0}
 .fbqr-qr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-16);width:100%}
+/* .fbqr 用 align-items:center，子元素預設是 hug 寬度；這裡明寫 width:100%，
+   讓 .btn-primary（width:100%）撐滿到跟上面 .fbqr-qr-desc 說明文字同寬，而不是被
+   父層的 align-items:center 縮回按鈕本身的內容寬度 */
+.fbqr-btn-mount{width:100%}
 .fbqr-qr-img{width:160px;height:160px;object-fit:cover}
 .fbqr-qr-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary)}
