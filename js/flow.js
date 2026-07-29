@@ -34,6 +34,19 @@ function stepA(){
   p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
 
+/* 單選題選項清單，樣式沿用 css/style.css 的 .choice（對應 Figma node 223:752「message/option」，
+   跟 engine.js choiceBtn() 在對話中產生的問題選項是同一個元件，只是這裡不經過 #controls／chat，
+   直接把按鈕掛到 .selpage 裡的容器上）。編號靠 .choice 既有的 CSS counter 自動產生，
+   容器需各自 counter-reset（見 .choice-group），兩題的編號才會各自從 1 開始。 */
+function buildSingleSelectList(container,options,onPick){
+  container.className='choice-group';
+  options.forEach(x=>{
+    const b=choiceBtn(x,null,()=>{container.querySelectorAll('.choice').forEach(o=>o.classList.remove('sel'));
+      b.classList.add('sel');onPick(x);});
+    container.appendChild(b);
+  });
+}
+
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
   clearControls();
@@ -53,18 +66,8 @@ function stepB(){
   const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
-  ['100 萬以下','100 萬 – 200 萬','200 萬以上'].forEach(x=>{
-    const b=document.createElement('button');b.className='opt';b.textContent=x;
-    b.onclick=()=>{ro.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-      b.classList.add('sel');S.assetRange=x;checkReady();};
-    ro.appendChild(b);
-  });
-  ['85% 以上','60–85%','30–60%','30% 以下'].forEach(x=>{
-    const b=document.createElement('button');b.className='opt';b.textContent=x;
-    b.onclick=()=>{co.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-      b.classList.add('sel');S.cashRatio=x;checkReady();};
-    co.appendChild(b);
-  });
+  buildSingleSelectList(ro,['100 萬以下','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();});
+  buildSingleSelectList(co,['85% 以上','60–85%','30–60%','30% 以下'],x=>{S.cashRatio=x;checkReady();});
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */

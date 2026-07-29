@@ -319,10 +319,12 @@ function renderNextStepList(heading,items,opts){
     btn.disabled=item.state==='disabled';
     btn.innerHTML=`<span class="nsl-item-text">
         <span class="nsl-item-title"></span>
-        <span class="nsl-item-desc"></span>
       </span>${NSL_ICON_CHEVRON}`;
     btn.querySelector('.nsl-item-title').textContent=item.title;
-    btn.querySelector('.nsl-item-desc').textContent=item.description;
+    if(item.description){
+      const desc=document.createElement('span');desc.className='nsl-item-desc';desc.textContent=item.description;
+      btn.querySelector('.nsl-item-text').appendChild(desc);
+    }
     btn.onclick=()=>{if(item.onSelect)item.onSelect();};
     itemsEl.appendChild(btn);
   });

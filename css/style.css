@@ -140,15 +140,8 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
   margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
-.opt{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1.5px solid var(--color-container-general-divider);
-  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
-  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
-  padding:15px 16px;border-radius:var(--radius-medium);margin:9px 0;cursor:pointer;transition:.15s}
-.opt:hover{border-color:var(--color-content-general-active)}
-.opt.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
-
 /* Claude 風格對話 */
-.chat{padding:var(--spacing-20) var(--spacing-20) 10px}
+.chat{padding:var(--spacing-20) 0 10px;margin:0 4%}
 /* .turn：一輪對話（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，由 js/engine.js 的
    startTurn()／appendToChat() 建立與掛載內容，讓 down() 能把整輪當一個單位捲動、
    一起判斷要不要頂到畫面最上緣（理由見 engine.js down() 上方的註解）。
@@ -229,6 +222,11 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-light-active);font-size:12px;font-weight:800;line-height:1}
 .choice:disabled{opacity:.4;cursor:not-allowed}
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
+
+/* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
+   每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
+  （#controls 本身已經在上面 197 行 counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
+.choice-group{counter-reset:choice-num}
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
 /* 流程結尾畫面：已改用 card/feedback-qr 元件（css/component-library.css .fbqr-*） */
 /* 底部輸入列已改用 bar/chat-input 元件（css/component-library.css .icb-*） */
