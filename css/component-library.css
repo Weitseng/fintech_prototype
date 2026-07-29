@@ -83,6 +83,14 @@ input.calc-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
   background:var(--color-surface-white);box-shadow:var(--shadow-light);cursor:pointer;border:0}
 input.calc-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--color-surface-white);
   box-shadow:var(--shadow-light);cursor:pointer;border:0}
+/* 拖曳旋鈕陰影（Figma node 202:835 標註的「Popover」效果樣式，css/tokens/shadow.css 的
+   --shadow-popover 剛好完全對應：0px 4px 16px 0px #0044ad14）：拖曳/觸控中（:active）
+   把陰影從預設的 --shadow-light 換成範圍更大、更明顯的 --shadow-popover，跟著旋鈕本身
+   的 pseudo-element 移動，不需要另外用 JS 算位置；放開後 :active 結束、陰影自動退回
+   --shadow-light，不用額外程式碼處理「拖曳結束後隱藏」。滑鼠 hover 時也先給同樣的陰影，
+   讓使用者在按下之前就能感受到這裡可以拖曳。 */
+input.calc-slider:hover::-webkit-slider-thumb,input.calc-slider:active::-webkit-slider-thumb{box-shadow:var(--shadow-popover)}
+input.calc-slider:hover::-moz-range-thumb,input.calc-slider:active::-moz-range-thumb{box-shadow:var(--shadow-popover)}
 input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full);background:transparent}
 
 .calc-cards-row{display:flex;gap:var(--spacing-8);width:100%}
@@ -134,14 +142,14 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   background:var(--color-surface-blue);color:var(--color-content-general-primary)}
 .icb-input::placeholder{color:var(--color-navy-200)}
-.icb-input:disabled{background:var(--color-surface-grey);color:var(--color-content-general-disabled);cursor:not-allowed}
+.icb-input:disabled{background:var(--color-container-general-disabled);color:var(--color-content-general-disabled);cursor:not-allowed}
 .icb-input:disabled::placeholder{color:var(--color-content-general-disabled)}
 .icb-send{flex-shrink:0;width:44px;height:44px;border-radius:50%;border:0;padding:0;
   background:var(--color-container-general-active-primary);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .icb-send svg{width:24px;height:24px;display:block}
 .icb-send:disabled{background:var(--color-container-general-disabled);cursor:not-allowed}
 .icb-disclaimer{width:100%;font-family:var(--font-cn);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);
-  color:var(--color-content-general-secondary);text-align:center}
+  color:var(--color-content-general-secondary);text-align:left}
 
 /* message/chat-bubble（Figma node 219:747）使用者發送訊息氣泡，靠右對齊；
    系統回覆訊息（.ai-msg／.md-quote，見 css/style.css）是不同樣式，不要共用 */
@@ -188,21 +196,30 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .btn-primary:hover{background:var(--color-sky-blue-500)}
 .btn-primary:disabled{background:var(--color-container-general-disabled);color:var(--color-content-general-disabled);cursor:not-allowed}
 
-/* card/feedback-qr（Figma node 254:888，ai 投資助理_QR code 掃描）流程結尾的滿意度回饋卡，
+/* card/feedback-qr（Figma node 260:993，ai 投資助理_QR code 掃描）流程結尾的滿意度回饋卡，
    「立即申購」／「諮詢理專」共用同一份。底部的 disabled InputChatBar 不在這裡渲染——
    那是全站共用、掛在 #inputbar 的既有元件（js/bootstrap.js），本來就會顯示，不用重複建立。
-   字級對應：標題套 Subtitle-B、說明文字套 Body-R，皆用專案既有 --type-* token。 */
-/* .fbqr 只有 .fbqr-qr／.fbqr-btn-mount 兩個子元素，gap 即為按鈕與上方 QR 說明區塊的間距，
+   字級對應：標題套 Headline、說明文字套 Body-R，皆用專案既有 --type-* token；
+   說明文字在 Figma 原稿是純黑 #000000／16px，專案 token 沒有完全對應的顏色與字級，
+   已跟需求方確認改用最接近的 Content/General/Primary＋Body-R，不新增 token。 */
+/* .fbqr 只有 .fbqr-qr／.fbqr-btn-mount 兩個子元素，gap 即為按鈕與上方內容區塊的間距，
    依需求固定為 40px（--spacing-40），與 btn-primary 在其他頁面（stepA/stepB/H2 確認送出）
    跟上方物件的距離保持一致 */
 .fbqr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-40);width:100%;margin:var(--spacing-24) 0}
-.fbqr-qr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-16);width:100%}
+/* .fbqr-qr：慶祝圖示＋標題＋說明（.fbqr-intro）在上，QR Code 在下，兩者間距 40px，
+   對應 Figma node 260:1004 的 gap-40 */
+.fbqr-qr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-40);width:100%}
+/* .fbqr-intro：圖示跟「標題＋說明」文字群組間距 12px，對應 node 266:1187 的 gap-12 */
+.fbqr-intro{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-12);width:100%}
+.fbqr-icon{width:80px;height:80px;display:block}
+/* .fbqr-copy：標題跟說明文字間距 8px，對應 node 266:1312 的 gap-8 */
+.fbqr-copy{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-8);width:100%}
 /* .fbqr 用 align-items:center，子元素預設是 hug 寬度；這裡明寫 width:100%，
    讓 .btn-primary（width:100%）撐滿到跟上面 .fbqr-qr-desc 說明文字同寬，而不是被
    父層的 align-items:center 縮回按鈕本身的內容寬度 */
 .fbqr-btn-mount{width:100%}
-.fbqr-qr-img{width:160px;height:160px;object-fit:cover}
-.fbqr-qr-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
-  font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary)}
+.fbqr-qr-img{width:126px;height:126px;object-fit:cover}
+.fbqr-qr-title{font-family:var(--font-cn);font-size:var(--type-headline-size);
+  font-weight:var(--type-headline-weight-cn);line-height:var(--type-headline-lh-cn);color:var(--color-content-general-primary);text-align:center}
 .fbqr-qr-desc{font-family:var(--font-cn);font-size:var(--type-body-size);
   font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);color:var(--color-content-general-primary);text-align:center}

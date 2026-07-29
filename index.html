@@ -16,8 +16,11 @@
 <body>
 <div class="app">
   <header class="app-header">
-    <h1 class="app-header-title">凱基銀行 AI 智富管家</h1>
-    <button class="reset" onclick="resetAll()">↺ 重新開始</button>
+    <div class="app-header-brand">
+      <img class="app-header-logo" src="assets/logo.png" alt="">
+      <h1 class="app-header-title">凱基銀行 AI 智富管家</h1>
+    </div>
+    <button class="reset" onclick="resetAll()">↺ <span class="reset-label">重新開始</span></button>
   </header>
   <div class="screen" id="screen"></div>
   <div class="controls" id="controls"></div>

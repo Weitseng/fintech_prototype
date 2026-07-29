@@ -247,7 +247,7 @@ const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http:
 </svg>`;
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
-  disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
+  disabledMessage:'展覽期間暫不開放。請點擊上方按鈕選項繼續操作',
   disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
 };
 function renderInputChatBar(state,opts){
@@ -355,10 +355,16 @@ function renderButtonPrimary(label,opts){
 }
 COMPONENTS['button/primary']={render:renderButtonPrimary};
 
-/* ---- card/feedback-qr（Figma node 254:888，ai 投資助理_QR code 掃描）----
-   流程結尾的滿意度回饋卡：QR Code 區塊（圖＋標題＋說明）＋再體驗一次按鈕，「立即申購」／「諮詢理專」
-   兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
-   2026-07-27 依需求調整：移除條款提示文字，按鈕改放在說明文字下方（QR 區塊之後）。
+/* ---- card/feedback-qr（Figma node 260:993，ai 投資助理_QR code 掃描）----
+   流程結尾的滿意度回饋卡：慶祝圖示＋標題＋三行說明＋QR Code＋再體驗一次按鈕，「立即申購」／
+   「諮詢理專」兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
+   2026-07-29 依 Figma 更新：新增頂部慶祝圖示（assets/feedback-celebrate.png，266:1146
+   「Business Symbols/優惠＆活動」），標題文案改「非常感謝您的體驗」並改用 Headline token
+   （原本誤用 Subtitle-B），說明文字拆成三行獨立段落（原本後兩行擠在同一行），QR Code
+   移到說明文字之後（原本在最上面），尺寸依設計稿改 126px（原本 160px）。
+   說明文字色／字級對應 Content/General/Primary＋Body-R token——這兩個 token 在 Figma
+   原稿裡的實際標示是純黑 #000000／16px，專案 token 沒有完全對應的項目，已跟需求方確認
+   改用最接近的既有 token（不新增 token）。
    底部的 disabled InputChatBar 不在這個元件裡渲染——那是掛在 #inputbar 的全站共用元件
    （js/bootstrap.js 已經是 disabled 狀態），呼叫端不需要另外處理。
    opts：{qrSrc, onRestart}，qrSrc 先用 placeholder 圖檔，之後有真實問卷連結的 QR 圖再替換路徑即可；
@@ -370,9 +376,18 @@ function renderFeedbackQrCard(opts){
   const card=document.createElement('div');card.className='fbqr';
   card.innerHTML=`
     <div class="fbqr-qr">
+      <div class="fbqr-intro">
+        <img class="fbqr-icon" src="assets/feedback-celebrate.png" alt="">
+        <div class="fbqr-copy">
+          <div class="fbqr-qr-title">非常感謝您的體驗</div>
+          <div class="fbqr-qr-desc">
+            <p>您的寶貴意見是我們前進的動力！</p>
+            <p>誠摯邀請您掃描 QR Code 填寫滿意度問卷</p>
+            <p>凱基銀行感謝您的支持與配合。</p>
+          </div>
+        </div>
+      </div>
       <img class="fbqr-qr-img" src="${qrSrc}" alt="滿意度問卷 QR Code">
-      <div class="fbqr-qr-title">感謝您的體驗</div>
-      <div class="fbqr-qr-desc">您的寶貴意見是我們前進的動力！<br>誠摯邀請您掃描 QR Code 填寫滿意度問卷，凱基銀行感謝您的支持與配合。</div>
     </div>
     <div class="fbqr-btn-mount"></div>`;
   card.querySelector('.fbqr-btn-mount').appendChild(

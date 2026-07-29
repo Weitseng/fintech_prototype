@@ -16,8 +16,7 @@
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
-  document.querySelector('.app-header').style.display='none';
-  const p=wrap();p.className='selpage';
+  const p=wrap();p.className='selpage opening-page';
   p.innerHTML=`
     <div class="selpage-hero">
       <video class="selpage-hero-video" autoplay muted loop playsinline>
@@ -50,7 +49,6 @@ function buildSingleSelectList(container,options,onPick){
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
   clearControls();
-  document.querySelector('.app-header').style.display='';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="kicker">開始之前</div>
