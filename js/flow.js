@@ -244,7 +244,11 @@ function stageGList(){
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
 function showCatalogCards(items){
   const onDetail=p=>enterProductDetail(p,items);
-  const onCalc=p=>enterProductCalc(p,items);
+  /* 從卡片列直接點「立即試算」時還沒有 meSay() 開新的一輪，跟 enterProductDetail 的
+     「試算這檔商品」次一步選項（已經由 meSay() 另起一輪）情況不同，這裡要另外標記
+     fresh:true，讓 enterProductCalc 知道要自己開新的一輪、把商品卡片帶到最上面
+     （見 enterProductCalc() 的說明） */
+  const onCalc=p=>enterProductCalc(p,items,{fresh:true});
   if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{
@@ -294,8 +298,17 @@ function backToCatalogList(items){
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
    外匯定存利率不隨年期變動，關掉近1年/近3年切換（showPeriodTabs:false） */
-function enterProductCalc(p,items){
+function enterProductCalc(p,items,opts){
   clearControls();
+  /* 從商品卡片列直接點「立即試算」時（opts.fresh，見 showCatalogCards），前面還沒有任何
+     meSay() 開新的一輪，試算內容會一路疊進「商品清單」那一整輪裡；等內容長過一個畫面，
+     down() 貼齊底部的邏輯會把最上面的商品卡片列整個推出畫面，使用者完全看不到剛才點的
+     是哪一張卡。這裡先用 startTurn() 另立新的一輪、把「剛才點的商品卡片（列）」——也就是
+     這一輪目前最後一個元素——帶到新的一輪最上面，記下來當 cardAnchor。
+     從商品詳情頁的「試算這檔商品」選項進來則不會帶 opts.fresh——那條路徑已經由
+     showNextSteps 內部的 meSay() 開過一輪新的，這裡不需要、也不應該再開一次，
+     否則會把 meSay() 特地留住的提問句擠出這一輪。 */
+  const cardAnchor=(opts&&opts.fresh)?startTurn().firstElementChild:null;
   S.selectedProductCode=p.code;
   const tag={bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
@@ -319,6 +332,11 @@ function enterProductCalc(p,items){
         onSelect:()=>{clearControls();backToCatalogList(items);}}
     );
     showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
+    /* 試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把 cardAnchor（剛才點的
+       商品卡片）整個推出畫面上緣；這裡再往回捲一點點，固定露出卡片下緣 PEEK_PX 高度，
+       讓使用者還能看到「這是延伸自哪張卡片」，等畫面穩定（下一輪重繪）後才修正，
+       避免蓋掉 showNextSteps 剛算好的位置 */
+    if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
   },{label:'為您試算中',heavy:true});
 }
 
