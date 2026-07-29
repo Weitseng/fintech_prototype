@@ -1,0 +1,22 @@
+/**
+ * KGI Design System — Radius Tokens
+ * 來源: Figma 變數集合「Default」(取自 Default.tokens.json)
+ * 最後同步: 2026-07-27
+ */
+
+:root {
+  /* 0px — 直角，無圓角 */
+  --radius-none: 0px; /* Figma: "0", VariableID:15698:2845 */
+
+  /* 1px — 用於小版 Tag */
+  --radius-xs: 1px; /* Figma: "1", VariableID:15698:2846 */
+
+  /* 3px — 用於 Selection Chip */
+  --radius-small: 3px; /* Figma: "3", VariableID:15698:2847 */
+
+  /* 6px — 用於卡片 */
+  --radius-medium: 6px; /* Figma: "6", VariableID:15698:2848 */
+
+  /* 100px — 用於囊型狀的按鈕/選擇器/Tag、Search Bar（膠囊/pill shape） */
+  --radius-full: 100px; /* Figma: "100", VariableID:15698:2849 */
+}

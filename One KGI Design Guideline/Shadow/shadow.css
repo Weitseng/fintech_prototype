@@ -1,0 +1,28 @@
+/**
+ * Shadow / Elevation Design Tokens
+ * 來源：Figma Shadow effect styles（light / basic / popover）
+ * 對應文件：Shadow_陰影規範.md
+ *
+ * 核心原則：陰影大小反映高度（Elevation）。
+ * 表面越高，blur radius / offset-y / 不透明度越大；表面越低，數值越小。
+ * light → basic → popover 為由低至高的三個層級，數值同步遞增。
+ *
+ * 草擬版，尚未經設計負責人審核，正式採用前請與 Figma 元件庫最新版本核對。
+ */
+
+:root {
+  /* Light — 最低層級。用於未選取 / 停用狀態等極輕微的區隔，不作為互動強調。 */
+  --shadow-light: 0px 1px 8px 0px #0044ad05;
+
+  /* Basic — 基礎層級。用於 Card、List、Sheet、Banner 等內容容器，最常用的層級。 */
+  --shadow-basic: 0px 2px 12px 0px #0044ad0a;
+
+  /* PopOver — 最高層級。用於 Dialog、Dropdown、Floating Button 等需聚焦的浮動元件。 */
+  --shadow-popover: 0px 4px 16px 0px #0044ad14;
+}
+
+/* 使用範例
+.card            { box-shadow: var(--shadow-basic); }
+.dialog          { box-shadow: var(--shadow-popover); }
+.currency-select--unselected { box-shadow: var(--shadow-light); }
+*/
