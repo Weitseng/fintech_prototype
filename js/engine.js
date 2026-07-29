@@ -94,6 +94,7 @@ function startTurn(){
   if(prevEl)turn.appendChild(prevEl);
   chatBox.appendChild(turn);
   currentTurnEl=turn;
+  turnLoadingShown=false;
   return turn;
 }
 /* 這一輪已經定案（選項按鈕／下一步清單已經出現，換使用者操作）：#controls 的 min-height
@@ -230,7 +231,14 @@ function mdToHtml(src){
 
 /* ================= 對話輔助（共用渲染工具） ================= */
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
-function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;const s=screen();s.innerHTML='';
+/* turnLoadingShown：這一輪是否已經出現過一次 loading。同一輪常常是好幾個 aiSay() 呼叫
+   接力串起來（例如先講一句開場、再串接下一句分析結果），如果每個 aiSay() 呼叫都各自判斷
+   「我是不是這一輪第一個」，彼此看不到對方，還是會一輪出現好幾次 loading。改成這個跨呼叫
+   共用的旗標，由 startTurn() 在每一輪開始時重置成 false，aiSay() 只有在旗標還是 false 時
+   才顯示 loading、顯示完就設成 true，之後不管接了幾個 aiSay()，都只會直接接著印字，
+   不會再跳出 loading，直到使用者下一次操作、startTurn() 重置旗標為止。 */
+let turnLoadingShown=false;
+function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;turnLoadingShown=false;const s=screen();s.innerHTML='';
   chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
   const disclaimer=document.createElement('p');disclaimer.className='analysis-disclaimer';
   disclaimer.innerHTML='本服務內容由 AI 自動生成，建議使用前請詳閱<span class="link">《AI 智富管家使用同意條款》</span>';
@@ -245,18 +253,65 @@ function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTo
   stageC();}
 /* opts.label：依情境自訂 loading 文字（保底預設「管家思考中」，理論上每個呼叫都該自帶 label，
    保底值只是防呆，不該常態出現）；
-   opts.heavy：標記為「理論上較複雜」的任務（資產分析、彙整、試算……），loading 總長拉到 BASE_DELAY+HEAVY_EXTRA，
-   讓使用者感受到系統有在運算，即使回覆內容其實是預先寫好的。
-   即使沒標 heavy，單則訊息字數超過 LONG_MSG_LEN 也會自動視為複雜內容，一併加長 */
+   opts.heavy：標記為「理論上較複雜」的任務（資產分析、彙整、試算……），開頭 loading 總長拉到
+   BASE_DELAY+HEAVY_EXTRA，讓使用者感受到系統有在運算，即使回覆內容其實是預先寫好的。
+   即使沒標 heavy，第一句字數超過 LONG_MSG_LEN 也會自動視為複雜內容，一併加長。
+   loading 只在「這一輪對話」開頭出現一次（見 turnLoadingShown）——不管這一輪背後接了
+   幾個 aiSay() 呼叫、每個呼叫裡又有幾句話，都只有最開頭那一句話之前會出現 loading，
+   之後不管是同一個 aiSay() 陣列裡的後續句子、還是接續呼叫的下一個 aiSay()，都直接接著
+   上一句逐字印出，模擬 Claude 那種「開頭想一下、之後內容就一路生成下去」的節奏，
+   不會每句話、每次呼叫都重新「思考」一次。 */
 const LONG_MSG_LEN=120;
 const BASE_DELAY=900;
 const HEAVY_EXTRA=1300;
 const MSG_GAP=400;
+/* 逐字印出單一句：先用 mdToHtml() 把整段 markdown 一次轉成最終的排版結構
+   （標題、粗體、清單、斜體……該有的標籤與樣式從第一個字開始就是對的），
+   再用 TreeWalker 抓出這個結構裡所有的文字節點，把內容清空、逐字補回去——
+   等於是「排版先長出來，文字才一個字一個字填進正確的位置」，不會讓使用者看到
+   **、# 這類還沒轉換的原始 markdown 語法，填完最後一個字，畫面就已經是最終樣子，
+   不需要再多一次「換上最終 HTML」的替換動作。
+   每個字的間隔不是固定值，而是「整段印完的總時長」除以字數：固定間隔在長文字
+   （例如試算說明、比較表）上會拖得非常久，讓使用者等到不耐煩；改成總時長有上下限
+   （TYPE_MIN_MS ~ TYPE_MAX_MS），字數愈多、單字間隔愈短，整段落地的時間就不會
+   隨字數線性增加。
+   down() 沒有每個字都呼叫——逐字捲動太頻繁會造成明顯的抖動/效能負擔，這裡改成
+   每隔幾個字才重算一次捲動位置，捲動仍會跟著文字增長往下走，只是不逐字同步。 */
+const TYPE_MIN_MS=280;
+const TYPE_MAX_MS=1800;
+const TYPE_PER_CHAR=16;
+const TYPE_SCROLL_EVERY=3;
+function typeOut(text,cb){
+  const m=document.createElement('div');m.className='ai-msg';appendToChat(m);
+  m.innerHTML=mdToHtml(text);
+  const walker=document.createTreeWalker(m,NodeFilter.SHOW_TEXT);
+  const nodes=[];let wn;while((wn=walker.nextNode()))nodes.push(wn);
+  const fullTexts=nodes.map(n=>n.textContent);
+  nodes.forEach(n=>{n.textContent='';});
+  const totalChars=fullTexts.reduce((a,s)=>a+s.length,0);
+  if(totalChars===0){down();cb();return;}
+  const total=Math.min(TYPE_MAX_MS,Math.max(TYPE_MIN_MS,totalChars*TYPE_PER_CHAR));
+  const perChar=Math.max(4,total/totalChars);
+  let shown=0;(function step(){
+    shown++;
+    let remain=shown;
+    for(let k=0;k<nodes.length;k++){
+      const len=fullTexts[k].length;
+      nodes[k].textContent=remain>=len?fullTexts[k]:fullTexts[k].slice(0,Math.max(0,remain));
+      remain-=len;
+    }
+    if(shown%TYPE_SCROLL_EVERY===0||shown>=totalChars)down();
+    if(shown<totalChars)setTimeout(step,perChar);else cb();
+  })();
+}
 function aiSay(msgs,done,opts){
   opts=opts||{};
   const label=opts.label||'管家思考中';
   let i=0;(function next(){
     if(i>=msgs.length){if(done)done();return;}
+    const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);});};
+    if(i>0||turnLoadingShown){startTyping();return;}
+    turnLoadingShown=true;
     const t=document.createElement('div');t.className='typing';
     const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
     const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
@@ -280,10 +335,8 @@ function aiSay(msgs,done,opts){
          重複呼叫只是算出同一個位置，不會有任何跳動——這跟舊版「每則訊息各自當錨點」
          不一樣，那樣才會把使用者正在讀的前一段推到畫面外，這裡因為錨點永遠是同一個容器，
          不會有這個問題。 */
-      orb.destroy();t.remove();const m=document.createElement('div');m.className='ai-msg';
-      m.innerHTML=mdToHtml(msgs[i]);appendToChat(m);
-      down();
-      i++;setTimeout(next,MSG_GAP);
+      orb.destroy();t.remove();
+      startTyping();
     },BASE_DELAY+(heavy?HEAVY_EXTRA:0));
   })();
 }
