@@ -48,16 +48,24 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 
 /* ---- card/product（Figma node 178:664）ProductCard_Display ----
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
-   數值標籤依商品類別區分：債券為商品對照矩陣原始欄位「票面/配息率」；基金無真實績效欄位，
-   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「過去一年報酬率」；
-   定存不分天期一律標示「年利率」；第二個統計欄位對定存沒有意義的「投資類型」，
-   改標示「最高限額」，數值讀 catalog.js 的 maxAmt（含幣別，例如「USD 2,000」）；
-   債券／基金維持原本的「投資類型」＋ investType 陣列組字串 */
+   2026-07-29 依 Excel「精選債券基金_客戶屬性對照矩陣」原始欄位重新對應兩個統計格：
+   - 第一格（rateLabel/rateStr）：債券＝「票面/配息率」讀 rate1y（債券的 rate1y 本來就等於
+     Excel 真實票面利率，沒有另外造假，沿用即可）；基金＝「近一年報酬率」改讀 catalog.js
+     新增的 return1y（Excel 真實數字），不能沿用 rate1y——基金的 rate1y／rate3y 是試算卡
+     （card/calculator）專用的示範性參考值，非真實績效，兩者用途不同不要混用；
+     定存＝「年利率」讀 rate1y（銀行牌告利率，本來就是真的，不受影響）。
+   - 第二格（stat2Label/stat2Value）：債券＝「參考買進價」讀 catalog.js 新增的 refPrice；
+     基金＝「基金淨值」讀 catalog.js 新增的 nav；定存＝「最高限額」讀 maxAmt（不受影響）。
+     refPrice／nav 都直接輸出數字本身，不額外加千分位或補零——對應 Excel 儲存格本身也是
+     General／整數格式，沒有 %、元等單位，跟著原始資料的呈現方式即可。
+   - 原本債券／基金共用的「投資類型」（investType 陣列組字串）已被上述真實數字取代，
+     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
-  const rate1Str=(p.rate1y*100).toFixed(2);
-  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'過去一年報酬率';
-  const stat2Label=p.cat==='deposit'?'最高限額':'投資類型';
-  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.investType.join('／');
+  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'近一年報酬率';
+  const rateSrc=p.cat==='fund'?p.return1y:p.rate1y;
+  const rate1Str=(rateSrc*100).toFixed(2);
+  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?'參考買進價':'基金淨值';
+  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?p.refPrice:p.nav;
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
