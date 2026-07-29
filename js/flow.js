@@ -104,16 +104,16 @@ function stageC(){
         const w=wrap();
         const opts=[
           ['先放著，可能是備用金或短期要用',
-           '**短期預留的資金，通常需要同時兼顧彈性與穩定，**例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
+           '*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
            ['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']],
           ['想加減賺一點零用錢，風險不要太高',
-           '**了解，這屬於穩健增值的方向。**我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
+           '*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
            ['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']],
           ['想讓這筆錢成長更多，可以承擔一些風險',
-           '**了解，這屬於積極成長的方向。**我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
+           '*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
            ['提升價值','價值提升','增值','成長','積極','提高','承擔風險']],
           ['還沒想法，想先聽看看建議',
-           '**沒問題，我們可以先從幾個簡單的問題開始，**逐步釐清較適合您的規劃方向。',
+           '*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
            ['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']]
         ];
         opts.forEach(([label,ack,kw])=>w.appendChild(choiceBtn(label,null,()=>{
@@ -142,30 +142,30 @@ function ch_d1(){
     ];
     o.forEach(([label,val,wt,kw])=>w.appendChild(choiceBtn(label,null,()=>{S.q1=val;S.depositWeight=wt;meSay(label);clearControls();
       const summary=val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
-      aiSay([`**${summary}**。`],()=>ch_d2(),{label:'管家正在理解分析'});},kw)));
+      aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});},kw)));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function ch_d2(){
   aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
-      aiSay(['**這代表本金安全是您最優先的考量。**我會以「完全保本與高穩定」的商品為主，為您規劃方向。'],()=>resolveConservative(),{label:'管家正在理解分析'});},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
+      aiSay(['*這代表本金安全是您最優先的考量。*我會以「完全保本與高穩定」的商品為主，為您規劃方向。'],()=>resolveConservative(),{label:'管家正在理解分析'});},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
     w.appendChild(choiceBtn('可以接受小幅波動（跌幅約 10%～30%）',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅波動（跌幅約 10%～30%）');clearControls();
-      aiSay(['**了解，您能接受一定程度的波動。**我們可以在維持資產穩健的前提下，適度搭配收益型商品。'],()=>ch_d3(),{label:'管家正在理解分析'});},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
+      aiSay(['*了解，您能接受一定程度的波動。*我們可以在維持資產穩健的前提下，適度搭配收益型商品。'],()=>ch_d3(),{label:'管家正在理解分析'});},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
     w.appendChild(choiceBtn('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會');clearControls();
-      aiSay(['**了解，您能接受較大幅度的波動，以換取成長機會。**成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3(),{label:'管家正在理解分析'});},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
+      aiSay(['*了解，您能接受較大幅度的波動，以換取成長機會。*成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3(),{label:'管家正在理解分析'});},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function ch_d3(){
   aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您：","> 在投資型商品裡，您比較看重哪一種特質？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('希望領息穩定、到期時間明確',null,()=>{S.q3='領息穩定、到期時間明確';meSay('希望領息穩定、到期時間明確');clearControls();resolveAttribute('bond','B');},['領息','到期','穩定','固定','確定','債']));
-    w.appendChild(choiceBtn('希望門檻較低、追求收益潛能',null,()=>{S.q3='想以較低門檻參與、追求收益潛能';meSay('希望門檻較低、追求收益潛能');clearControls();resolveAttribute('fund','A');},['低門檻','收益潛能','成長','基金','潛力']));
+    w.appendChild(choiceBtn('希望定期定額分散風險、追求收益潛能',null,()=>{S.q3='想以定期定額分散風險、追求收益潛能';meSay('希望定期定額分散風險、追求收益潛能');clearControls();resolveAttribute('fund','A');},['定期定額','分散風險','收益潛能','成長','基金','潛力']));
     w.appendChild(choiceBtn('兩者都可以，或想搭配著看',null,()=>{S.q3='都可以／想搭配';meSay('兩者都可以，或想搭配著看');clearControls();resolveAttribute('combo','AB');},['都可以','搭配','混合','都要','兩個都']));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function resolveConservative(){S.attribute='C';S.recoType='deposit';stageE();}
 function resolveAttribute(recoType,attr){
@@ -198,7 +198,7 @@ function stageE(){
   aiSay(messages,()=>{
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
-      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
+      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
     aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
@@ -258,13 +258,20 @@ function showCatalogCards(items){
 function enterProductDetail(p,items){
   clearControls();
   const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
+  const isDeposit=p.cat==='deposit';
+  /* 定存商品介紹內文（feature 及以下欄位）不套用 **粗體** 強調——粗體會被 mdToHtml
+     轉成 <strong>，顏色跟著變成 --color-content-general-active，不是一般內文的
+     --color-content-general-primary。定存這幾行只是單純陳列規格，不需要強調色，
+     債券／基金保留原本的粗體強調 */
   const lines=[
     `## ${p.name}`,
     p.feature,
-    `- 商品類別：**${catLabel}**｜幣別：**${p.currency}**`,
-    `- 最低申購金額：**${p.minAmt}**｜配息頻率：**${p.payFreq}**`,
+    isDeposit?`- 商品類別：${catLabel}｜幣別：${p.currency}`
+      :`- 商品類別：**${catLabel}**｜幣別：**${p.currency}**`,
+    isDeposit?`- 最低申購金額：${p.minAmt}｜配息頻率：${p.payFreq}`
+      :`- 最低申購金額：**${p.minAmt}**｜配息頻率：**${p.payFreq}**`,
     p.cat==='bond'?`- 到期日：**${p.maturity}**（首次贖回日：${p.callDate}）`
-      :p.cat==='deposit'?`- 存款天期：**${p.tenor}**｜計息方式：**機動利率、到期領息**`
+      :isDeposit?`- 存款天期：${p.tenor}｜計息方式：機動利率、到期領息`
       :`- 申購方式：**${p.entry}**`
   ].join('\n');
   const messages=[lines];
@@ -326,7 +333,7 @@ function stageH1(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Amt=x;meSay(x);clearControls();stageH1b();},[x]));
     });
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function stageH1b(){
   aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：','> 這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
@@ -335,7 +342,7 @@ function stageH1b(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Ratio=x;meSay(x);clearControls();stageH2();},[x]));
     });
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 /* H-2：目前主要投資項目（可複選） */
 const H2_OPTIONS=[
@@ -350,27 +357,27 @@ function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='oversea_stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
   if(keys.length===0){
-    return{result:'deposit',reason:'**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+    return{result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
   }
   if(hasGrowth&&!hasBond){
-    return{result:'bond',reason:'**目前配置偏重成長型資產，穩定收益的部位相對較少。**建議補上一部分債券部位，透過穩定的配息現金流，平衡整體資產的波動程度。'};
+    return{result:'bond',reason:'*目前配置偏重成長型資產，穩定收益的部位相對較少。*建議補上一部分債券部位，透過穩定的配息現金流，平衡整體資產的波動程度。'};
   }
   if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
-    return{result:'fund',reason:'**您目前的資產配置已相當多元，也累積了一定的投資經驗。**這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
+    return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
   }
-  return{result:'deposit',reason:'**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+  return{result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
   let{result,reason}=base;
   if(result==='fund'&&(S.cashRatio==='85% 以上'||S.h1Ratio==='1–50%')){
-    result='bond';reason='**您已具備一定的投資概念，不過目前現金比例偏高，或其他配置仍偏保守。**建議先透過債券打好穩定收益的基礎，會比直接投入基金更為穩健。';
+    result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高，或其他配置仍偏保守。*建議先透過債券打好穩定收益的基礎，會比直接投入基金更為穩健。';
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
-    result='fund';reason='**您的資金規模充足，投資風格也偏積極。**可以進一步搭配基金組合，讓資金有更大的空間發揮成長潛力。';
+    result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以進一步搭配基金組合，讓資金有更大的空間發揮成長潛力。';
   }
   ({result,reason}=reconcileWithOriginal({result,reason}));
   if(result==='bond'&&S.q1==='一年內'){
-    result='fund';reason='**這筆資金一年內就可能會用到，而債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息。**若中途提前賣出，可能無法拿回全部本金，因此這裡改為規劃彈性較高、以收益與穩健為主的基金，兼顧資金運用的靈活度。';
+    result='fund';reason='*這筆資金一年內就可能會用到，而債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息。*若中途提前賣出，可能無法拿回全部本金，因此這裡改為規劃彈性較高、以收益與穩健為主的基金，兼顧資金運用的靈活度。';
   }
   return{result,reason};
 }
@@ -386,16 +393,16 @@ function reconcileWithOriginal(adjusted){
   const diff=hRank-origRank;
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='**行內原本的風險評估偏保守，但他行資產顯示您已具備豐富的多元投資經驗。**因此在原本的判斷基礎上調高一個層級，同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
+    reason='*行內原本的風險評估偏保守，但他行資產顯示您已具備豐富的多元投資經驗。*因此在原本的判斷基礎上調高一個層級，同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
-    reason='**行內原本的風險評估偏積極，但他行資產顯示您目前的投資經驗或占比仍偏保守。**因此在原本的判斷基礎上調低一個層級，先以較穩健的方向打好基礎，之後可以再逐步調整。';
+    reason='*行內原本的風險評估偏積極，但他行資產顯示您目前的投資經驗或占比仍偏保守。*因此在原本的判斷基礎上調低一個層級，先以較穩健的方向打好基礎，之後可以再逐步調整。';
   }
   return{result,reason};
 }
 function stageH2(){
   if(S.h1Ratio==='0%'){
-    const base={result:'deposit',reason:'**目前資金大多處於閒置狀態。**建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+    const base={result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
     const adj=reconcileWithOriginal(base);
     S.h2Items=[];S.h2Reason=adj.reason;S.recoTypeH=adj.result;
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
@@ -425,7 +432,7 @@ function stageH2(){
     confirmWrap.appendChild(confirmBtn);
     w.appendChild(confirmWrap);
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 
 /* ================= H-3 試算與轉入建議 =================
@@ -434,12 +441,12 @@ function stageH3(){
   const prod=PRODUCT_DATA[S.recoTypeH];
   const calcLabel=calcLabelFor(prod);
   const recap=`幫您把目前掌握到的資產樣貌整理一下：
-- 凱基銀行資產級距：**${S.assetRange||'—'}**，現金比例：**${S.cashRatio||'—'}**
-- 其他銀行資產級距：**${S.h1Amt||'—'}**，投資比例：**${S.h1Ratio||'—'}**
-- 其他銀行主要投資項目：**${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}**`;
+- 凱基銀行資產級距：${S.assetRange||'—'}，現金比例：${S.cashRatio||'—'}
+- 其他銀行資產級距：${S.h1Amt||'—'}，投資比例：${S.h1Ratio||'—'}
+- 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
   const bridge=S.recoTypeH==='deposit'
     ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
+    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
   aiSay([recap,S.h2Reason,bridge],()=>{
     showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
       {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
