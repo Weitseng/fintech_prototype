@@ -148,12 +148,24 @@ body{font-family:var(--font-cn);
 .opt.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
 
 /* Claude 風格對話 */
+.chat{padding:20px 20px 10px}
+/* 進入對話後、第一則分析內容（stageC()）之前固定顯示的 AI 生成內容警語 */
+.analysis-disclaimer{font-family:var(--font-cn);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);
+  color:#4c5466;margin:0 0 16px;text-align:center}
+.analysis-disclaimer .link{color:var(--brand)}
 .chat{padding:var(--spacing-20) var(--spacing-20) 10px}
 /* .turn：一輪對話（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，由 js/engine.js 的
    startTurn()／appendToChat() 建立與掛載內容，讓 down() 能把整輪當一個單位捲動、
    一起判斷要不要頂到畫面最上緣（理由見 engine.js down() 上方的註解）。
    不疊加任何視覺樣式（無 padding/margin/border/min-height），避免影響裡面訊息原本的排版。 */
 .turn{display:block}
+.ai-msg{font-size:15.5px;line-height:1.75;color:var(--ink);margin:16px 0;animation:fade .4s ease}
+.ai-msg b,.ai-msg strong{color:var(--ink);font-weight:800}
+.ai-msg em{font-style:normal;color:var(--brand);font-weight:700} /* AI 回答裡唯一保留藍字的地方：總結／結論句用單星號 *...* 標記，
+  其餘（覆述使用者選項、條列關鍵詞、資料數值）一律用雙星號 **...**，顏色跟隨上面的 content primary（--ink），不再是藍字 */
+.ai-msg .md-h1{font-size:17.5px;font-weight:800;margin:2px 0 8px;line-height:1.4}
+.ai-msg .md-h2{font-size:17.5px;font-weight:800;margin:2px 0 6px;line-height:1.4}
+.ai-msg .md-h3{font-size:17.5px;font-weight:700;margin:2px 0 6px;line-height:1.4}
 .ai-msg{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
   color:var(--color-content-general-primary);margin:16px 0;animation:fade .4s ease}

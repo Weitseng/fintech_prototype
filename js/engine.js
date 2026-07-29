@@ -232,6 +232,9 @@ function mdToHtml(src){
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
 function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;const s=screen();s.innerHTML='';
   chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
+  const disclaimer=document.createElement('p');disclaimer.className='analysis-disclaimer';
+  disclaimer.innerHTML='本服務內容由 AI 自動生成，建議使用前請詳閱<span class="link">《AI 智富管家使用同意條款》</span>';
+  chatBox.appendChild(disclaimer);
   scrollSpacer=document.createElement('div');scrollSpacer.className='scroll-spacer';s.appendChild(scrollSpacer);
   const scrollWrap=document.createElement('div');scrollWrap.className='scroll-bottom-wrap';
   scrollBtn=document.createElement('button');

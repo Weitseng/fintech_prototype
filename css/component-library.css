@@ -23,6 +23,22 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcard-tags{display:flex;flex-wrap:wrap;gap:var(--spacing-4) var(--spacing-8)}
 .pcard-tag{display:inline-flex;align-items:center;height:24px;padding:2px 8px;
+  border:1px solid #96c8fa;border-radius:100px;font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:#3773dc;white-space:nowrap}
+.pcard-stats{display:flex;gap:16px}
+.pcard-stat{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pcard-stat-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:#4f607b}
+.pcard-stat-value{font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-en);line-height:var(--type-subtitle-lh-en);color:#041c43}
+.pcard-stat-value.ascend{color:#dd4f2c}
+.pcard-actions{display:flex;gap:12px;justify-content:flex-end}
+.pcard-btn{border:0;background:#fff;color:var(--brand);font-weight:var(--type-body-r-weight-cn);font-size:var(--type-body-size);
+  padding:8px 20px;border-radius:20px;cursor:pointer;transition:.15s;font-family:inherit}
+.pcard-btn:hover{background:#f2f6ff}
+.pcard-btn.pcard-btn-light{background:#dceaff}
+.pcard-btn.pcard-btn-light:hover{background:#c6ddfb}
+.pcard-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none;
+  scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
+  導致卡片邊緣比上方文字多凸出 20px、對不齊；scroll-padding 讓瀏覽器把 padding 算進 snap 的安全範圍 */
   border:1px solid var(--color-sky-blue-300);border-radius:var(--radius-full);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-tag-highlight);white-space:nowrap}
 .pcard-stats{display:flex;gap:var(--spacing-16)}
 .pcard-stat{flex:1;display:flex;flex-direction:column;gap:var(--spacing-4);min-width:0}
