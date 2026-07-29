@@ -32,9 +32,11 @@
 .pcard-actions{display:flex;gap:12px;justify-content:flex-end}
 .pcard-btn{border:0;background:#fff;color:var(--brand);font-weight:var(--type-body-r-weight-cn);font-size:var(--type-body-size);
   padding:8px 20px;border-radius:20px;cursor:pointer;transition:.15s;font-family:inherit}
-.pcard-btn:hover{background:#f2f6ff}
 .pcard-btn.pcard-btn-light{background:#dceaff}
-.pcard-btn.pcard-btn-light:hover{background:#c6ddfb}
+@media (hover:hover) and (pointer:fine){
+  .pcard-btn:hover{background:#f2f6ff}
+  .pcard-btn.pcard-btn-light:hover{background:#c6ddfb}
+}
 .pcard-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
   -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none;
   scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
@@ -48,9 +50,11 @@
 .pcard-actions{display:flex;gap:var(--spacing-12);justify-content:flex-end}
 .pcard-btn{border:0;background:var(--color-container-card-white);color:var(--color-content-general-active);font-weight:var(--type-body-r-weight-cn);font-size:var(--type-body-size);
   padding:8px 20px;border-radius:var(--radius-full);cursor:pointer;transition:.15s;font-family:inherit}
-.pcard-btn:hover{background:var(--color-surface-blue)}
 .pcard-btn.pcard-btn-light{background:var(--color-container-general-active-secondary)}
-.pcard-btn.pcard-btn-light:hover{background:var(--color-sky-blue-200)}
+@media (hover:hover) and (pointer:fine){
+  .pcard-btn:hover{background:var(--color-surface-blue)}
+  .pcard-btn.pcard-btn-light:hover{background:var(--color-sky-blue-200)}
+}
 .pcard-row{display:flex;gap:var(--spacing-12);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
   -webkit-overflow-scrolling:touch;margin:var(--spacing-24) -20px;padding:4px 20px var(--spacing-16);scrollbar-width:none}
 .pcard-row::-webkit-scrollbar{display:none}
@@ -141,7 +145,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .icb-send svg{width:24px;height:24px;display:block}
 .icb-send:disabled{background:var(--color-container-general-disabled);cursor:not-allowed}
 .icb-disclaimer{width:100%;font-family:var(--font-cn);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);
-  color:var(--color-content-general-secondary);text-align:center}
+  color:var(--color-content-general-secondary);text-align:left}
 
 /* message/chat-bubble（Figma node 219:747）使用者發送訊息氣泡，靠右對齊；
    系統回覆訊息（.ai-msg／.md-quote，見 css/style.css）是不同樣式，不要共用 */
@@ -162,11 +166,13 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   background:transparent;border:0;border-bottom:1px solid var(--color-container-general-divider);border-radius:var(--radius-none);
   cursor:pointer;text-align:left;font-family:inherit;transition:background .15s}
 .nsl-items .nsl-item:last-child{border-bottom:0}
-.nsl-item:hover{background:var(--color-container-general-filter-inactive-grey)}
 .nsl-item:active{background:var(--color-container-general-divider)}
 .nsl-item:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 .nsl-item:disabled{cursor:not-allowed;opacity:.5}
-.nsl-item:disabled:hover{background:transparent}
+@media (hover:hover) and (pointer:fine){
+  .nsl-item:hover{background:var(--color-container-general-filter-inactive-grey)}
+  .nsl-item:disabled:hover{background:transparent}
+}
 .nsl-item-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--spacing-4)}
 .nsl-item-title{font-family:var(--kgi-font-auto-body-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;font-weight:var(--kgi-font-auto-body-regular-tc-weight);font-size:var(--kgi-font-auto-body-regular-tc-size-rem);line-height:var(--kgi-font-auto-body-regular-tc-line-height);letter-spacing:var(--kgi-font-auto-body-regular-tc-letter-spacing);color:var(--color-content-general-primary)}
 .nsl-item-desc{font-family:var(--kgi-font-auto-caption-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;font-weight:var(--kgi-font-auto-caption-regular-tc-weight);font-size:var(--kgi-font-auto-caption-regular-tc-size-rem);line-height:var(--kgi-font-auto-caption-regular-tc-line-height);letter-spacing:var(--kgi-font-auto-caption-regular-tc-letter-spacing);color:var(--color-content-general-secondary)}
@@ -185,7 +191,9 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);
   text-align:center;cursor:pointer;transition:background .15s}
-.btn-primary:hover{background:var(--color-sky-blue-500)}
+@media (hover:hover) and (pointer:fine){
+  .btn-primary:hover{background:var(--color-sky-blue-500)}
+}
 .btn-primary:disabled{background:var(--color-container-general-disabled);color:var(--color-content-general-disabled);cursor:not-allowed}
 
 /* card/feedback-qr（Figma node 254:888，ai 投資助理_QR code 掃描）流程結尾的滿意度回饋卡，
