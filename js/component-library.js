@@ -50,11 +50,14 @@ COMPONENTS['chart/pie']={render:renderPieChart};
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
    數值標籤依商品類別區分：債券為商品對照矩陣原始欄位「票面/配息率」；基金無真實績效欄位，
    沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「過去一年報酬率」；
-   定存不分天期一律標示「年利率」，投資類型固定顯示「保守」 */
+   定存不分天期一律標示「年利率」；第二個統計欄位對定存沒有意義的「投資類型」，
+   改標示「最高限額」，數值讀 catalog.js 的 maxAmt（含幣別，例如「USD 2,000」）；
+   債券／基金維持原本的「投資類型」＋ investType 陣列組字串 */
 function renderProductCardDisplay(p,onDetail,onCalc){
   const rate1Str=(p.rate1y*100).toFixed(2);
-  const investTypeStr=p.cat==='deposit'?'保守':p.investType.join('／');
   const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'過去一年報酬率';
+  const stat2Label=p.cat==='deposit'?'最高限額':'投資類型';
+  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.investType.join('／');
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
@@ -62,7 +65,7 @@ function renderProductCardDisplay(p,onDetail,onCalc){
     </div>
     <div class="pcard-stats">
       <div class="pcard-stat"><div class="pcard-stat-label">${rateLabel}</div><div class="pcard-stat-value ascend">${rate1Str}%</div></div>
-      <div class="pcard-stat"><div class="pcard-stat-label">投資類型</div><div class="pcard-stat-value">${investTypeStr}</div></div>
+      <div class="pcard-stat"><div class="pcard-stat-label">${stat2Label}</div><div class="pcard-stat-value">${stat2Value}</div></div>
     </div>
     <div class="pcard-actions">
       <button class="pcard-btn detail-btn">商品詳情</button>

@@ -141,7 +141,7 @@ function ch_d1(){
       const summary=val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
       aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});},kw)));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function ch_d2(){
   aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
@@ -153,16 +153,16 @@ function ch_d2(){
     w.appendChild(choiceBtn('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會');clearControls();
       aiSay(['*了解，您能接受較大幅度的波動，以換取成長機會。*成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3(),{label:'管家正在理解分析'});},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function ch_d3(){
   aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您：","> 在投資型商品裡，您比較看重哪一種特質？"],()=>{
     const w=wrap();
     w.appendChild(choiceBtn('希望領息穩定、到期時間明確',null,()=>{S.q3='領息穩定、到期時間明確';meSay('希望領息穩定、到期時間明確');clearControls();resolveAttribute('bond','B');},['領息','到期','穩定','固定','確定','債']));
-    w.appendChild(choiceBtn('希望門檻較低、追求收益潛能',null,()=>{S.q3='想以較低門檻參與、追求收益潛能';meSay('希望門檻較低、追求收益潛能');clearControls();resolveAttribute('fund','A');},['低門檻','收益潛能','成長','基金','潛力']));
+    w.appendChild(choiceBtn('希望定期定額分散風險、追求收益潛能',null,()=>{S.q3='想以定期定額分散風險、追求收益潛能';meSay('希望定期定額分散風險、追求收益潛能');clearControls();resolveAttribute('fund','A');},['定期定額','分散風險','收益潛能','成長','基金','潛力']));
     w.appendChild(choiceBtn('兩者都可以，或想搭配著看',null,()=>{S.q3='都可以／想搭配';meSay('兩者都可以，或想搭配著看');clearControls();resolveAttribute('combo','AB');},['都可以','搭配','混合','都要','兩個都']));
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function resolveConservative(){S.attribute='C';S.recoType='deposit';stageE();}
 function resolveAttribute(recoType,attr){
@@ -195,7 +195,7 @@ function stageE(){
   aiSay(messages,()=>{
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
-      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時，您可以自己拖動拉桿調整的部分。`;
+      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
     aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
@@ -255,13 +255,20 @@ function showCatalogCards(items){
 function enterProductDetail(p,items){
   clearControls();
   const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
+  const isDeposit=p.cat==='deposit';
+  /* 定存商品介紹內文（feature 及以下欄位）不套用 **粗體** 強調——粗體會被 mdToHtml
+     轉成 <strong>，顏色跟著變成 --color-content-general-active，不是一般內文的
+     --color-content-general-primary。定存這幾行只是單純陳列規格，不需要強調色，
+     債券／基金保留原本的粗體強調 */
   const lines=[
     `## ${p.name}`,
     p.feature,
-    `- 商品類別：**${catLabel}**｜幣別：**${p.currency}**`,
-    `- 最低申購金額：**${p.minAmt}**｜配息頻率：**${p.payFreq}**`,
+    isDeposit?`- 商品類別：${catLabel}｜幣別：${p.currency}`
+      :`- 商品類別：**${catLabel}**｜幣別：**${p.currency}**`,
+    isDeposit?`- 最低申購金額：${p.minAmt}｜配息頻率：${p.payFreq}`
+      :`- 最低申購金額：**${p.minAmt}**｜配息頻率：**${p.payFreq}**`,
     p.cat==='bond'?`- 到期日：**${p.maturity}**（首次贖回日：${p.callDate}）`
-      :p.cat==='deposit'?`- 存款天期：**${p.tenor}**｜計息方式：**機動利率、到期領息**`
+      :isDeposit?`- 存款天期：${p.tenor}｜計息方式：機動利率、到期領息`
       :`- 申購方式：**${p.entry}**`
   ].join('\n');
   const messages=[lines];
@@ -323,7 +330,7 @@ function stageH1(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Amt=x;meSay(x);clearControls();stageH1b();},[x]));
     });
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 function stageH1b(){
   aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：','> 這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
@@ -332,7 +339,7 @@ function stageH1b(){
       w.appendChild(choiceBtn(x,null,()=>{S.h1Ratio=x;meSay(x);clearControls();stageH2();},[x]));
     });
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 /* H-2：目前主要投資項目（可複選） */
 const H2_OPTIONS=[
@@ -422,7 +429,7 @@ function stageH2(){
     confirmWrap.appendChild(confirmBtn);
     w.appendChild(confirmWrap);
     setControls(w);
-  },{label:'管家準備中'});
+  },{label:'管家思考中'});
 }
 
 /* ================= H-3 試算與轉入建議 =================
@@ -436,7 +443,7 @@ function stageH3(){
 - 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
   const bridge=S.recoTypeH==='deposit'
     ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例——這也是等一下試算時可以自己拖動調整的部分。`;
+    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
   aiSay([recap,S.h2Reason,bridge],()=>{
     showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
       {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
