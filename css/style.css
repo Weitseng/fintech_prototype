@@ -132,7 +132,13 @@ body{font-family:var(--font-cn);
   box-shadow:var(--shadow-popover);align-items:center;justify-content:center;
   font-size:18px;line-height:1;color:var(--color-content-general-active);cursor:pointer}
 .scroll-bottom-btn.show{display:flex}
-.scroll-bottom-btn:hover{background:var(--color-container-general-light-active-blue)}
+/* :hover 一律包在 (hover:hover) 媒體查詢裡，只有真正的滑鼠裝置才會套用——
+   觸控裝置（平板／手機）沒有「滑鼠移開」的動作，點下去後 :hover 會卡住不消失，
+   若不排除，會讓使用者以為選項被預設選起來（尤其 .opt/.choice 的 hover 邊框色
+   跟 .sel 選中色完全一樣，兩者在觸控裝置上會混淆） */
+@media (hover:hover) and (pointer:fine){
+  .scroll-bottom-btn:hover{background:var(--color-container-general-light-active-blue)}
+}
 
 /* 選擇頁 */
 .selpage{padding:26px 22px 22px}
@@ -179,8 +185,8 @@ body{font-family:var(--font-cn);
 .ai-msg{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
   color:var(--color-content-general-primary);margin:16px 0;animation:fade .4s ease}
-.ai-msg b,.ai-msg strong{color:var(--color-content-general-active);font-weight:var(--type-body-b-weight-cn)}
-.ai-msg em{font-style:normal;color:var(--color-content-tag-highlight);font-weight:var(--type-body-b-weight-cn)}
+.ai-msg b,.ai-msg strong{color:var(--color-content-general-primary);font-weight:var(--type-body-b-weight-cn)}
+.ai-msg em{font-style:normal;color:var(--color-content-general-primary);font-weight:var(--type-body-b-weight-cn)}
 .ai-msg .md-h1{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
   margin:2px 0 8px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
 .ai-msg .md-h2{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
@@ -232,7 +238,9 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
   line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
   padding:13px 15px;border-radius:var(--radius-medium);margin:8px 0;cursor:pointer;transition:.15s}
-.choice:hover{border-color:var(--color-content-general-active)}
+@media (hover:hover) and (pointer:fine){
+  .choice:hover{border-color:var(--color-content-general-active)}
+}
 .choice small{display:block;font-family:var(--font-cn);font-weight:var(--type-caption-weight-cn);font-size:var(--type-caption-size);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);margin-top:2px}
 .choice.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}

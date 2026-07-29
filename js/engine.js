@@ -173,6 +173,24 @@ function scrollToBottom(){
   maxScrollTop=Math.max(maxScrollTop,s.scrollTop);
   updateScrollBtn();
 }
+/* down() 貼齊底部只在乎「最新內容有沒有露出」，內容一旦長過一個畫面很多（例如商品卡片列
+   後面接著試算卡＋下一步清單），貼齊底部會把 anchorEl 整個推到畫面上緣以上，完全看不到。
+   有些情境希望即使內容很長，還是能在畫面最上緣留一點 anchorEl 的邊緣當作「這是延伸自哪張
+   卡片」的視覺提示（見 flow.js enterProductCalc()）。這裡在 down() 都捲完之後再補一次修正：
+   只有在目前捲動位置已經把 anchorEl 整個推出畫面時才往回捲一點，捲到「anchorEl 下緣距離
+   畫面頂端還留 pxVisible px」為止；如果 anchorEl 本來就還看得到（貼齊頂端那種情況），
+   就不去動它，避免蓋掉 down() 原本算好的位置。 */
+function peekAnchorAbove(anchorEl,pxVisible){
+  if(!anchorEl)return;
+  const s=screen();
+  const sRect=s.getBoundingClientRect(),aRect=anchorEl.getBoundingClientRect();
+  const desiredTop=s.scrollTop+(aRect.bottom-sRect.top)-pxVisible;
+  if(s.scrollTop>desiredTop){
+    s.scrollTop=Math.max(0,desiredTop);
+    maxScrollTop=s.scrollTop;
+    updateScrollBtn();
+  }
+}
 /* 換上新按鈕後多做一次「強制重繪」：把 min-height 解除、換上新內容這一連串樣式變動，
    在部分瀏覽器環境下版面計算是對的（DOM／CSSOM 都正確），但畫面沒有真的重繪，
    新按鈕會變成看不見的「隱形」內容，要等使用者之後不相關的操作才會補繪出來。
@@ -281,15 +299,26 @@ const TYPE_MIN_MS=280;
 const TYPE_MAX_MS=1800;
 const TYPE_PER_CHAR=16;
 const TYPE_SCROLL_EVERY=3;
+/* mdToHtml() 一次把整段結構（標題／段落／每個 <li>）都插進 DOM，逐字動畫只清空、
+   再補回「文字節點」的內容——但區塊本身（例如 <li> 的項目符號、標題的行高）從第一格
+   就已經存在，不受文字節點清空影響，會整批立刻顯示。於是使用者會看到「上一段話都還
+   沒打完，下面清單的項目符號已經全部跳出來」。這裡額外把每個區塊元素（標題／段落／
+   引言／清單項目）先設成 display:none，直到該區塊自己的文字節點真正開始被填入
+   （也就是輪到它「登場」的那一刻）才解除隱藏，讓區塊跟文字同步逐一出現，不再搶跑。 */
+const TYPE_BLOCK_SEL='.md-h1,.md-h2,.md-h3,.md-p,.md-quote,.md-ul li';
 function typeOut(text,cb){
   const m=document.createElement('div');m.className='ai-msg';appendToChat(m);
   m.innerHTML=mdToHtml(text);
+  const blocks=Array.from(m.querySelectorAll(TYPE_BLOCK_SEL));
+  blocks.forEach(b=>{b.style.display='none';});
+  const blockOf=node=>{let el=node.parentElement;while(el&&el!==m){if(blocks.includes(el))return el;el=el.parentElement;}return null;};
   const walker=document.createTreeWalker(m,NodeFilter.SHOW_TEXT);
   const nodes=[];let wn;while((wn=walker.nextNode()))nodes.push(wn);
+  const nodeBlocks=nodes.map(blockOf);
   const fullTexts=nodes.map(n=>n.textContent);
   nodes.forEach(n=>{n.textContent='';});
   const totalChars=fullTexts.reduce((a,s)=>a+s.length,0);
-  if(totalChars===0){down();cb();return;}
+  if(totalChars===0){blocks.forEach(b=>{b.style.display='';});down();cb();return;}
   const total=Math.min(TYPE_MAX_MS,Math.max(TYPE_MIN_MS,totalChars*TYPE_PER_CHAR));
   const perChar=Math.max(4,total/totalChars);
   let shown=0;(function step(){
@@ -297,7 +326,9 @@ function typeOut(text,cb){
     let remain=shown;
     for(let k=0;k<nodes.length;k++){
       const len=fullTexts[k].length;
-      nodes[k].textContent=remain>=len?fullTexts[k]:fullTexts[k].slice(0,Math.max(0,remain));
+      const piece=remain>=len?fullTexts[k]:fullTexts[k].slice(0,Math.max(0,remain));
+      nodes[k].textContent=piece;
+      if(piece.length>0&&nodeBlocks[k]&&nodeBlocks[k].style.display==='none')nodeBlocks[k].style.display='';
       remain-=len;
     }
     if(shown%TYPE_SCROLL_EVERY===0||shown>=totalChars)down();
