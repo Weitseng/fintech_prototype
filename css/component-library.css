@@ -35,7 +35,9 @@
 .pcard-btn.pcard-btn-light{background:#dceaff}
 .pcard-btn.pcard-btn-light:hover{background:#c6ddfb}
 .pcard-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
-  -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none}
+  -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none;
+  scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
+  導致卡片邊緣比上方文字多凸出 20px、對不齊；scroll-padding 讓瀏覽器把 padding 算進 snap 的安全範圍 */
 .pcard-row::-webkit-scrollbar{display:none}
 .pcard-row .pcard{flex-shrink:0;scroll-snap-align:start}
 
