@@ -285,7 +285,11 @@ function enterProductDetail(p,items){
     showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
       {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
         keywords:['試算','算','好','可以','ok','OK'],
-        onSelect:()=>{clearControls();enterProductCalc(p,items);}},
+        /* 這裡執行的當下，showNextSteps 內部的 meSay() 剛把這一輪換成
+           [提問句「了解商品內容之後…」, 使用者回覆泡泡「試算這檔商品」]，
+           currentTurnEl 目前最後一個元素就是那顆回覆泡泡，直接拿來當 enterProductCalc
+           的錨點，讓試算卡渲染完成、畫面貼齊底部之後，還能保留一點這顆泡泡的邊緣 */
+        onSelect:()=>{clearControls();enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});}},
       {id:'back',title:'再看看其他產品',description:'看看其他商品',
         keywords:['返回','清單','其他','上一步','回去'],
         onSelect:()=>{clearControls();backToCatalogList(items);}}
@@ -300,15 +304,18 @@ function backToCatalogList(items){
    外匯定存利率不隨年期變動，關掉近1年/近3年切換（showPeriodTabs:false） */
 function enterProductCalc(p,items,opts){
   clearControls();
-  /* 從商品卡片列直接點「立即試算」時（opts.fresh，見 showCatalogCards），前面還沒有任何
-     meSay() 開新的一輪，試算內容會一路疊進「商品清單」那一整輪裡；等內容長過一個畫面，
-     down() 貼齊底部的邏輯會把最上面的商品卡片列整個推出畫面，使用者完全看不到剛才點的
-     是哪一張卡。這裡先用 startTurn() 另立新的一輪、把「剛才點的商品卡片（列）」——也就是
-     這一輪目前最後一個元素——帶到新的一輪最上面，記下來當 cardAnchor。
-     從商品詳情頁的「試算這檔商品」選項進來則不會帶 opts.fresh——那條路徑已經由
-     showNextSteps 內部的 meSay() 開過一輪新的，這裡不需要、也不應該再開一次，
-     否則會把 meSay() 特地留住的提問句擠出這一輪。 */
-  const cardAnchor=(opts&&opts.fresh)?startTurn().firstElementChild:null;
+  opts=opts||{};
+  /* cardAnchor：試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把「使用者剛才
+     點的是什麼」整個推出畫面上緣；這裡記住一個錨點元素，稍後在畫面穩定後幫忙保留它的邊緣
+     （見下面 peekAnchorAbove()）。兩種進入路徑，錨點的抓法不一樣：
+     - 從商品卡片列直接點「立即試算」時（opts.fresh，見 showCatalogCards）：前面還沒有任何
+       meSay() 開新的一輪，這裡要自己用 startTurn() 另立新的一輪，把「剛才點的商品卡片（列）」
+       ——也就是這一輪目前最後一個元素——帶到新的一輪最上面當錨點
+     - 從商品詳情頁的「試算這檔商品」選項進來（opts.anchor，見 enterProductDetail）：
+       showNextSteps 內部的 meSay() 已經開過一輪新的（[提問句, 使用者回覆泡泡]），這裡不需要、
+       也不應該再開一次（會把 meSay() 特地留住的提問句擠出這一輪），直接把呼叫端傳進來的
+       元素（使用者回覆泡泡）當錨點即可 */
+  const cardAnchor=opts.anchor!==undefined?opts.anchor:(opts.fresh?startTurn().firstElementChild:null);
   S.selectedProductCode=p.code;
   const tag={bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
