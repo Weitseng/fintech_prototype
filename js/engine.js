@@ -34,6 +34,15 @@ const RECO_REASON={
    recoType, path, h1Amt, h1Ratio, h2Items, h2Reason, recoTypeH, selectedProductCode
 */
 let S={};
+/* flowGen：目前這一輪「對話流程」的世代編號。resetAll() 每次都會 +1——
+   aiSay() 內部所有排隊中的 setTimeout（逐字輸出、訊息間隔、下一句 done callback）
+   都會在真正執行前比對自己出生時的世代是否還是目前的世代，不是就直接放棄，不會
+   再呼叫 done／往下一階段推進。沒有這層保護的話，使用者點「重新開始」當下若正好
+   有訊息還在排隊，舊流程的 setTimeout 鏈不會被中止，會在使用者已經重新走完
+   開場、進到新一輪對話後才姍姍來遲，把舊流程的訊息／選項按鈕（例如 setControls()
+   加的核取方塊）硬塞進新一輪畫面，或把已經隱藏的 #controls 又打開——這正是使用者
+   回報「重新開始後畫面突然跑出不該出現的選項」的成因。 */
+let flowGen=0;
 const screen=()=>document.getElementById('screen');
 const ctrls=()=>document.getElementById('controls');
 /* 每次有新內容加入時，不要整頁捲到最底，而是把「剛新增的這則」（或整輪容器，見 currentTurnEl）
@@ -141,7 +150,42 @@ function bottomMinGap(){
 function chatBottomPad(){
   return parseFloat(getComputedStyle(chatBox).paddingBottom)||0;
 }
-function down(anchor){
+/* ================= 平滑捲動（僅用於 meSay() 開新一輪這個瞬間） =================
+   down() 其餘所有呼叫端（逐字輸出時每隔幾個字、setControls() 換按鈕、商品卡片流程的
+   peekAnchorAbove()）都刻意維持「呼叫完 scrollTop 就已經是目標值」這個前提——css/style.css
+   的 .screen 也刻意不加 scroll-behavior:smooth，原因相同：瀏覽器原生的平滑捲動是非同步的，
+   設定完 scrollTop 後畫面不會馬上捲到那裡，這裡大量呼叫端（尤其逐字輸出時 TYPE_SCROLL_EVERY
+   個字就呼叫一次、peekAnchorAbove() 假設 down() 呼叫完當下位置已經是最終值）都會因此對不上。
+   但使用者送出回答、meSay() 把畫面整個捲去對齊新一輪頂端的這個瞬間，是唯一「一次性、大距離」
+   的跳動，太快切換容易讓使用者誤以為畫面重置、開了新對話——這裡改成自己控制的 rAF 動畫，
+   而不是交給瀏覽器的 scroll-behavior:smooth：每一影格都自己同步寫回 scrollTop，讀出來的值
+   永遠等於畫面當下真正捲到的位置，不會有原生平滑捲動那種「設定完但畫面還沒真的捲到」的落差；
+   down() 開頭一律先取消前一個還在跑的動畫，不管新呼叫是要接著動畫還是要瞬間跳定，都不會有
+   兩段動畫互相打架。只有 meSay() 會傳 {smooth:true}，其餘呼叫端不帶這個參數，維持跟以前
+   完全一樣的即時捲動，不影響既有依賴同步位置的邏輯。 */
+/* 時長／曲線經使用者實測回饋調整過一次：原本 MIN 220ms／MAX 480ms／1.8px 每 ms，
+   常見的一輪距離（兩三百 px）算出來幾乎都卡在 220ms 下限，太快看起來還是像瞬跳；
+   改成 MIN 380ms／MAX 900ms／0.9px 每 ms，同樣的距離落在 400~600ms 左右，肉眼才
+   看得出明顯的位移過程。曲線也從 easeOutCubic 換成 easeOutQuart——四次方在尾段
+   減速更明顯，讓「滑到定位前逐漸變慢」的感覺更清楚，不是勻速跑到底才突然停。 */
+let scrollAnimFrame=null;
+const SCROLL_ANIM_MIN_MS=380,SCROLL_ANIM_MAX_MS=900,SCROLL_ANIM_PX_PER_MS=0.9;
+const easeOutQuart=t=>1-Math.pow(1-t,4);
+const prefersReducedMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animateScrollTop(el,target){
+  const from=el.scrollTop,distance=target-from;
+  if(Math.abs(distance)<1){el.scrollTop=target;updateScrollBtn();return;}
+  const duration=Math.min(SCROLL_ANIM_MAX_MS,Math.max(SCROLL_ANIM_MIN_MS,Math.abs(distance)/SCROLL_ANIM_PX_PER_MS));
+  const start=performance.now();
+  (function tick(now){
+    const t=Math.min(1,(now-start)/duration);
+    el.scrollTop=from+distance*easeOutQuart(t);
+    updateScrollBtn();
+    scrollAnimFrame=t<1?requestAnimationFrame(tick):null;
+  })(start);
+}
+function down(anchor,opts){
+  if(scrollAnimFrame){cancelAnimationFrame(scrollAnimFrame);scrollAnimFrame=null;}
   const s=screen();
   /* 一開始的資產初步分析（stageC()：問候語＋圓餅圖＋現金分析＋第一題）都還在 currentTurnEl
      建立之前——這一段是使用者進來後第一次看到的畫面，本身就是由上往下一段段長出來的單一整體，
@@ -152,13 +196,14 @@ function down(anchor){
   if(!currentTurnEl){maxScrollTop=Infinity;updateScrollBtn();return;}
   syncSpacer();
   const el=anchor||(chatBox&&chatBox.lastElementChild);
+  let target;
   if(el){
     const cRect=s.getBoundingClientRect(),eRect=el.getBoundingClientRect();
     /* 錨點高度達到 #screen 可視高度 80% 時就切成「貼齊底部＋保留最小間距」，不用等到
        實際超出、產生捲動軸才生效——低於 80% 時維持原本「頂到最上緣」，這種情況下錨點
        本來就矮，貼頂之後下方留白自然遠大於最小間距，不需要另外套用。 */
     if(eRect.height<=s.clientHeight*0.8){
-      s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
+      target=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
     }else{
       /* 貼齊底部時故意用 chatBox（而非錨點自己）的下緣去算：錨點是 chatBox 最後一個子節點，
          它的下緣跟 chatBox 的下緣之間還隔著 .chat 的 padding-bottom，如果拿錨點自己的下緣
@@ -166,16 +211,21 @@ function down(anchor){
          chatBox 下緣去判斷）以為「還沒到底」，讓「回到最下方」按鈕跟著冒出來，剛好蓋在
          剛貼齊畫面下緣的選項上——用同一顆 chatBox 下緣去算，兩邊判斷基準才會一致 */
       const chatRect=chatBox.getBoundingClientRect();
-      s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
+      target=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
     }
   }else{
-    s.scrollTop=s.scrollHeight;
+    target=s.scrollHeight;
   }
   /* down() 算完就是這一輪該停留的最深位置——再往下全是 scrollSpacer 借來的空白，同步成
      maxScrollTop，讓使用者自己往下滑時會被 clampScroll() 擋在這裡，不會滑進空白裡（見上方
-     maxScrollTop 宣告處的說明） */
-  maxScrollTop=s.scrollTop;
-  updateScrollBtn();
+     maxScrollTop 宣告處的說明）。不管走動畫還是即時捲動，這個目標值都一樣，先同步更新。 */
+  maxScrollTop=target;
+  if(opts&&opts.smooth&&!prefersReducedMotion()){
+    animateScrollTop(s,target);
+  }else{
+    s.scrollTop=target;
+    updateScrollBtn();
+  }
 }
 function isScreenAtBottom(){
   if(!chatBox)return true;
@@ -238,6 +288,7 @@ function wrap(){return document.createElement('div');}
 function assetMid(){return {'50 萬以下':250000,'50–100 萬':750000,'100 萬 – 200 萬':1500000,'200 萬以上':3200000}[S.assetRange]||1000000;}
 
 function resetAll(){
+  flowGen++;
   S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
      attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   clearControls();stepA();
@@ -395,7 +446,9 @@ function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
   const label=opts.label||'管家思考中';
+  const myGen=flowGen;
   let i=0;(function next(){
+    if(myGen!==flowGen)return;
     if(cancelToken&&cancelToken.cancelled)return;
     if(i>=msgs.length){if(done)done();return;}
     const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);},cancelToken);};
@@ -451,7 +504,7 @@ function aiAsk(question){
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
   startTurn();
   renderComponent('message/chat-bubble',text);
-  requestAnimationFrame(()=>down(currentTurnEl));
+  requestAnimationFrame(()=>down(currentTurnEl,{smooth:true}));
 }
 function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('button');
   b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
