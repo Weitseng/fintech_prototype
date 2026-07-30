@@ -154,8 +154,8 @@ function chatBottomPad(){
    down() 其餘所有呼叫端（逐字輸出時每隔幾個字、setControls() 換按鈕、商品卡片流程的
    peekAnchorAbove()）都刻意維持「呼叫完 scrollTop 就已經是目標值」這個前提——css/style.css
    的 .screen 也刻意不加 scroll-behavior:smooth，原因相同：瀏覽器原生的平滑捲動是非同步的，
-   設定完 scrollTop 後畫面不會馬上捲到那裡，這裡大量呼叫端（尤其逐字輸出時 TYPE_SCROLL_EVERY
-   個字就呼叫一次、peekAnchorAbove() 假設 down() 呼叫完當下位置已經是最終值）都會因此對不上。
+   設定完 scrollTop 後畫面不會馬上捲到那裡，這裡大量呼叫端（尤其分段生成時每補一段字就呼叫
+   一次、peekAnchorAbove() 假設 down() 呼叫完當下位置已經是最終值）都會因此對不上。
    但使用者送出回答、meSay() 把畫面整個捲去對齊新一輪頂端的這個瞬間，是唯一「一次性、大距離」
    的跳動，太快切換容易讓使用者誤以為畫面重置、開了新對話——這裡改成自己控制的 rAF 動畫，
    而不是交給瀏覽器的 scroll-behavior:smooth：每一影格都自己同步寫回 scrollTop，讀出來的值
@@ -378,26 +378,30 @@ const LONG_MSG_LEN=120;
 const BASE_DELAY=900;
 const HEAVY_EXTRA=1300;
 const MSG_GAP=400;
-/* 逐字印出單一句：先用 mdToHtml() 把整段 markdown 一次轉成最終的排版結構
+/* 分段生成單一句：先用 mdToHtml() 把整段 markdown 一次轉成最終的排版結構
    （標題、粗體、清單、斜體……該有的標籤與樣式從第一個字開始就是對的），
-   再用 TreeWalker 抓出這個結構裡所有的文字節點，把內容清空、逐字補回去——
-   等於是「排版先長出來，文字才一個字一個字填進正確的位置」，不會讓使用者看到
-   **、# 這類還沒轉換的原始 markdown 語法，填完最後一個字，畫面就已經是最終樣子，
-   不需要再多一次「換上最終 HTML」的替換動作。
-   每個字的間隔不是固定值，而是「整段印完的總時長」除以字數：固定間隔在長文字
-   （例如試算說明、比較表）上會拖得非常久，讓使用者等到不耐煩；改成總時長有上下限
-   （TYPE_MIN_MS ~ TYPE_MAX_MS），字數愈多、單字間隔愈短，整段落地的時間就不會
-   隨字數線性增加。
-   down() 沒有每個字都呼叫——逐字捲動太頻繁會造成明顯的抖動/效能負擔，這裡改成
-   每隔幾個字才重算一次捲動位置，捲動仍會跟著文字增長往下走，只是不逐字同步。 */
-const TYPE_MIN_MS=280;
-const TYPE_MAX_MS=1800;
-const TYPE_PER_CHAR=16;
-const TYPE_SCROLL_EVERY=3;
-/* mdToHtml() 一次把整段結構（標題／段落／每個 <li>）都插進 DOM，逐字動畫只清空、
+   再用 TreeWalker 抓出這個結構裡所有的文字節點，把每個文字節點換成一個空的
+   <span class="chunk-host"> 容器，之後每一段新生成的文字都是一個獨立的
+   <span class="chunk-fade">（見 css/style.css @keyframes chunkFade），
+   只做 opacity 0→1、不帶任何位移，讓新出現的一小段字有個短暫、柔和的淡入，
+   而不是像原本直接改 textContent 那樣硬生生「跳」出來；已經淡入完的前一段
+   維持在 DOM 裡不會再變動，視覺上不會閃爍或重播。
+   每次補上去的不是單一個字，而是一小段隨機長度的字元（模擬語言模型一次吐出
+   一個 token/幾個字的節奏），視覺上是「一小段一小段柔和地冒出來」而不是
+   慢到看得到單一個字跳動，也不是整段話一次落地——比較接近使用者熟悉的
+   AI 聊天工具即時生成文字的感覺，同時間隔本身也故意帶一點隨機浮動
+   （CHUNK_DELAY_MIN ~ CHUNK_DELAY_MAX 之間），不是等間隔的機械節奏，
+   讓「生成中」的感覺更真實，也比固定節奏更不容易讓人一直盯著看。
+   down() 沒有每個字都呼叫——這裡改成每補上一段就重算一次捲動位置，
+   頻率遠低於逐字版本，捲動仍會跟著內容增長往下走。 */
+const CHUNK_MIN_LEN=2;
+const CHUNK_MAX_LEN=6;
+const CHUNK_DELAY_MIN=30;
+const CHUNK_DELAY_MAX=90;
+/* mdToHtml() 一次把整段結構（標題／段落／每個 <li>）都插進 DOM，分段生成動畫只清空、
    再補回「文字節點」的內容——但區塊本身（例如 <li> 的項目符號、標題的行高）從第一格
    就已經存在，不受文字節點清空影響，會整批立刻顯示。於是使用者會看到「上一段話都還
-   沒打完，下面清單的項目符號已經全部跳出來」。這裡額外把每個區塊元素（標題／段落／
+   沒生成完，下面清單的項目符號已經全部跳出來」。這裡額外把每個區塊元素（標題／段落／
    引言／清單項目）先設成 display:none，直到該區塊自己的文字節點真正開始被填入
    （也就是輪到它「登場」的那一刻）才解除隱藏，讓區塊跟文字同步逐一出現，不再搶跑。 */
 const TYPE_BLOCK_SEL='.md-h1,.md-h2,.md-h3,.md-p,.md-quote,.md-ul li';
@@ -426,27 +430,36 @@ function typeOut(text,cb,cancelToken){
   const nodes=[];let wn;while((wn=walker.nextNode()))nodes.push(wn);
   const nodeBlocks=nodes.map(blockOf);
   const fullTexts=nodes.map(n=>n.textContent);
-  nodes.forEach(n=>{n.textContent='';});
+  const hosts=nodes.map(n=>{
+    const host=document.createElement('span');host.className='chunk-host';
+    n.parentNode.replaceChild(host,n);
+    return host;
+  });
+  const shownLens=nodes.map(()=>0);
   const totalChars=fullTexts.reduce((a,s)=>a+s.length,0);
   if(totalChars===0){blocks.forEach(b=>{b.style.display='';});down();if(cancelToken)cancelToken.onCancel(null);cb();return;}
-  const total=Math.min(TYPE_MAX_MS,Math.max(TYPE_MIN_MS,totalChars*TYPE_PER_CHAR));
-  const perChar=Math.max(4,total/totalChars);
   let shown=0;(function step(){
     if(cancelToken&&cancelToken.cancelled)return;
-    shown++;
+    const chunkLen=CHUNK_MIN_LEN+Math.floor(Math.random()*(CHUNK_MAX_LEN-CHUNK_MIN_LEN+1));
+    shown=Math.min(totalChars,shown+chunkLen);
     let remain=shown;
     for(let k=0;k<nodes.length;k++){
       const len=fullTexts[k].length;
-      const piece=remain>=len?fullTexts[k]:fullTexts[k].slice(0,Math.max(0,remain));
-      nodes[k].textContent=piece;
-      if(piece.length>0&&nodeBlocks[k]&&nodeBlocks[k].style.display==='none')nodeBlocks[k].style.display='';
+      const pieceLen=Math.max(0,Math.min(len,remain));
+      if(pieceLen>shownLens[k]){
+        const span=document.createElement('span');span.className='chunk-fade';
+        span.textContent=fullTexts[k].slice(shownLens[k],pieceLen);
+        hosts[k].appendChild(span);
+        shownLens[k]=pieceLen;
+        if(nodeBlocks[k]&&nodeBlocks[k].style.display==='none')nodeBlocks[k].style.display='';
+      }
       remain-=len;
     }
-    if(shown%TYPE_SCROLL_EVERY===0||shown>=totalChars)down();
-    /* 這句話完整打完的當下，要把 cancelToken 的清除動作重置成 null——不然 _onCancel
-       會一直指向「移除這則已經打完的訊息」，萬一使用者剛好在下一句開始打字前那段空檔
+    down();
+    /* 這句話完整生成完的當下，要把 cancelToken 的清除動作重置成 null——不然 _onCancel
+       會一直指向「移除這則已經生成完的訊息」，萬一使用者剛好在下一句開始生成前那段空檔
        （MSG_GAP）點了新的一次，cancel() 誤觸發就會把這句已經完整顯示的內容也清掉 */
-    if(shown<totalChars)setTimeout(step,perChar);
+    if(shown<totalChars)setTimeout(step,CHUNK_DELAY_MIN+Math.random()*(CHUNK_DELAY_MAX-CHUNK_DELAY_MIN));
     else{if(cancelToken)cancelToken.onCancel(null);cb();}
   })();
 }

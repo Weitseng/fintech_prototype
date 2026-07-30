@@ -230,6 +230,13 @@ body{font-family:var(--font-cn);
 .ai-msg .md-ul li{margin:3px 0}
 /* 使用者發送訊息氣泡已改用 message/chat-bubble 元件（css/component-library.css .mcb-*） */
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* AI 回覆分段生成（見 js/engine.js typeOut()）：每一小段新出現的文字都是一個
+   .chunk-fade，只做 opacity 淡入、不帶位移，讓生成節奏感覺柔和而不是硬生生跳出來；
+   .chunk-host 只是取代原本文字節點位置的容器，不加任何視覺樣式，避免影響排版。 */
+.chunk-host{display:inline}
+.chunk-fade{display:inline;animation:chunkFade .22s ease}
+@keyframes chunkFade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.chunk-fade{animation:none}}
 /* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
    跟一般敘述性 ai-msg 區分開，不用底部色塊，改用跟標題相近的字級來凸顯 */
 .md-quote{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
