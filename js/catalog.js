@@ -1,67 +1,81 @@
 /* ============================================================
    商品資料（共用，來源：精選債券基金_客戶屬性對照矩陣.xlsx，2026.06）
    異動請對照原始 Excel「商品對照矩陣」工作表一起更新，欄位定義見該檔「篩選說明」工作表。
-   - rate／rate1y：以票面利率（債券）或示範性年化報酬（基金）表示，供試算卡使用
+   - rate／rate1y：以票面利率（債券）或示範性年化報酬（基金）表示，供試算卡（card/calculator）使用
    - rate3y：近三年年化參考值。債券票面利率固定，1年/3年數字相同；
      基金無公開票面利率，rate1y／rate3y 為示範性參考值（非真實歷史績效），僅供試算展示
+     ——這兩個欄位只給試算卡的互動運算用，不是 Excel 原始數字，不要拿來顯示在商品卡片上
+   - return1y：僅 fund 商品使用，Excel「近一年報酬率」原始欄位（真實數字，非示範值），
+     商品卡片（card/product）的「近一年報酬率」統計格顯示這個，不是上面的 rate1y
+   - nav：僅 fund 商品使用，Excel「基金淨值」原始欄位，商品卡片顯示用
+   - refPrice：僅 bond 商品使用，Excel「參考買進價」原始欄位，商品卡片顯示用；
+     債券的「票面/配息率」商品卡片沿用既有的 rate／rate1y 即可——這兩個欄位對債券來說本來就是
+     Excel 的真實票面利率，不是示範值，不用另外新增欄位
    - risk：穩健／中等／積極（風險接受度，稻越高風險越大）
    - cat：bond／fund／deposit（deposit 為屬性 C 的美元定存天期商品，rate 為銀行公告牌告利率，非試算示範值）
    - investType：['收益'|'平衡'|'成長']，可複選
    - assetSize：小／中／大（對應最低申購門檻的資產規模建議）
    - tenor：僅 deposit 商品使用，顯示用的天期文字（如「7天」「12個月」）
    ============================================================ */
+/* 債券商品卡片（card/product）兩個統計格的標題，直接取自 Excel「商品對照矩陣」工作表的
+   欄位標題儲存格 H2（票面/配息率）／J2（參考買進價(%)），不要在 component-library.js 裡另外
+   寫死字串——之後 Excel 欄位標題如果改名，只要同步改這裡兩個值即可，不用去 render 函式裡找。
+   J2 標題本身帶了「(%)」，代表 refPrice 是「面額的百分之幾」的報價慣例（如 94 代表面額的
+   94%），不是絕對金額——儲存格數字本身是整數 94、沒有存成 0.94，顯示時要自己補上 % 後綴，
+   不能像 rate1y／return1y 那樣先乘以 100（那樣會變成 9400%，是錯的）。 */
+const BOND_CARD_LABELS={rate:'票面/配息率',price:'參考買進價(%)'};
 const CATALOG=[
-  {code:'BD337',cat:'bond',name:'美林 Merrill Lynch BV',currency:'AUD',rate:0.051,rate1y:0.051,rate3y:0.051,
+  {code:'BD337',cat:'bond',name:'美林 Merrill Lynch BV',currency:'AUD',rate:0.051,rate1y:0.051,rate3y:0.051,refPrice:94,
     payFreq:'月配',minAmt:'10,000',maturity:'2044/2/1',callDate:'2029/2/1',
     risk:'穩健',investType:['收益'],assetSize:'中',entry:'單筆',
     feature:'月月配息；高信評 AA-（本表信評最高）；澳幣匯率風險',
     issuerInfo:'美國銀行（Bank of America）集團旗下設於荷蘭的融資發行體，Merrill Lynch 為其投行與財富管理品牌，所發債券的信用實質反映母集團美國銀行。美銀為美國規模最大的金融控股集團之一。'},
-  {code:'BD395',cat:'bond',name:'摩根士丹利金融',currency:'ZAR',rate:0.066,rate1y:0.066,rate3y:0.066,
+  {code:'BD395',cat:'bond',name:'摩根士丹利金融',currency:'ZAR',rate:0.066,rate1y:0.066,rate3y:0.066,refPrice:82,
     payFreq:'季配',minAmt:'200,000',maturity:'2040/10/23',callDate:'-',
     risk:'積極',investType:['收益','成長'],assetSize:'大',entry:'單筆',
     feature:'到期贖回價 150%；持有期領息 6.6%；南非幣結構型，匯率風險最高、門檻最高',
     issuerInfo:'摩根士丹利集團的融資子公司，發行債券通常由母公司 Morgan Stanley 提供保證。摩根士丹利是全球主要的投資銀行與財富管理機構之一。'},
-  {code:'BD396',cat:'bond',name:'Alphabet 公司',currency:'USD',rate:0.055,rate1y:0.055,rate3y:0.055,
+  {code:'BD396',cat:'bond',name:'Alphabet 公司',currency:'USD',rate:0.055,rate1y:0.055,rate3y:0.055,refPrice:92,
     payFreq:'半年配',minAmt:'10,000',maturity:'2046/2/15',callDate:'2045/8/15',
     risk:'穩健',investType:['收益'],assetSize:'中',entry:'單筆',
     feature:'Google／YouTube 母公司；投資級科技龍頭；新發行票面 5%以上',
     issuerInfo:'Google 的母公司，全球最大科技公司之一。核心業務為網路搜尋與數位廣告，並涵蓋 YouTube、Android、Google Cloud 與人工智慧等，財務體質穩健、信用評等居最高等級之列。'},
-  {code:'BD365',cat:'bond',name:'康卡斯特 Comcast',currency:'USD',rate:0.0565,rate1y:0.0565,rate3y:0.0565,
+  {code:'BD365',cat:'bond',name:'康卡斯特 Comcast',currency:'USD',rate:0.0565,rate1y:0.0565,rate3y:0.0565,refPrice:91,
     payFreq:'半年配',minAmt:'10,000',maturity:'2054/6/1',callDate:'2053/12/1',
     risk:'穩健',investType:['收益'],assetSize:'中',entry:'單筆',
     feature:'美國第一大有線電視；環球影業（Universal）母公司；長天期',
     issuerInfo:'美國最大的有線寬頻與媒體集團之一，旗下包含 NBCUniversal（影視、環球影城）與歐洲 Sky，業務橫跨寬頻網路、有線電視、影視內容與主題樂園。'},
-  {code:'BD398',cat:'bond',name:'Meta 平台公司',currency:'USD',rate:0.063,rate1y:0.063,rate3y:0.063,
+  {code:'BD398',cat:'bond',name:'Meta 平台公司',currency:'USD',rate:0.063,rate1y:0.063,rate3y:0.063,refPrice:93,
     payFreq:'半年配',minAmt:'10,000',maturity:'2056/5/15',callDate:'2055/11/15',
     risk:'穩健',investType:['收益'],assetSize:'中',entry:'單筆',
     feature:'全球社群平台龍頭；美元券票面最高 6%以上；天期長',
     issuerInfo:'Facebook、Instagram、WhatsApp、Threads 的母公司，全球社群媒體與數位廣告龍頭，近年大幅投資人工智慧與 Reality Labs（VR/AR、元宇宙）。'},
-  {code:'BD348',cat:'bond',name:'高盛金融國際',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.045,
+  {code:'BD348',cat:'bond',name:'高盛金融國際',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.045,refPrice:86,
     payFreq:'月配',minAmt:'5,000',maturity:'2039/9/5',callDate:'2026/9/5',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'月月配息；門檻最低 USD 5,000；中長天期；首次贖回日近（2026/9/5），易被提前贖回',
     issuerInfo:'高盛集團旗下的國際發行／營運實體，所發債券通常由母公司 The Goldman Sachs Group 保證。高盛是全球頂尖的投資銀行之一。'},
-  {code:'FUND1',cat:'fund',name:'貝萊德全球智慧數據股票入息基金',currency:'USD',rate:0.08,rate1y:0.08,rate3y:0.06,
+  {code:'FUND1',cat:'fund',name:'貝萊德全球智慧數據股票入息基金',currency:'USD',rate:0.08,rate1y:0.08,rate3y:0.06,nav:26.84,return1y:0.1211,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['收益','成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'AI 大數據量化選股；全球股票入息；持股 250–400 檔分散；配息可能來自本金',
     managerInfo:'貝萊德（BlackRock）發行，運用系統化／量化模型（即「智慧數據」）篩選全球股票，以追求較高股息收益為訴求，屬全球股票型。股票型波動相對較高，配息來源可能包含本金。'},
-  {code:'FUND2',cat:'fund',name:'摩根多重收益基金',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.04,
+  {code:'FUND2',cat:'fund',name:'摩根多重收益基金',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.04,nav:74.36,return1y:0.1405,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'中等',investType:['平衡','收益'],assetSize:'小',entry:'單筆／定期定額',
     feature:'全球多重資產（債＋股＋REITs）；月月配息；含高收益債，配息可能來自本金',
     managerInfo:'摩根資產管理旗下的多重資產（股、債等）收益型基金，全球分散布局，目標提供相對穩定的月配息。組合含非投資等級（高收益）債，配息來源可能為本金。'},
-  {code:'FUND3',cat:'fund',name:'凱基收益成長多重資產基金',currency:'TWD',rate:0.05,rate1y:0.05,rate3y:0.045,
+  {code:'FUND3',cat:'fund',name:'凱基收益成長多重資產基金',currency:'TWD',rate:0.05,rate1y:0.05,rate3y:0.045,nav:15.53,return1y:0.1509,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'中等',investType:['平衡','成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'股債雙向＋掩護性買權收權利金；月配；含高收益債，配息可能來自本金',
     managerInfo:'凱基投信發行的海外多重資產型基金，股債靈活配置、兼顧收益與成長，提供月配息，風險報酬等級 RR3。含非投資等級債，配息來源可能為本金。'},
-  {code:'FUND4',cat:'fund',name:'匯豐ESG永續多元資產組合基金',currency:'TWD',rate:0.035,rate1y:0.035,rate3y:0.032,
+  {code:'FUND4',cat:'fund',name:'匯豐ESG永續多元資產組合基金',currency:'TWD',rate:0.035,rate1y:0.035,rate3y:0.032,nav:9.19,return1y:0.1321,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'穩健',investType:['平衡'],assetSize:'小',entry:'單筆／定期定額',
     feature:'ESG 永續主題；股債平衡、債部位 50% 以上；風險等級 RR3，較保守',
     managerInfo:'匯豐投信發行的組合型基金（投資其他基金的 FOF），投資於具 ESG／永續特色的子基金，跨股債多元資產配置，採月配息設計，透過子基金分散但仍受市場波動影響。'},
-  {code:'FUND5',cat:'fund',name:'凱基台灣精五門基金',currency:'TWD',rate:0.09,rate1y:0.09,rate3y:0.07,
+  {code:'FUND5',cat:'fund',name:'凱基台灣精五門基金',currency:'TWD',rate:0.09,rate1y:0.09,rate3y:0.07,nav:154.48,return1y:1.6084,
     payFreq:'不配息',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'台股五大趨勢產業；追求資本利得；RR4 股票型',

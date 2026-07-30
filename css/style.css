@@ -101,14 +101,21 @@ body{font-family:var(--font-cn);
   保證「文字置中、按鈕貼右」同時成立，不用算兩邊寬度是否對稱 */
 .app-header{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;
   padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider)}
-.app-header-title{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+.app-header-brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;align-items:center;gap:var(--spacing-12)}
+.app-header-logo{width:28px;height:28px;display:block;flex-shrink:0}
+.app-header-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
   line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
   color:var(--color-content-general-primary);white-space:nowrap}
 .reset{flex-shrink:0;font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);
   background:var(--color-container-general-filter-inactive-grey);border:0;color:var(--color-content-general-secondary);
   padding:6px 10px;border-radius:var(--radius-medium);cursor:pointer}
+/* 窄螢幕（約 iPhone SE〜一般手機寬度）下，置中的 logo＋標題文字組合寬度加上兩側「重新開始」
+   按鈕，容易在同一列擠到互相重疊；這個寬度只留圖示、把文字標籤收起來，保留功能但不佔版面，
+   避免跟置中的 .app-header-brand 疊字（門檻 400px 是實測 iPhone SE／一般手機寬度下兩者
+   剛好會重疊的臨界值，見驗證時的截圖）。 */
+@media (max-width:400px){.reset-label{display:none}}
 .screen{flex:1;overflow-y:auto} /* 故意不加 scroll-behavior:smooth：部分瀏覽器環境下，動畫捲動未必會實際套用，
   導致 down() 用 getBoundingClientRect 算出的位置跟實際捲動狀態對不上，改用即時捲動確保位置永遠準確 */
 .screen::-webkit-scrollbar{width:0}
@@ -135,9 +142,24 @@ body{font-family:var(--font-cn);
 
 /* 選擇頁 */
 .selpage{padding:26px 22px 22px}
-.selpage-hero{margin-bottom:36px}
-.selpage-hero-video{display:block;width:100%;height:auto}
+/* 開場影片區（Figma node 283:1079「image 58」）：寬度固定採單一規則（100%，填滿 .selpage
+   內容寬度，不因裝置尺寸切換不同公式）——超過 .app 的 max-width:820px 之後，這個寬度
+   會維持在固定的 776px，不再隨視窗變寬而繼續變寬；高度預設用 aspect-ratio 採影片素材
+   原始比例（1080:1274，assets/opening-animation.mp4）精算，行動裝置（寬度隨視窗縮小）跟
+   桌機／平板（寬度固定 776px 後）自然呈現不同高度。.opening-page 版面（見下方）會用
+   flex 壓縮這個高度以塞進視窗，此時交給 object-fit:cover 裁切（允許裁切，見下方
+   .opening-page 的說明），維持置中比例，不變形。 */
+.selpage-hero{width:100%;aspect-ratio:1080/1274;margin-bottom:36px;overflow:hidden}
+.selpage-hero-video{display:block;width:100%;height:100%;object-fit:cover}
 .selpage-intro{text-align:center}
+/* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
+   要優先壓縮影片區塊，標題文字／開始體驗按鈕永遠不能被擠出畫面。只加在 stepA 的 .selpage
+   上（多一個 .opening-page class），不影響 stepB 等其他 .selpage 頁面——那些頁面內容
+   （多題選項）本來就可能比視窗高，仍需要維持原本「內容撐高、.screen 自己捲動」的行為，
+   不能套用同一組 flex-shrink:0 規則，否則選項清單會被壓縮變形。 */
+.opening-page{display:flex;flex-direction:column;height:100%}
+.opening-page .selpage-hero{flex:1 1 auto;min-height:0}
+.opening-page .selpage-intro,.opening-page #startBtnMount{flex-shrink:0}
 .selpage .kicker{font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-active)}
 .selpage h1{font-family:var(--font-cn);font-size:var(--type-headline-size);font-weight:var(--type-headline-weight-cn);
@@ -146,22 +168,8 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
   margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
-.opt{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1.5px solid var(--color-container-general-divider);
-  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
-  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
-  padding:15px 16px;border-radius:var(--radius-medium);margin:9px 0;cursor:pointer;transition:.15s}
-@media (hover:hover) and (pointer:fine){
-  .opt:hover{border-color:var(--color-content-general-active)}
-}
-.opt.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
-
 /* Claude 風格對話 */
-.chat{padding:20px 20px 10px}
-/* 進入對話後、第一則分析內容（stageC()）之前固定顯示的 AI 生成內容警語 */
-.analysis-disclaimer{font-family:var(--font-cn);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);
-  color:#4c5466;margin:0 0 16px;text-align:left}
-.analysis-disclaimer .link{color:var(--brand)}
-.chat{padding:var(--spacing-20) var(--spacing-20) 10px}
+.chat{padding:var(--spacing-20) 0 10px;margin:0 4%}
 /* .turn：一輪對話（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，由 js/engine.js 的
    startTurn()／appendToChat() 建立與掛載內容，讓 down() 能把整輪當一個單位捲動、
    一起判斷要不要頂到畫面最上緣（理由見 engine.js down() 上方的註解）。
@@ -251,6 +259,11 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-light-active);font-size:12px;font-weight:800;line-height:1}
 .choice:disabled{opacity:.4;cursor:not-allowed}
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
+
+/* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
+   每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
+  （#controls 本身已經在上面 197 行 counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
+.choice-group{counter-reset:choice-num}
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
 /* 流程結尾畫面：已改用 card/feedback-qr 元件（css/component-library.css .fbqr-*） */
 /* 底部輸入列已改用 bar/chat-input 元件（css/component-library.css .icb-*） */

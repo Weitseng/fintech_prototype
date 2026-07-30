@@ -48,16 +48,27 @@ COMPONENTS['chart/pie']={render:renderPieChart};
 
 /* ---- card/product（Figma node 178:664）ProductCard_Display ----
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
-   數值標籤依商品類別區分：債券為商品對照矩陣原始欄位「票面/配息率」；基金無真實績效欄位，
-   沿用 catalog.js 註明的示範性參考值 rate1y（非真實歷史績效，僅供試算展示）標示為「過去一年報酬率」；
-   定存不分天期一律標示「年利率」；第二個統計欄位對定存沒有意義的「投資類型」，
-   改標示「最高限額」，數值讀 catalog.js 的 maxAmt（含幣別，例如「USD 2,000」）；
-   債券／基金維持原本的「投資類型」＋ investType 陣列組字串 */
+   2026-07-29 依 Excel「精選債券基金_客戶屬性對照矩陣」原始欄位重新對應兩個統計格：
+   - 第一格（rateLabel/rateStr）：債券＝「票面/配息率」讀 rate1y（債券的 rate1y 本來就等於
+     Excel 真實票面利率，沒有另外造假，沿用即可）；基金＝「近一年報酬率」改讀 catalog.js
+     新增的 return1y（Excel 真實數字），不能沿用 rate1y——基金的 rate1y／rate3y 是試算卡
+     （card/calculator）專用的示範性參考值，非真實績效，兩者用途不同不要混用；
+     定存＝「年利率」讀 rate1y（銀行牌告利率，本來就是真的，不受影響）。
+   - 第二格（stat2Label/stat2Value）：債券＝「參考買進價(%)」讀 catalog.js 新增的 refPrice，
+     字尾補一個 % ——Excel 標題本身寫明這欄是「面額的百分之幾」（如 94 代表面額 94%），
+     但儲存格數字是整數 94、不是 0.94，不能像 rate1y 那樣乘以 100，只需補 % 後綴；
+     基金＝「基金淨值」讀 catalog.js 新增的 nav，直接輸出數字本身，不額外加單位——
+     對應 Excel 儲存格是 General 格式，沒有幣別符號；定存＝「最高限額」讀 maxAmt（不受影響）。
+   - 原本債券／基金共用的「投資類型」（investType 陣列組字串）已被上述真實數字取代，
+     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。
+   - 債券的兩個標題字串不要寫死在這裡，改讀 catalog.js 的 BOND_CARD_LABELS——那兩個值
+     直接對應 Excel 工作表的欄位標題儲存格（H2／J2），之後 Excel 標題改名只要改那邊。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
-  const rate1Str=(p.rate1y*100).toFixed(2);
-  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'過去一年報酬率';
-  const stat2Label=p.cat==='deposit'?'最高限額':'投資類型';
-  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.investType.join('／');
+  const rateLabel=p.cat==='bond'?BOND_CARD_LABELS.rate:p.cat==='deposit'?'年利率':'近一年報酬率';
+  const rateSrc=p.cat==='fund'?p.return1y:p.rate1y;
+  const rate1Str=(rateSrc*100).toFixed(2);
+  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?BOND_CARD_LABELS.price:'基金淨值';
+  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?`${p.refPrice}%`:p.nav;
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
@@ -247,7 +258,7 @@ const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http:
 </svg>`;
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
-  disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
+  disabledMessage:'展覽期間暫不開放。請點擊上方按鈕選項繼續操作',
   disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
 };
 function renderInputChatBar(state,opts){
@@ -322,10 +333,12 @@ function renderNextStepList(heading,items,opts){
     btn.disabled=item.state==='disabled';
     btn.innerHTML=`<span class="nsl-item-text">
         <span class="nsl-item-title"></span>
-        <span class="nsl-item-desc"></span>
       </span>${NSL_ICON_CHEVRON}`;
     btn.querySelector('.nsl-item-title').textContent=item.title;
-    btn.querySelector('.nsl-item-desc').textContent=item.description;
+    if(item.description){
+      const desc=document.createElement('span');desc.className='nsl-item-desc';desc.textContent=item.description;
+      btn.querySelector('.nsl-item-text').appendChild(desc);
+    }
     btn.onclick=()=>{if(item.onSelect)item.onSelect();};
     itemsEl.appendChild(btn);
   });
@@ -353,10 +366,16 @@ function renderButtonPrimary(label,opts){
 }
 COMPONENTS['button/primary']={render:renderButtonPrimary};
 
-/* ---- card/feedback-qr（Figma node 254:888，ai 投資助理_QR code 掃描）----
-   流程結尾的滿意度回饋卡：QR Code 區塊（圖＋標題＋說明）＋再體驗一次按鈕，「立即申購」／「諮詢理專」
-   兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
-   2026-07-27 依需求調整：移除條款提示文字，按鈕改放在說明文字下方（QR 區塊之後）。
+/* ---- card/feedback-qr（Figma node 260:993，ai 投資助理_QR code 掃描）----
+   流程結尾的滿意度回饋卡：慶祝圖示＋標題＋三行說明＋QR Code＋再體驗一次按鈕，「立即申購」／
+   「諮詢理專」兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
+   2026-07-29 依 Figma 更新：新增頂部慶祝圖示（assets/feedback-celebrate.png，266:1146
+   「Business Symbols/優惠＆活動」），標題文案改「非常感謝您的體驗」並改用 Headline token
+   （原本誤用 Subtitle-B），說明文字拆成三行獨立段落（原本後兩行擠在同一行），QR Code
+   移到說明文字之後（原本在最上面），尺寸依設計稿改 126px（原本 160px）。
+   說明文字色／字級對應 Content/General/Primary＋Body-R token——這兩個 token 在 Figma
+   原稿裡的實際標示是純黑 #000000／16px，專案 token 沒有完全對應的項目，已跟需求方確認
+   改用最接近的既有 token（不新增 token）。
    底部的 disabled InputChatBar 不在這個元件裡渲染——那是掛在 #inputbar 的全站共用元件
    （js/bootstrap.js 已經是 disabled 狀態），呼叫端不需要另外處理。
    opts：{qrSrc, onRestart}，qrSrc 先用 placeholder 圖檔，之後有真實問卷連結的 QR 圖再替換路徑即可；
@@ -368,9 +387,18 @@ function renderFeedbackQrCard(opts){
   const card=document.createElement('div');card.className='fbqr';
   card.innerHTML=`
     <div class="fbqr-qr">
+      <div class="fbqr-intro">
+        <img class="fbqr-icon" src="assets/feedback-celebrate.png" alt="">
+        <div class="fbqr-copy">
+          <div class="fbqr-qr-title">非常感謝您的體驗</div>
+          <div class="fbqr-qr-desc">
+            <p>您的寶貴意見是我們前進的動力！</p>
+            <p>誠摯邀請您掃描 QR Code 填寫滿意度問卷</p>
+            <p>凱基銀行感謝您的支持與配合。</p>
+          </div>
+        </div>
+      </div>
       <img class="fbqr-qr-img" src="${qrSrc}" alt="滿意度問卷 QR Code">
-      <div class="fbqr-qr-title">感謝您的體驗</div>
-      <div class="fbqr-qr-desc">您的寶貴意見是我們前進的動力！<br>誠摯邀請您掃描 QR Code 填寫滿意度問卷，凱基銀行感謝您的支持與配合。</div>
     </div>
     <div class="fbqr-btn-mount"></div>`;
   card.querySelector('.fbqr-btn-mount').appendChild(
