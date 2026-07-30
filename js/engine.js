@@ -133,7 +133,23 @@ function appendToChat(el){
    的體驗）；裝不下時改成貼齊底部，讓這一輪目前最新、使用者接下來要處理的內容一定在可視
    範圍內，代價是使用者得自己往上捲才能重讀這一輪開頭——這個取捨跟一般聊天介面「內容太長
    就跟著最新內容」的預期一致，好過看不到新資訊。 */
-const SCROLL_BOTTOM_PAD=16;
+/* bottomMinGap()：捲到底時，最後一則訊息與 #screen 底部要維持的最小間距，避免內容緊貼
+   畫面下緣造成閱讀卡頓感。斷點沿用 kgi-typography-tokens.css 既有的 auto token 判定規則
+   （@media max-width:768px 切 mWeb／Web），不新增額外斷點；數值直接讀 Design Guideline
+   既有的 --spacing-80／--spacing-40（見 css/tokens/spacing.css），不自訂新數值。 */
+function bottomMinGap(){
+  const varName=window.innerWidth<=768?'--spacing-40':'--spacing-80';
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(varName))||0;
+}
+/* chatBox（.chat）自己有 padding-bottom（見 css/style.css .chat 規則），貼齊底部時算的是
+   chatBox 的外緣（含這段 padding），不是最後一則訊息真正的下緣——如果直接把 bottomMinGap()
+   當成 chatBox 外緣要留的間距，會少算這段 padding，導致最後訊息實際只留到
+   (bottomMinGap()-這段 padding) 那麼多，數值一旦超過 padding 本身反而會變成負數、
+   訊息被切到畫面下緣以下。這裡動態讀出目前的 padding-bottom 一併補回計算，
+   確保「最後訊息下緣到畫面下緣」的可視間距精準等於 bottomMinGap()。 */
+function chatBottomPad(){
+  return parseFloat(getComputedStyle(chatBox).paddingBottom)||0;
+}
 function down(anchor){
   const s=screen();
   /* 一開始的資產初步分析（stageC()：問候語＋圓餅圖＋現金分析＋第一題）都還在 currentTurnEl
@@ -147,7 +163,10 @@ function down(anchor){
   const el=anchor||(chatBox&&chatBox.lastElementChild);
   if(el){
     const cRect=s.getBoundingClientRect(),eRect=el.getBoundingClientRect();
-    if(eRect.height<=s.clientHeight){
+    /* 錨點高度達到 #screen 可視高度 80% 時就切成「貼齊底部＋保留最小間距」，不用等到
+       實際超出、產生捲動軸才生效——低於 80% 時維持原本「頂到最上緣」，這種情況下錨點
+       本來就矮，貼頂之後下方留白自然遠大於最小間距，不需要另外套用。 */
+    if(eRect.height<=s.clientHeight*0.8){
       s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
     }else{
       /* 貼齊底部時故意用 chatBox（而非錨點自己）的下緣去算：錨點是 chatBox 最後一個子節點，
@@ -156,7 +175,7 @@ function down(anchor){
          chatBox 下緣去判斷）以為「還沒到底」，讓「回到最下方」按鈕跟著冒出來，剛好蓋在
          剛貼齊畫面下緣的選項上——用同一顆 chatBox 下緣去算，兩邊判斷基準才會一致 */
       const chatRect=chatBox.getBoundingClientRect();
-      s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-SCROLL_BOTTOM_PAD);
+      s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
     }
   }else{
     s.scrollTop=s.scrollHeight;
@@ -178,7 +197,7 @@ function updateScrollBtn(){
 }
 function scrollToBottom(){
   const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
-  s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom));
+  s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
   maxScrollTop=Math.max(maxScrollTop,s.scrollTop);
   updateScrollBtn();
 }
