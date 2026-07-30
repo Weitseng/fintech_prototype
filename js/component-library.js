@@ -168,7 +168,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         <div class="calc-result-value calc-weighted"></div>
         <div class="calc-result-sentence calc-sentence"></div>
       </div>
-      <div class="calc-disclaimer">利率為近期市場概算，非保證數字，實際會隨市場變動。生活換算以一杯手搖飲 ${CALC_CONFIG.drinkPrice} 元、一次朋友聚會約 ${CALC_CONFIG.dinnerPrice} 元估算。美元計價項目另有匯率漲跌風險，可能讓實際結果比試算更好或更差，此工具僅供理解概念，不構成投資建議。</div>
+      <div class="calc-disclaimer">利率為市場概算，實際將隨市場變動；歷史回測僅供參考，不代表未來績效。生活換算以 1 杯手搖飲 ${CALC_CONFIG.drinkPrice} 元、1 次朋友聚會 ${CALC_CONFIG.dinnerPrice} 元 估算。美元計價另有匯率風險，實際結果可能與試算不同。本工具僅供概念說明，不構成投資建議。</div>
     </div>`;
 
   const slider=card.querySelector('.calc-slider');
@@ -204,7 +204,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     const rate=currentRate();
     const years=currentYears();
     const depositRateLabel=(asset.cat==='deposit'&&asset.tenor!=='12個月')?`${asset.tenor}利率`:'年利率';
-    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'投資1年報酬':'投資3年報酬'):depositRateLabel;
+    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'近一年報酬':'近3年報酬'):depositRateLabel;
     card.querySelector('.calc-fund-rate-value').textContent=(rate*100).toFixed(2)+'%';
     const weighted=((assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate)*years;
     card.querySelector('.calc-weighted').textContent=(weighted*100).toFixed(2)+'%';

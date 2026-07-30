@@ -182,6 +182,11 @@ body{font-family:var(--font-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
   margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+/* 進入對話後、第一則分析內容（stageC()）之前固定顯示的 AI 生成內容警語；
+   文字排版直接用共用的 .type-caption-r 工具類（見上方字級系統），這裡只補
+   版面（margin／對齊）跟本文顏色，連結色另外指定成 container active */
+.analysis-disclaimer{margin:0 0 16px;text-align:left;color:var(--color-content-general-secondary)}
+.analysis-disclaimer .link{color:var(--color-container-general-active-primary)}
 /* Claude 風格對話 */
 .chat{padding:var(--spacing-20) 0 10px;margin:0 4%}
 /* .turn：一輪對話（助理提問＋使用者回覆＋接續的 AI 回覆）的容器，由 js/engine.js 的
