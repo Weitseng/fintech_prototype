@@ -434,9 +434,17 @@ function renderOptionPopover(question,options,onPick){
   const title=document.createElement('div');title.className='opt-popover-title';title.textContent=question;
   const list=document.createElement('div');list.className='choice-group';
   pop.appendChild(title);pop.appendChild(list);wrap.appendChild(pop);
+  /* 這個浮動選單掛在 .app 底下，不在 #screen／#controls 裡面，resetAll() 清畫面時本來會漏掉它
+     （見 engine.js activePopover 的說明）。這裡記住「目前顯示中的是哪一個」，讓 resetAll()
+     在使用者還沒選、就直接點「重新開始」時，也能找到並移除它，不會殘留蓋在新畫面上。 */
+  if(activePopover&&activePopover!==wrap)activePopover.remove();
+  activePopover=wrap;
   (app||document.body).appendChild(wrap);
   (options||[]).forEach(opt=>{
-    list.appendChild(choiceBtn(opt.label,opt.sub||null,()=>onPick(opt),opt.kw));
+    list.appendChild(choiceBtn(opt.label,opt.sub||null,()=>{
+      if(activePopover===wrap)activePopover=null;
+      onPick(opt);
+    },opt.kw));
   });
   return wrap;
 }
