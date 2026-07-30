@@ -6,7 +6,7 @@
 /* name/tag 用於屬性層級的訊息（推薦理由、按鈕文案）；實際可選的基金商品清單改由 catalog.js 的 CATALOG 提供 */
 PRODUCT_DATA.fund={key:'fund',name:'凱基核心成長基金組合',tag:'基金',rate:0.06,color:'#7A4FE0',colorDark:'#5c34c2'};
 
-RECO_REASON.fund=`## 為什麼基金適合您
+RECO_REASON.fund=`## 基金可能是適合您的方向
 您更重視**定期定額分散風險、追求收益潛能**，也能接受淨值上下波動——這正是基金組合比較能發揮的地方。
 
 - **交由專業團隊操作**：不需要自己盯盤研究個股，門檻相對低
