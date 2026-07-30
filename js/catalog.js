@@ -112,8 +112,11 @@ function riskAllowed(tolerance){
   return tolerance==='穩健' ? ['穩健'] : ['穩健','中等','積極'];
 }
 function assetSizeRank(v){return {'小':1,'中':2,'大':3}[v]||1;}
+/* '100 萬以下' 是舊鍵，題目1（S.assetRange）已拆成'50 萬以下'／'50–100 萬'兩個新選項，
+   不會再產生這個字串，但 stageH1()（他行資產級距，存到 S.h1Amt，見 flow.js）目前仍沿用
+   原本三選項、沒有跟著拆，這裡保留舊鍵給它用，不要刪掉。 */
 function assetRangeRank(range){
-  return {'100 萬以下':1,'100 萬 – 200 萬':2,'100 萬–200 萬':2,'200 萬以上':3}[range]||1;
+  return {'50 萬以下':1,'50–100 萬':1,'100 萬以下':1,'100 萬 – 200 萬':2,'100 萬–200 萬':2,'200 萬以上':3}[range]||1;
 }
 function assetTierAllowed(range){
   const v=assetRangeRank(range);
