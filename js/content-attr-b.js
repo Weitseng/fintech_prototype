@@ -6,7 +6,7 @@
 /* name/tag 用於屬性層級的訊息（推薦理由、按鈕文案）；實際可選的債券商品清單改由 catalog.js 的 CATALOG 提供 */
 PRODUCT_DATA.bond={key:'bond',name:'凱基優選投資級債券',tag:'債券',rate:0.045,color:'#3355FF',colorDark:'#1f3ad6'};
 
-RECO_REASON.bond=`## 為什麼債券適合您
+RECO_REASON.bond=`## 債券可能是適合您的方向
 您更看重**領息穩定、到期時間明確**，債券正好能提供相對穩定的配息與明確的到期時間。
 
 - **配息相對穩定**：依約定頻率配發利息，收益可預期性較高
