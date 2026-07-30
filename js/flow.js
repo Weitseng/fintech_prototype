@@ -95,8 +95,10 @@ function cashInsight(){
 }
 function stageC(){
   const est=idleEstimate();
+  const myGen=flowGen;
   aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
     setTimeout(()=>{
+      if(myGen!==flowGen)return;
       renderComponent('chart/pie',100-est.pct,assetMid());
       aiSay([`${cashInsight()}\n\n依您的資產級距與現金比例推估，您目前大概有一筆 **NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}** 的資金，一直是用比較低的利率方式閒置著。`],()=>{
         /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
