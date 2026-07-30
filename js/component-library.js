@@ -54,18 +54,21 @@ COMPONENTS['chart/pie']={render:renderPieChart};
      新增的 return1y（Excel 真實數字），不能沿用 rate1y——基金的 rate1y／rate3y 是試算卡
      （card/calculator）專用的示範性參考值，非真實績效，兩者用途不同不要混用；
      定存＝「年利率」讀 rate1y（銀行牌告利率，本來就是真的，不受影響）。
-   - 第二格（stat2Label/stat2Value）：債券＝「參考買進價」讀 catalog.js 新增的 refPrice；
-     基金＝「基金淨值」讀 catalog.js 新增的 nav；定存＝「最高限額」讀 maxAmt（不受影響）。
-     refPrice／nav 都直接輸出數字本身，不額外加千分位或補零——對應 Excel 儲存格本身也是
-     General／整數格式，沒有 %、元等單位，跟著原始資料的呈現方式即可。
+   - 第二格（stat2Label/stat2Value）：債券＝「參考買進價(%)」讀 catalog.js 新增的 refPrice，
+     字尾補一個 % ——Excel 標題本身寫明這欄是「面額的百分之幾」（如 94 代表面額 94%），
+     但儲存格數字是整數 94、不是 0.94，不能像 rate1y 那樣乘以 100，只需補 % 後綴；
+     基金＝「基金淨值」讀 catalog.js 新增的 nav，直接輸出數字本身，不額外加單位——
+     對應 Excel 儲存格是 General 格式，沒有幣別符號；定存＝「最高限額」讀 maxAmt（不受影響）。
    - 原本債券／基金共用的「投資類型」（investType 陣列組字串）已被上述真實數字取代，
-     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。 */
+     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。
+   - 債券的兩個標題字串不要寫死在這裡，改讀 catalog.js 的 BOND_CARD_LABELS——那兩個值
+     直接對應 Excel 工作表的欄位標題儲存格（H2／J2），之後 Excel 標題改名只要改那邊。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
-  const rateLabel=p.cat==='bond'?'票面/配息率':p.cat==='deposit'?'年利率':'近一年報酬率';
+  const rateLabel=p.cat==='bond'?BOND_CARD_LABELS.rate:p.cat==='deposit'?'年利率':'近一年報酬率';
   const rateSrc=p.cat==='fund'?p.return1y:p.rate1y;
   const rate1Str=(rateSrc*100).toFixed(2);
-  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?'參考買進價':'基金淨值';
-  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?p.refPrice:p.nav;
+  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?BOND_CARD_LABELS.price:'基金淨值';
+  const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?`${p.refPrice}%`:p.nav;
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
       <div class="pcard-name" title="${p.name}">${p.name}</div>
