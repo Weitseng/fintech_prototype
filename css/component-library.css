@@ -241,12 +241,16 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    + bottom:16px 呈現，不佔用 #screen／#controls／#inputbar 的版面高度、也不影響它們的既有邏輯。
    外層容器背景／圓角／陰影對應 Design Guideline 既有 token：Surface White／Radius-small(3px)／
    Popover 陰影（跟 .pie-card／.pcard 等既有卡片同一組陰影值），皆為既有 token，未新增任何自訂數值。
+   2026-07-30 依 Figma 更新：外層容器新增 1px 邊框，色票對應 Figma 的
+   cdf-color-palette/sky-blue/sky-blue-100（#e5f1fc），專案既有 token 已有完全對應的原色
+   --color-sky-blue-100，直接套用，未新增數值。
    標題套用 Subtitle-B 字級 token＋Content/General/Primary 色票——跟 aiAsk() 的 .md-quote
    用的是同一組 token，選完之後這句話用 aiAsk() 顯示在聊天紀錄時字級／顏色自然一致。
    選項清單直接重用既有 .choice-group／.choice（choiceBtn()，對應 Figma Message/option 元件，
    見 js/flow.js buildSingleSelectList() 的說明），不重建、不修改其內部樣式與 hover/focus 狀態。 */
 .opt-popover-wrap{position:absolute;left:4%;right:4%;bottom:16px;z-index:20}
-.opt-popover{background:var(--color-surface-white);border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
+.opt-popover{background:var(--color-surface-white);border:1px solid var(--color-sky-blue-100);
+  border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
   padding:var(--spacing-12) var(--spacing-16) var(--spacing-24);
   max-height:calc(100% - 96px);overflow-y:auto;
   display:flex;flex-direction:column;gap:var(--spacing-16);animation:optPopIn .2s ease}
