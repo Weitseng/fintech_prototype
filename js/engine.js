@@ -259,12 +259,13 @@ let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
    選項按鈕選完就會被 clearControls() 清掉——如果使用者對著同一張卡、或不同幾張卡連續
    快速點擊，會在前一次內容都還沒打完的情況下又觸發一次 enterProductDetail／
    enterProductCalc，兩三輪回覆疊在一起，畫面會變得很亂（見 flow.js 裡的用法）。
-   這裡用一個全站共用的忙碌旗標擋掉這種情況：任一次商品詳情／試算開始處理，就先鎖住旗標，
-   等這一輪內容（含下一步清單）完整渲染完了才解鎖——按鈕本身不套用停用樣式，卡片看起來
-   隨時可以點，使用者稍後也確實仍然可以再點同一張卡重複操作，只是同一時間不能疊加觸發
-   第二次（忙碌時點擊會被靜靜忽略，不會有任何視覺回饋）。 */
-let cardBusy=false;
-function setCardBusy(v){cardBusy=v;}
+   這裡不是擋掉後面的點擊，而是讓「最新一次點擊」直接中止取代前一次還沒打完的輸出：
+   cardCancelToken 永遠指向「目前這一次商品詳情／試算是否還在進行中」的取消令牌
+   （見 aiSay()／typeOut() 的 cancelToken 參數）。新的點擊一律先呼叫舊令牌的 cancel()，
+   讓前一次的 loading／逐字輸出立刻消失，再讓自己接手往下渲染；某次動作完整渲染完之後，
+   要記得把這個參照清掉（設回 null），不然之後合法的「重新點同一張卡」會誤觸發把已經
+   顯示完的內容清掉。 */
+let cardCancelToken=null;
 /* turnLoadingShown：這一輪是否已經出現過一次 loading。同一輪常常是好幾個 aiSay() 呼叫
    接力串起來（例如先講一句開場、再串接下一句分析結果），如果每個 aiSay() 呼叫都各自判斷
    「我是不是這一輪第一個」，彼此看不到對方，還是會一輪出現好幾次 loading。改成這個跨呼叫
@@ -322,8 +323,23 @@ const TYPE_SCROLL_EVERY=3;
    引言／清單項目）先設成 display:none，直到該區塊自己的文字節點真正開始被填入
    （也就是輪到它「登場」的那一刻）才解除隱藏，讓區塊跟文字同步逐一出現，不再搶跑。 */
 const TYPE_BLOCK_SEL='.md-h1,.md-h2,.md-h3,.md-p,.md-quote,.md-ul li';
-function typeOut(text,cb){
+/* cancelToken：讓「還在跑的 aiSay／typeOut 邏輯」可以被之後一次新的呼叫直接中止取代，
+   而不是傻等目前這輪 setTimeout 鏈自己跑完（見 flow.js 商品卡片的用法：連續點擊時，
+   新的點擊會直接中止前一次還沒打完的輸出，改顯示最新點的內容，而不是排隊疊加）。
+   用法：呼叫端建立一個 token，傳進 aiSay(opts.cancelToken)；要中止時呼叫 token.cancel()，
+   會立刻執行「目前畫面上正顯示的暫時內容」（loading 動畫、或還在逐字輸出中的訊息）
+   對應的清除動作，並讓 aiSay／typeOut 內部所有還沒執行的接續動作（下一個字、下一句、
+   done callback）直接停手，不會再產生任何新內容。呼叫端在自己的內容完整渲染完之後，
+   應該把自己持有的 token 參照清掉（不要再呼叫 cancel），這樣之後合法的「重新點同一張卡」
+   才不會誤觸發清除已經完整顯示的內容。 */
+function makeCancelToken(){
+  return {cancelled:false,_onCancel:null,
+    onCancel(fn){this._onCancel=fn;},
+    cancel(){this.cancelled=true;const fn=this._onCancel;this._onCancel=null;if(fn)fn();}};
+}
+function typeOut(text,cb,cancelToken){
   const m=document.createElement('div');m.className='ai-msg';appendToChat(m);
+  if(cancelToken)cancelToken.onCancel(()=>{m.remove();});
   m.innerHTML=mdToHtml(text);
   const blocks=Array.from(m.querySelectorAll(TYPE_BLOCK_SEL));
   blocks.forEach(b=>{b.style.display='none';});
@@ -334,10 +350,11 @@ function typeOut(text,cb){
   const fullTexts=nodes.map(n=>n.textContent);
   nodes.forEach(n=>{n.textContent='';});
   const totalChars=fullTexts.reduce((a,s)=>a+s.length,0);
-  if(totalChars===0){blocks.forEach(b=>{b.style.display='';});down();cb();return;}
+  if(totalChars===0){blocks.forEach(b=>{b.style.display='';});down();if(cancelToken)cancelToken.onCancel(null);cb();return;}
   const total=Math.min(TYPE_MAX_MS,Math.max(TYPE_MIN_MS,totalChars*TYPE_PER_CHAR));
   const perChar=Math.max(4,total/totalChars);
   let shown=0;(function step(){
+    if(cancelToken&&cancelToken.cancelled)return;
     shown++;
     let remain=shown;
     for(let k=0;k<nodes.length;k++){
@@ -348,15 +365,21 @@ function typeOut(text,cb){
       remain-=len;
     }
     if(shown%TYPE_SCROLL_EVERY===0||shown>=totalChars)down();
-    if(shown<totalChars)setTimeout(step,perChar);else cb();
+    /* 這句話完整打完的當下，要把 cancelToken 的清除動作重置成 null——不然 _onCancel
+       會一直指向「移除這則已經打完的訊息」，萬一使用者剛好在下一句開始打字前那段空檔
+       （MSG_GAP）點了新的一次，cancel() 誤觸發就會把這句已經完整顯示的內容也清掉 */
+    if(shown<totalChars)setTimeout(step,perChar);
+    else{if(cancelToken)cancelToken.onCancel(null);cb();}
   })();
 }
 function aiSay(msgs,done,opts){
   opts=opts||{};
+  const cancelToken=opts.cancelToken;
   const label=opts.label||'管家思考中';
   let i=0;(function next(){
+    if(cancelToken&&cancelToken.cancelled)return;
     if(i>=msgs.length){if(done)done();return;}
-    const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);});};
+    const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);},cancelToken);};
     if(i>0||turnLoadingShown){startTyping();return;}
     turnLoadingShown=true;
     const t=document.createElement('div');t.className='typing';
@@ -369,8 +392,10 @@ function aiSay(msgs,done,opts){
     /* 這裡故意不呼叫 down()：如果使用者才剛回答完問題，meSay() 已經把畫面捲到「提問＋回答」對齊頂端，
        這裡如果又捲一次會把那組畫面往上推、蓋掉剛才特地留住的提問。等真正的訊息換上來才需要捲動。 */
     appendToChat(t);
+    if(cancelToken)cancelToken.onCancel(()=>{orb.destroy();t.remove();});
     const heavy=opts.heavy||msgs[i].length>LONG_MSG_LEN;
     setTimeout(()=>{
+      if(cancelToken&&cancelToken.cancelled)return;
       /* 每一段訊息換上來都呼叫 down()：down() 現在一律用「這一輪的容器」（currentTurnEl）
          當錨點，而不是每則訊息各自的元素，所以重複呼叫是安全的——容器的頂端位置
          不會因為裡面又長了一段新內容而改變，唯一會變的只有「瀏覽器允不允許捲到那個位置」
@@ -456,7 +481,11 @@ function showNextSteps(heading,items){
     onSelect:()=>{
       el.remove();
       aiAsk(heading);
-      meSay(item.title);
+      /* item.echo：選填，回覆泡泡要講的內容跟清單上顯示的 title 不同時使用（例如
+         「試算這檔商品」這種通用標籤在 UI 上維持簡短，但回覆泡泡想講出具體商品名稱
+         「試算○○○○基金」，讓後續的回應有明確的對話脈絡可以對應）。沒有帶 echo 的
+         項目行為不變，一律用 item.title 當回覆內容。 */
+      meSay(item.echo!==undefined?item.echo:item.title);
       if(item.onSelect)item.onSelect();
     }
   }));
