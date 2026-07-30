@@ -299,14 +299,20 @@ COMPONENTS['bar/chat-input']={render:renderInputChatBar};
    使用者自己送出的對話內容（靠右對齊），跟 aiSay()／aiAsk() 的系統回覆訊息（.ai-msg／.md-quote）
    是不同樣式，此元件只對應使用者發送的這一種，不要拿去用在系統回覆上。
    純顯示用元件，不含業務邏輯（如 echo 抑制），呼叫端自行決定何時呼叫。
-   opts：{className} 可疊加額外 class（例如客製化寬度）。 */
+   opts：{className} 可疊加額外 class（例如客製化寬度）。
+   唯一呼叫端是 engine.js 的 meSay()，這裡故意不呼叫 down()：meSay() 自己會在
+   requestAnimationFrame 裡帶 {smooth:true} 呼叫 down()，讓畫面平滑捲到新一輪頂端
+   （見 meSay() 的說明）。這裡如果也跟著即時 down() 一次，會在同一個瞬間先把捲動位置
+   瞬間跳到目標值附近，等 meSay() 的平滑捲動接著執行時，起點跟終點已經幾乎重疊，
+   使用者會只看到瞬間跳格、看不到滑動過程——這正是「平滑捲動看起來還是一閃就到位」
+   的成因，所以這裡改成完全交給呼叫端決定要不要捲、怎麼捲。 */
 function renderMessageChatBubble(content,opts){
   opts=opts||{};
   const row=document.createElement('div');row.className='mcb-row'+(opts.className?' '+opts.className:'');
   const bubble=document.createElement('div');bubble.className='mcb';
   bubble.textContent=content;
   row.appendChild(bubble);
-  appendToChat(row);down();
+  appendToChat(row);
   return row;
 }
 COMPONENTS['message/chat-bubble']={render:renderMessageChatBubble};
