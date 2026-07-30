@@ -99,26 +99,31 @@ function stageC(){
     setTimeout(()=>{
       renderComponent('chart/pie',100-est.pct,assetMid());
       aiSay([`${cashInsight()}\n\n依您的資產級距與現金比例推估，您目前大概有一筆 **NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}** 的資金，一直是用比較低的利率方式閒置著。`],()=>{
-        aiAsk("對於這筆閒置資金，您平時比較想怎麼運用它呢？");
-        const w=wrap();
+        /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
+           node 306:1102「問題回答優化」），不再走 #controls／setControls()：
+           選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
+           畫面呈現方式跟其他既有提問（如 showNextSteps()）一致，不影響版面高度。 */
+        const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
         const opts=[
-          ['先放著，可能是備用金或短期要用',
-           '*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
-           ['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']],
-          ['想加減賺一點零用錢，風險不要太高',
-           '*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
-           ['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']],
-          ['想讓這筆錢成長更多，可以承擔一些風險',
-           '*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
-           ['提升價值','價值提升','增值','成長','積極','提高','承擔風險']],
-          ['還沒想法，想先聽看看建議',
-           '*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
-           ['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']]
+          {label:'先放著，可能是備用金或短期要用',
+           ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
+           kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
+          {label:'想加減賺一點零用錢，風險不要太高',
+           ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
+           kw:['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']},
+          {label:'想讓這筆錢成長更多，可以承擔一些風險',
+           ack:'*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
+           kw:['提升價值','價值提升','增值','成長','積極','提高','承擔風險']},
+          {label:'還沒想法，想先聽看看建議',
+           ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
+           kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
         ];
-        opts.forEach(([label,ack,kw])=>w.appendChild(choiceBtn(label,null,()=>{
-          meSay(label);clearControls();aiSay([ack],()=>ch_d1(),{label:'管家正在理解分析'});
-        },kw)));
-        setControls(w);
+        const popover=renderComponent('popover/option-select',question,opts,opt=>{
+          popover.remove();
+          aiAsk(question);
+          meSay(opt.label);
+          aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+        });
       },{label:'為您分析資產配置中',heavy:true});
     },700);
   },{label:'管家為您準備分析中'});
@@ -128,42 +133,66 @@ function stageC(){
    每題選完的階段性小結，不用卡片、不寫「小結」，直接用 aiSay + **粗體** 融入對話
    ch_d1 開頭先帶出「配置」的概念，讓使用者知道這幾題是為了什麼、也預告最後會有拉桿可以調整比例
    每題的按鈕「顯示文字」寫成順口的完整回答，但存進 S.q1/S.q2/S.q3 的仍是原本的短字串（見檔頭說明）*/
+/* ch_d1／ch_d2／ch_d3／stageH1／stageH1b 這五題都改用 popover/option-select（浮動選單，
+   同 stageC() 的作法，見對應 Figma node 306:1102）：原本「> 問題句」那行從 aiSay() 陣列裡拿掉，
+   改成選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，不再走
+   #controls／setControls()／wrap()／choiceBtn()。問題文字、選項文字、後續分析文案／
+   keywords 皆逐字保留，只是把顯示時機從「按鈕之前」搬到「選完之後」。 */
 function ch_d1(){
   aiSay([
-    "接下來想請教您幾個問題，協助您掌握合適的**資金配置方式**——也就是多少比例放穩定型、多少比例追求成長，讓資金運用更有效率。",
-    "> 首先想了解，這筆資金大概多久之後可能會用到呢？"
+    "接下來想請教您幾個問題，協助您掌握合適的**資金配置方式**——也就是多少比例放穩定型、多少比例追求成長，讓資金運用更有效率。"
   ],()=>{
-    const w=wrap();
-    const o=[
-      ['大概一年內就會用到','一年內','high',['一年內','1年內','很快','馬上','短期','隨時','近期']],
-      ['應該一年以上都不會用到','一年以上','low',['一年以上','1年以上','很久','長期','不會用','都用不到','放很久']],
-      ['還不確定，要看情況','還不確定','mid',['還不確定','不確定','不一定','看情況','說不準','不知道']],
+    const question="首先想了解，這筆資金大概多久之後可能會用到呢？";
+    const opts=[
+      {label:'大概一年內就會用到',val:'一年內',wt:'high',kw:['一年內','1年內','很快','馬上','短期','隨時','近期']},
+      {label:'應該一年以上都不會用到',val:'一年以上',wt:'low',kw:['一年以上','1年以上','很久','長期','不會用','都用不到','放很久']},
+      {label:'還不確定，要看情況',val:'還不確定',wt:'mid',kw:['還不確定','不確定','不一定','看情況','說不準','不知道']}
     ];
-    o.forEach(([label,val,wt,kw])=>w.appendChild(choiceBtn(label,null,()=>{S.q1=val;S.depositWeight=wt;meSay(label);clearControls();
-      const summary=val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
-      aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});},kw)));
-    setControls(w);
+    const popover=renderComponent('popover/option-select',question,opts,opt=>{
+      popover.remove();S.q1=opt.val;S.depositWeight=opt.wt;
+      aiAsk(question);meSay(opt.label);
+      const summary=opt.val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':opt.val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
+      aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+    });
   },{label:'管家思考中'});
 }
 function ch_d2(){
-  aiSay(["接下來想了解一下您的風險承受度：","> 如果市場出現下跌，您能接受的跌幅程度大概是？"],()=>{
-    const w=wrap();
-    w.appendChild(choiceBtn('完全不能接受本金有任何波動',null,()=>{S.q2='完全不能接受本金波動';meSay('完全不能接受本金有任何波動');clearControls();
-      aiSay(['*這代表本金安全是您最優先的考量。*我會以「完全保本與高穩定」的商品為主，為您規劃方向。'],()=>resolveConservative(),{label:'管家正在理解分析'});},['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']));
-    w.appendChild(choiceBtn('可以接受小幅波動（跌幅約 10%～30%）',null,()=>{S.q2='可接受小幅波動';meSay('可以接受小幅波動（跌幅約 10%～30%）');clearControls();
-      aiSay(['*了解，您能接受一定程度的波動。*我們可以在維持資產穩健的前提下，適度搭配收益型商品。'],()=>ch_d3(),{label:'管家正在理解分析'});},['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']));
-    w.appendChild(choiceBtn('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',null,()=>{S.q2='可接受淨值明顯波動換取成長';meSay('可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會');clearControls();
-      aiSay(['*了解，您能接受較大幅度的波動，以換取成長機會。*成長型商品會是較適合的方向，協助您評估資產增值的潛力。'],()=>ch_d3(),{label:'管家正在理解分析'});},['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']));
-    setControls(w);
+  aiSay(["接下來想了解一下您的風險承受度："],()=>{
+    const question="如果市場出現下跌，您能接受的跌幅程度大概是？";
+    const opts=[
+      {label:'完全不能接受本金有任何波動',val:'完全不能接受本金波動',
+       ack:'*這代表本金安全是您最優先的考量。*我會以「完全保本與高穩定」的商品為主，為您規劃方向。',
+       next:()=>resolveConservative(),kw:['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']},
+      {label:'可以接受小幅波動（跌幅約 10%～30%）',val:'可接受小幅波動',
+       ack:'*了解，您能接受一定程度的波動。*我們可以在維持資產穩健的前提下，適度搭配收益型商品。',
+       next:()=>ch_d3(),kw:['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']},
+      {label:'可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',val:'可接受淨值明顯波動換取成長',
+       ack:'*了解，您能接受較大幅度的波動，以換取成長機會。*成長型商品會是較適合的方向，協助您評估資產增值的潛力。',
+       next:()=>ch_d3(),kw:['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']}
+    ];
+    const popover=renderComponent('popover/option-select',question,opts,opt=>{
+      popover.remove();S.q2=opt.val;
+      aiAsk(question);meSay(opt.label);
+      aiSay([opt.ack],opt.next,{label:'管家正在理解分析'});
+    });
   },{label:'管家思考中'});
 }
 function ch_d3(){
-  aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您：","> 在投資型商品裡，您比較看重哪一種特質？"],()=>{
-    const w=wrap();
-    w.appendChild(choiceBtn('希望領息穩定、到期時間明確',null,()=>{S.q3='領息穩定、到期時間明確';meSay('希望領息穩定、到期時間明確');clearControls();resolveAttribute('bond','B');},['領息','到期','穩定','固定','確定','債']));
-    w.appendChild(choiceBtn('希望定期定額分散風險、追求收益潛能',null,()=>{S.q3='想以定期定額分散風險、追求收益潛能';meSay('希望定期定額分散風險、追求收益潛能');clearControls();resolveAttribute('fund','A');},['定期定額','分散風險','收益潛能','成長','基金','潛力']));
-    w.appendChild(choiceBtn('兩者都可以，或想搭配著看',null,()=>{S.q3='都可以／想搭配';meSay('兩者都可以，或想搭配著看');clearControls();resolveAttribute('combo','AB');},['都可以','搭配','混合','都要','兩個都']));
-    setControls(w);
+  aiSay(["最後一個問題，這能幫我判斷債券還是基金更適合您："],()=>{
+    const question="在投資型商品裡，您比較看重哪一種特質？";
+    const opts=[
+      {label:'希望領息穩定、到期時間明確',val:'領息穩定、到期時間明確',next:()=>resolveAttribute('bond','B'),
+       kw:['領息','到期','穩定','固定','確定','債']},
+      {label:'希望定期定額分散風險、追求收益潛能',val:'想以定期定額分散風險、追求收益潛能',next:()=>resolveAttribute('fund','A'),
+       kw:['定期定額','分散風險','收益潛能','成長','基金','潛力']},
+      {label:'兩者都可以，或想搭配著看',val:'都可以／想搭配',next:()=>resolveAttribute('combo','AB'),
+       kw:['都可以','搭配','混合','都要','兩個都']}
+    ];
+    const popover=renderComponent('popover/option-select',question,opts,opt=>{
+      popover.remove();S.q3=opt.val;
+      aiAsk(question);meSay(opt.label);
+      opt.next();
+    });
   },{label:'管家思考中'});
 }
 function resolveConservative(){S.attribute='C';S.recoType='deposit';stageE();}
@@ -379,21 +408,25 @@ function enterProductCalc(p,items,opts){
 
 /* ================= 階段 H｜（路徑 2）補充更多資產資訊 ================= */
 function stageH1(){
-  aiSay(['那我們來聊聊您在凱基銀行以外的資產——這裡指的是股票、基金這類投資部位，還有活存、定存等現金部位，能幫助我更完整地了解您的整體配置。先讓我知道大概的資產級距：'],()=>{
-    const w=wrap();
-    ['100 萬以下','100 萬–200 萬','200 萬以上'].forEach(x=>{
-      w.appendChild(choiceBtn(x,null,()=>{S.h1Amt=x;meSay(x);clearControls();stageH1b();},[x]));
+  aiSay(['那我們來聊聊您在凱基銀行以外的資產——這裡指的是股票、基金這類投資部位，還有活存、定存等現金部位，能幫助我更完整地了解您的整體配置。'],()=>{
+    const question="先讓我知道大概的資產級距：";
+    const opts=['100 萬以下','100 萬–200 萬','200 萬以上'].map(x=>({label:x,kw:[x]}));
+    const popover=renderComponent('popover/option-select',question,opts,opt=>{
+      popover.remove();S.h1Amt=opt.label;
+      aiAsk(question);meSay(opt.label);
+      stageH1b();
     });
-    setControls(w);
   },{label:'管家思考中'});
 }
 function stageH1b(){
-  aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：','> 這些資產裡，大概有多少比例是用在投資上呢？'],()=>{
-    const w=wrap();
-    ['0%','1–50%','50% 以上'].forEach(x=>{
-      w.appendChild(choiceBtn(x,null,()=>{S.h1Ratio=x;meSay(x);clearControls();stageH2();},[x]));
+  aiSay(['這個比例能幫我判斷您平常對投資的熟悉程度、以及目前的風險偏好：'],()=>{
+    const question="這些資產裡，大概有多少比例是用在投資上呢？";
+    const opts=['0%','1–50%','50% 以上'].map(x=>({label:x,kw:[x]}));
+    const popover=renderComponent('popover/option-select',question,opts,opt=>{
+      popover.remove();S.h1Ratio=opt.label;
+      aiAsk(question);meSay(opt.label);
+      stageH2();
     });
-    setControls(w);
   },{label:'管家思考中'});
 }
 /* H-2：目前主要投資項目（可複選） */

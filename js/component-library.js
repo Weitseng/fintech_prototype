@@ -369,10 +369,13 @@ COMPONENTS['button/primary']={render:renderButtonPrimary};
 /* ---- card/feedback-qr（Figma node 260:993，ai 投資助理_QR code 掃描）----
    流程結尾的滿意度回饋卡：慶祝圖示＋標題＋三行說明＋QR Code＋再體驗一次按鈕，「立即申購」／
    「諮詢理專」兩條流程共用同一份（見 js/engine.js finishFlow()），不要各自複製一份。
-   2026-07-29 依 Figma 更新：新增頂部慶祝圖示（assets/feedback-celebrate.png，266:1146
+   2026-07-29 依 Figma 更新：新增頂部慶祝圖示（assets/feedback-celebrate.svg，266:1146
    「Business Symbols/優惠＆活動」），標題文案改「非常感謝您的體驗」並改用 Headline token
    （原本誤用 Subtitle-B），說明文字拆成三行獨立段落（原本後兩行擠在同一行），QR Code
-   移到說明文字之後（原本在最上面），尺寸依設計稿改 126px（原本 160px）。
+   移到說明文字之後（原本在最上面），尺寸依設計稿改 210px。
+   2026-07-30：慶祝圖示改用向量 SVG（原本是 80x80 點陣 PNG，在螢幕解析度高於 1x 時會模糊）；
+   Figma 匯出的原始圖層本身就是純色路徑，沒有漸層或點陣特效，用 SVG 重組後畫質完全無損，
+   任何尺寸／解析度下都清晰。
    說明文字色／字級對應 Content/General/Primary＋Body-R token——這兩個 token 在 Figma
    原稿裡的實際標示是純黑 #000000／16px，專案 token 沒有完全對應的項目，已跟需求方確認
    改用最接近的既有 token（不新增 token）。
@@ -388,7 +391,7 @@ function renderFeedbackQrCard(opts){
   card.innerHTML=`
     <div class="fbqr-qr">
       <div class="fbqr-intro">
-        <img class="fbqr-icon" src="assets/feedback-celebrate.png" alt="">
+        <img class="fbqr-icon" src="assets/feedback-celebrate.svg" alt="">
         <div class="fbqr-copy">
           <div class="fbqr-qr-title">非常感謝您的體驗</div>
           <div class="fbqr-qr-desc">
@@ -408,3 +411,27 @@ function renderFeedbackQrCard(opts){
   return card;
 }
 COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};
+
+/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）----
+   AI 提問選項的浮動選單：問題標題＋選項清單，以覆蓋（overlay）方式掛在 .app 底下、疊在輸入框之上，
+   不進 chatBox／不經過 #controls，因此不佔用 #screen 的版面高度（見 css/component-library.css
+   .opt-popover-wrap 的說明）。選項清單直接重用既有 choiceBtn()（Message/option 元件），
+   不重建/不修改其內部樣式；opts.kw 沿用既有 keywords 機制接上 activeChoices。
+   純顯示用元件：選取後「移除浮動選單／把問題與答案顯示進聊天紀錄／觸發後續分析」皆是呼叫端
+   （見 flow.js stageC()）的業務邏輯，這裡只負責渲染與回傳選取結果。
+   options：[{label, sub, kw}]；onPick(option) 為選中某一項時的回呼；回傳掛載的 wrap 元素，
+   呼叫端選取後自行 .remove()。 */
+function renderOptionPopover(question,options,onPick){
+  const app=document.querySelector('.app');
+  const wrap=document.createElement('div');wrap.className='opt-popover-wrap';
+  const pop=document.createElement('div');pop.className='opt-popover';
+  const title=document.createElement('div');title.className='opt-popover-title';title.textContent=question;
+  const list=document.createElement('div');list.className='choice-group';
+  pop.appendChild(title);pop.appendChild(list);wrap.appendChild(pop);
+  (app||document.body).appendChild(wrap);
+  (options||[]).forEach(opt=>{
+    list.appendChild(choiceBtn(opt.label,opt.sub||null,()=>onPick(opt),opt.kw));
+  });
+  return wrap;
+}
+COMPONENTS['popover/option-select']={render:renderOptionPopover};
