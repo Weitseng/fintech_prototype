@@ -186,8 +186,14 @@ function peekAnchorAbove(anchorEl,pxVisible){
   const sRect=s.getBoundingClientRect(),aRect=anchorEl.getBoundingClientRect();
   const desiredTop=s.scrollTop+(aRect.bottom-sRect.top)-pxVisible;
   if(s.scrollTop>desiredTop){
+    /* 這裡只把「目前顯示的位置」往上調一點露出錨點邊緣，不能跟著調降 maxScrollTop——
+       maxScrollTop 代表的是 down() 算出來的「這一輪貼齊底部應該停在哪」，也就是使用者
+       應該能自由捲到、看見試算結果／下一步清單的深度。如果這裡也把 maxScrollTop 一併
+       改成這個較淺的位置，會讓 clampScroll() 誤以為「這裡就是底了」，使用者手動往下滑
+       一超過這個位置就會被彈回來，變成得先點「回到最下方」按鈕（會用 Math.max 修正回
+       正確深度）才能繼續往下捲——這正是使用者回報的「往下滑會卡住」的成因。只調整
+       scrollTop、留著 maxScrollTop 不動，使用者從一開始的 peek 位置就能一路自由捲到底。 */
     s.scrollTop=Math.max(0,desiredTop);
-    maxScrollTop=s.scrollTop;
     updateScrollBtn();
   }
 }
