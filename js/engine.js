@@ -291,6 +291,7 @@ function resetAll(){
   flowGen++;
   S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
      attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
+  if(activePopover){activePopover.remove();activePopover=null;}
   clearControls();stepA();
 }
 
@@ -325,6 +326,13 @@ function mdToHtml(src){
 
 /* ================= 對話輔助（共用渲染工具） ================= */
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
+/* activePopover：目前顯示中的 popover/option-select 浮動選單（見 component-library.js
+   renderOptionPopover()）——它是掛在 .app 底下、疊在畫面最上層的覆蓋層，不在 #screen／
+   #controls 裡面，resetAll() 原本只會清空這兩者，選到選項前若使用者直接點「重新開始」，
+   這個浮動選單就會被漏掉，殘留在畫面上蓋住重新開始後的新畫面（使用者回報的「選項都還
+   出現、畫面壞掉」）。renderOptionPopover() 建立時會把自己指派給這個變數，選到選項或
+   resetAll() 都要負責清掉它，見 resetAll() 的用法。 */
+let activePopover=null;
 /* 商品卡片（.pcard-btn／「商品詳情」「立即試算」）留在對話紀錄裡是永久可點的，不像一般
    選項按鈕選完就會被 clearControls() 清掉——如果使用者對著同一張卡、或不同幾張卡連續
    快速點擊，會在前一次內容都還沒打完的情況下又觸發一次 enterProductDetail／
