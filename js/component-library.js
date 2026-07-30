@@ -408,3 +408,27 @@ function renderFeedbackQrCard(opts){
   return card;
 }
 COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};
+
+/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）----
+   AI 提問選項的浮動選單：問題標題＋選項清單，以覆蓋（overlay）方式掛在 .app 底下、疊在輸入框之上，
+   不進 chatBox／不經過 #controls，因此不佔用 #screen 的版面高度（見 css/component-library.css
+   .opt-popover-wrap 的說明）。選項清單直接重用既有 choiceBtn()（Message/option 元件），
+   不重建/不修改其內部樣式；opts.kw 沿用既有 keywords 機制接上 activeChoices。
+   純顯示用元件：選取後「移除浮動選單／把問題與答案顯示進聊天紀錄／觸發後續分析」皆是呼叫端
+   （見 flow.js stageC()）的業務邏輯，這裡只負責渲染與回傳選取結果。
+   options：[{label, sub, kw}]；onPick(option) 為選中某一項時的回呼；回傳掛載的 wrap 元素，
+   呼叫端選取後自行 .remove()。 */
+function renderOptionPopover(question,options,onPick){
+  const app=document.querySelector('.app');
+  const wrap=document.createElement('div');wrap.className='opt-popover-wrap';
+  const pop=document.createElement('div');pop.className='opt-popover';
+  const title=document.createElement('div');title.className='opt-popover-title';title.textContent=question;
+  const list=document.createElement('div');list.className='choice-group';
+  pop.appendChild(title);pop.appendChild(list);wrap.appendChild(pop);
+  (app||document.body).appendChild(wrap);
+  (options||[]).forEach(opt=>{
+    list.appendChild(choiceBtn(opt.label,opt.sub||null,()=>onPick(opt),opt.kw));
+  });
+  return wrap;
+}
+COMPONENTS['popover/option-select']={render:renderOptionPopover};

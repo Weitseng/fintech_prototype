@@ -235,3 +235,22 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   font-weight:var(--type-headline-weight-cn);line-height:var(--type-headline-lh-cn);color:var(--color-content-general-primary);text-align:center}
 .fbqr-qr-desc{font-family:var(--font-cn);font-size:var(--type-body-size);
   font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);color:var(--color-content-general-primary);text-align:center}
+
+/* popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）
+   AI 提問選項的浮動選單：以覆蓋（overlay）方式疊在輸入框之上，掛載在 .app 下用 position:absolute
+   + bottom:16px 呈現，不佔用 #screen／#controls／#inputbar 的版面高度、也不影響它們的既有邏輯。
+   外層容器背景／圓角／陰影對應 Design Guideline 既有 token：Surface White／Radius-small(3px)／
+   Popover 陰影（跟 .pie-card／.pcard 等既有卡片同一組陰影值），皆為既有 token，未新增任何自訂數值。
+   標題套用 Subtitle-B 字級 token＋Content/General/Primary 色票——跟 aiAsk() 的 .md-quote
+   用的是同一組 token，選完之後這句話用 aiAsk() 顯示在聊天紀錄時字級／顏色自然一致。
+   選項清單直接重用既有 .choice-group／.choice（choiceBtn()，對應 Figma Message/option 元件，
+   見 js/flow.js buildSingleSelectList() 的說明），不重建、不修改其內部樣式與 hover/focus 狀態。 */
+.opt-popover-wrap{position:absolute;left:4%;right:4%;bottom:16px;z-index:20}
+.opt-popover{background:var(--color-surface-white);border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
+  padding:var(--spacing-12) var(--spacing-16) var(--spacing-24);
+  max-height:calc(100% - 96px);overflow-y:auto;
+  display:flex;flex-direction:column;gap:var(--spacing-16);animation:optPopIn .2s ease}
+@keyframes optPopIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.opt-popover-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
+  font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
+  color:var(--color-content-general-primary)}
