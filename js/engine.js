@@ -255,6 +255,16 @@ function mdToHtml(src){
 
 /* ================= 對話輔助（共用渲染工具） ================= */
 let chatBox=null,activeChoices=[],freeOverride=null,suppressNextEcho=false;
+/* 商品卡片（.pcard-btn／「商品詳情」「立即試算」）留在對話紀錄裡是永久可點的，不像一般
+   選項按鈕選完就會被 clearControls() 清掉——如果使用者對著同一張卡、或不同幾張卡連續
+   快速點擊，會在前一次內容都還沒打完的情況下又觸發一次 enterProductDetail／
+   enterProductCalc，兩三輪回覆疊在一起，畫面會變得很亂（見 flow.js 裡的用法）。
+   這裡用一個全站共用的忙碌旗標擋掉這種情況：任一次商品詳情／試算開始處理，就先鎖住旗標，
+   等這一輪內容（含下一步清單）完整渲染完了才解鎖——按鈕本身不套用停用樣式，卡片看起來
+   隨時可以點，使用者稍後也確實仍然可以再點同一張卡重複操作，只是同一時間不能疊加觸發
+   第二次（忙碌時點擊會被靜靜忽略，不會有任何視覺回饋）。 */
+let cardBusy=false;
+function setCardBusy(v){cardBusy=v;}
 /* turnLoadingShown：這一輪是否已經出現過一次 loading。同一輪常常是好幾個 aiSay() 呼叫
    接力串起來（例如先講一句開場、再串接下一句分析結果），如果每個 aiSay() 呼叫都各自判斷
    「我是不是這一輪第一個」，彼此看不到對方，還是會一輪出現好幾次 loading。改成這個跨呼叫

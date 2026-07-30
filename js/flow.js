@@ -257,6 +257,10 @@ function showCatalogCards(items){
   }
 }
 function enterProductDetail(p,items){
+  /* 商品卡片的「商品詳情」「立即試算」永久留在對話紀錄裡可以重複點，見 engine.js 的
+     cardBusy 說明——這裡擋掉還在處理中又被連續點擊的情況，避免疊出好幾輪重複內容 */
+  if(cardBusy)return;
+  setCardBusy(true);
   clearControls();
   const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
   const isDeposit=p.cat==='deposit';
@@ -294,6 +298,7 @@ function enterProductDetail(p,items){
         keywords:['返回','清單','其他','上一步','回去'],
         onSelect:()=>{clearControls();backToCatalogList(items);}}
     ]);
+    setCardBusy(false);
   },{label:'為您整理商品資訊中'});
 }
 function backToCatalogList(items){
@@ -303,6 +308,10 @@ function backToCatalogList(items){
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
    外匯定存利率不隨年期變動，關掉近1年/近3年切換（showPeriodTabs:false） */
 function enterProductCalc(p,items,opts){
+  /* 商品卡片的「商品詳情」「立即試算」永久留在對話紀錄裡可以重複點，見 engine.js 的
+     cardBusy 說明——這裡擋掉還在處理中又被連續點擊的情況，避免疊出好幾輪重複內容 */
+  if(cardBusy)return;
+  setCardBusy(true);
   clearControls();
   opts=opts||{};
   /* cardAnchor：試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把「使用者剛才
@@ -344,6 +353,7 @@ function enterProductCalc(p,items,opts){
        讓使用者還能看到「這是延伸自哪張卡片」，等畫面穩定（下一輪重繪）後才修正，
        避免蓋掉 showNextSteps 剛算好的位置 */
     if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
+    setCardBusy(false);
   },{label:'為您試算中',heavy:true});
 }
 
