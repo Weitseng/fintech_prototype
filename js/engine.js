@@ -34,6 +34,15 @@ const RECO_REASON={
    recoType, path, h1Amt, h1Ratio, h2Items, h2Reason, recoTypeH, selectedProductCode
 */
 let S={};
+/* flowGen：目前這一輪「對話流程」的世代編號。resetAll() 每次都會 +1——
+   aiSay() 內部所有排隊中的 setTimeout（逐字輸出、訊息間隔、下一句 done callback）
+   都會在真正執行前比對自己出生時的世代是否還是目前的世代，不是就直接放棄，不會
+   再呼叫 done／往下一階段推進。沒有這層保護的話，使用者點「重新開始」當下若正好
+   有訊息還在排隊，舊流程的 setTimeout 鏈不會被中止，會在使用者已經重新走完
+   開場、進到新一輪對話後才姍姍來遲，把舊流程的訊息／選項按鈕（例如 setControls()
+   加的核取方塊）硬塞進新一輪畫面，或把已經隱藏的 #controls 又打開——這正是使用者
+   回報「重新開始後畫面突然跑出不該出現的選項」的成因。 */
+let flowGen=0;
 const screen=()=>document.getElementById('screen');
 const ctrls=()=>document.getElementById('controls');
 /* 每次有新內容加入時，不要整頁捲到最底，而是把「剛新增的這則」（或整輪容器，見 currentTurnEl）
@@ -238,6 +247,7 @@ function wrap(){return document.createElement('div');}
 function assetMid(){return {'100 萬以下':800000,'100 萬 – 200 萬':1500000,'200 萬以上':3200000}[S.assetRange]||1000000;}
 
 function resetAll(){
+  flowGen++;
   S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
      attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   clearControls();stepA();
@@ -395,7 +405,9 @@ function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
   const label=opts.label||'管家思考中';
+  const myGen=flowGen;
   let i=0;(function next(){
+    if(myGen!==flowGen)return;
     if(cancelToken&&cancelToken.cancelled)return;
     if(i>=msgs.length){if(done)done();return;}
     const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);},cancelToken);};
