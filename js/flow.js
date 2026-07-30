@@ -65,32 +65,32 @@ function stepB(){
   const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
-  buildSingleSelectList(ro,['100 萬以下','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();});
-  buildSingleSelectList(co,['85% 以上','60–85%','30–60%','30% 以下'],x=>{S.cashRatio=x;checkReady();});
+  buildSingleSelectList(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();});
+  buildSingleSelectList(co,['95% 以上','50–95%','5–50%','5% 以下'],x=>{S.cashRatio=x;checkReady();});
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */
 function idleEstimate(){
   const base=assetMid();
-  const pct={'85% 以上':0.92,'60–85%':0.72,'30–60%':0.45,'30% 以下':0.2}[S.cashRatio]||0.5;
+  const pct={'95% 以上':0.97,'50–95%':0.72,'5–50%':0.28,'5% 以下':0.03}[S.cashRatio]||0.5;
   const est=base*pct;
   return {lo:Math.round(est*0.8/50000)*50000,hi:Math.round(est*1.2/50000)*50000,pct:Math.round(pct*100)};
 }
 function cashInsight(){
   return {
-    '85% 以上':`## 現金比例偏高，實質購買力可能被通膨侵蝕
-您目前的資產大多放在活存或定存，資金運用上有高度的安全性與流動性，但長期持有仍有兩點需要留意：
+    '95% 以上':`## 現金比例極高，實質購買力可能被通膨侵蝕
+您的資產幾乎全數放在活存或定存，資金運用上有最高的安全性與流動性，但長期持有仍有兩點需要留意：
 
-- **通膨侵蝕購買力**：活存年利率通常不到 1%，長期低於物價上漲速度，實質購買力可能逐步下降
-- **未參與市場成長**：這部分資金目前沒有投資參與，等於暫時放棄了潛在的成長機會
+- **通膨侵蝕購買力**：活存年利率通常不到 1%，長期低於物價上漲速度，實質購買力可能持續下降
+- **幾乎未參與市場成長**：這筆資金目前幾乎沒有任何投資參與，等於完全放棄了潛在的成長機會
 
 接下來，我們可以一起看看如何讓這筆閒置資金運用得更有效率。`,
-    '60–85%':`## 現金比例偏高，實質購買力可能被通膨侵蝕
+    '50–95%':`## 現金比例偏高，實質購買力可能被通膨侵蝕
 您的資產配置目前仍以保守的活存／定存為主。這樣的安排安全性較高，但也代表有一部分資金的成長效率有限，若重新規劃，這筆資金應有機會發揮更高的價值。`,
-    '30–60%':`## 現金與投資配置已相對均衡
+    '5–50%':`## 現金與投資配置已相對均衡
 您目前的資金配置已有一定基礎，仍有一小部分資金留在低利率帳戶中。若一併規劃這部分資金，整體效益有機會進一步提升。`,
-    '30% 以下':`## 現金比例控制得宜，資金運用效率較高
-您目前的現金比例偏低，顯示資金已有相當程度的投入。若能一併檢視剩餘的閒置部位，整體資產配置可以更完整。`
+    '5% 以下':`## 現金比例極低，資金運用效率高
+您的現金比例幾乎趨近於零，顯示資金幾乎已全數投入。若能一併檢視剩餘的閒置部位，整體資產配置可以更完整。`
   }[S.cashRatio]||'';
 }
 function stageC(){
@@ -457,7 +457,7 @@ function classifyH2(keys){
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
   let{result,reason}=base;
-  if(result==='fund'&&(S.cashRatio==='85% 以上'||S.h1Ratio==='1–50%')){
+  if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
     result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高，或其他配置仍偏保守。*建議先透過債券打好穩定收益的基礎，會比直接投入基金更為穩健。';
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
     result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以進一步搭配基金組合，讓資金有更大的空間發揮成長潛力。';

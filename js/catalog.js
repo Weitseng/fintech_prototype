@@ -1,12 +1,20 @@
 /* ============================================================
    商品資料（共用，來源：精選債券基金_客戶屬性對照矩陣.xlsx，2026.06）
    異動請對照原始 Excel「商品對照矩陣」工作表一起更新，欄位定義見該檔「篩選說明」工作表。
-   - rate／rate1y：以票面利率（債券）或示範性年化報酬（基金）表示，供試算卡（card/calculator）使用
-   - rate3y：近三年年化參考值。債券票面利率固定，1年/3年數字相同；
-     基金無公開票面利率，rate1y／rate3y 為示範性參考值（非真實歷史績效），僅供試算展示
-     ——這兩個欄位只給試算卡的互動運算用，不是 Excel 原始數字，不要拿來顯示在商品卡片上
-   - return1y：僅 fund 商品使用，Excel「近一年報酬率」原始欄位（真實數字，非示範值），
-     商品卡片（card/product）的「近一年報酬率」統計格顯示這個，不是上面的 rate1y
+   - rate／rate1y：以票面利率（債券）表示，或基金的 Excel「近一年報酬率」（真實數字），
+     供試算卡（card/calculator）使用；基金的 rate1y 數值上等於 return1y，兩個欄位都留著
+     是因為 card/calculator 統一讀 rate1y（跨債券/基金/定存共用同一套欄位名稱），
+     card/product 統一讀 return1y，兩邊呼叫端不用各自判斷商品類別去挑欄位名稱
+   - rate3y：近三年參考年化值。債券票面利率固定，1年/3年數字相同；基金原本這裡放的是
+     示範性參考值，2026-07-30 依 Excel「近三年報酬率」欄位改回真實數字——但 Excel 那欄
+     揭露的是「三年累積報酬率」，不是年化值，而試算卡的公式是「年化率 × 持有年數」的單利
+     模式（見 renderAssetVsDepositCalc() 的 weighted 計算），兩者單位不同，直接套用會在
+     乘上 3 年時重複計入時間效果、把報酬率灌水成三倍。這裡先除以 3 換算成試算卡單利公式
+     需要的「等效年化」數字（例如 Excel 累積 48.9% → 16.3%），數學上等於「假設三年平均
+     分攤」的近似值，不是官方年化報酬率，之後若基金公司揭露正式年化數字，這裡要優先換成
+     那個數字，除以 3 只是在沒有官方年化數字時的近似做法
+   - return1y：僅 fund 商品使用，Excel「近一年報酬率」原始欄位（真實數字），
+     商品卡片（card/product）的「近一年報酬率」統計格顯示這個
    - nav：僅 fund 商品使用，Excel「基金淨值」原始欄位，商品卡片顯示用
    - refPrice：僅 bond 商品使用，Excel「參考買進價」原始欄位，商品卡片顯示用；
      債券的「票面/配息率」商品卡片沿用既有的 rate／rate1y 即可——這兩個欄位對債券來說本來就是
@@ -55,27 +63,27 @@ const CATALOG=[
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'月月配息；門檻最低 USD 5,000；中長天期；首次贖回日近（2026/9/5），易被提前贖回',
     issuerInfo:'高盛集團旗下的國際發行／營運實體，所發債券通常由母公司 The Goldman Sachs Group 保證。高盛是全球頂尖的投資銀行之一。'},
-  {code:'FUND1',cat:'fund',name:'貝萊德全球智慧數據股票入息基金',currency:'USD',rate:0.08,rate1y:0.08,rate3y:0.06,nav:26.84,return1y:0.1211,
+  {code:'FUND1',cat:'fund',name:'貝萊德全球智慧數據股票入息基金',currency:'USD',rate:0.08,rate1y:0.1211,rate3y:0.163,nav:26.84,return1y:0.1211,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['收益','成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'AI 大數據量化選股；全球股票入息；持股 250–400 檔分散；配息可能來自本金',
     managerInfo:'貝萊德（BlackRock）發行，運用系統化／量化模型（即「智慧數據」）篩選全球股票，以追求較高股息收益為訴求，屬全球股票型。股票型波動相對較高，配息來源可能包含本金。'},
-  {code:'FUND2',cat:'fund',name:'摩根多重收益基金',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.04,nav:74.36,return1y:0.1405,
+  {code:'FUND2',cat:'fund',name:'摩根多重收益基金',currency:'USD',rate:0.045,rate1y:0.1405,rate3y:0.1098,nav:74.36,return1y:0.1405,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'中等',investType:['平衡','收益'],assetSize:'小',entry:'單筆／定期定額',
     feature:'全球多重資產（債＋股＋REITs）；月月配息；含高收益債，配息可能來自本金',
     managerInfo:'摩根資產管理旗下的多重資產（股、債等）收益型基金，全球分散布局，目標提供相對穩定的月配息。組合含非投資等級（高收益）債，配息來源可能為本金。'},
-  {code:'FUND3',cat:'fund',name:'凱基收益成長多重資產基金',currency:'TWD',rate:0.05,rate1y:0.05,rate3y:0.045,nav:15.53,return1y:0.1509,
+  {code:'FUND3',cat:'fund',name:'凱基收益成長多重資產基金',currency:'TWD',rate:0.05,rate1y:0.1509,rate3y:0.1473,nav:15.53,return1y:0.1509,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'中等',investType:['平衡','成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'股債雙向＋掩護性買權收權利金；月配；含高收益債，配息可能來自本金',
     managerInfo:'凱基投信發行的海外多重資產型基金，股債靈活配置、兼顧收益與成長，提供月配息，風險報酬等級 RR3。含非投資等級債，配息來源可能為本金。'},
-  {code:'FUND4',cat:'fund',name:'匯豐ESG永續多元資產組合基金',currency:'TWD',rate:0.035,rate1y:0.035,rate3y:0.032,nav:9.19,return1y:0.1321,
+  {code:'FUND4',cat:'fund',name:'匯豐ESG永續多元資產組合基金',currency:'TWD',rate:0.035,rate1y:0.1321,rate3y:0.0835,nav:9.19,return1y:0.1321,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'穩健',investType:['平衡'],assetSize:'小',entry:'單筆／定期定額',
     feature:'ESG 永續主題；股債平衡、債部位 50% 以上；風險等級 RR3，較保守',
     managerInfo:'匯豐投信發行的組合型基金（投資其他基金的 FOF），投資於具 ESG／永續特色的子基金，跨股債多元資產配置，採月配息設計，透過子基金分散但仍受市場波動影響。'},
-  {code:'FUND5',cat:'fund',name:'凱基台灣精五門基金',currency:'TWD',rate:0.09,rate1y:0.09,rate3y:0.07,nav:154.48,return1y:1.6084,
+  {code:'FUND5',cat:'fund',name:'凱基台灣精五門基金',currency:'TWD',rate:0.09,rate1y:1.6084,rate3y:0.9547,nav:154.48,return1y:1.6084,
     payFreq:'不配息',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'台股五大趨勢產業；追求資本利得；RR4 股票型',
@@ -112,8 +120,11 @@ function riskAllowed(tolerance){
   return tolerance==='穩健' ? ['穩健'] : ['穩健','中等','積極'];
 }
 function assetSizeRank(v){return {'小':1,'中':2,'大':3}[v]||1;}
+/* '100 萬以下' 是舊鍵，題目1（S.assetRange）已拆成'50 萬以下'／'50–100 萬'兩個新選項，
+   不會再產生這個字串，但 stageH1()（他行資產級距，存到 S.h1Amt，見 flow.js）目前仍沿用
+   原本三選項、沒有跟著拆，這裡保留舊鍵給它用，不要刪掉。 */
 function assetRangeRank(range){
-  return {'100 萬以下':1,'100 萬 – 200 萬':2,'100 萬–200 萬':2,'200 萬以上':3}[range]||1;
+  return {'50 萬以下':1,'50–100 萬':1,'100 萬以下':1,'100 萬 – 200 萬':2,'100 萬–200 萬':2,'200 萬以上':3}[range]||1;
 }
 function assetTierAllowed(range){
   const v=assetRangeRank(range);

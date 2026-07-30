@@ -285,7 +285,7 @@ function setControls(node){freeOverride=null;const c=ctrls();c.style.minHeight='
    所以拿掉凍結，讓 #controls 清空後立刻塌陷、#screen 立刻拿回應有的可視高度即可。 */
 function clearControls(){ctrls().innerHTML='';}
 function wrap(){return document.createElement('div');}
-function assetMid(){return {'100 萬以下':800000,'100 萬 – 200 萬':1500000,'200 萬以上':3200000}[S.assetRange]||1000000;}
+function assetMid(){return {'50 萬以下':250000,'50–100 萬':750000,'100 萬 – 200 萬':1500000,'200 萬以上':3200000}[S.assetRange]||1000000;}
 
 function resetAll(){
   flowGen++;
