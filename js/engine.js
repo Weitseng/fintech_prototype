@@ -150,7 +150,37 @@ function bottomMinGap(){
 function chatBottomPad(){
   return parseFloat(getComputedStyle(chatBox).paddingBottom)||0;
 }
-function down(anchor){
+/* ================= 平滑捲動（僅用於 meSay() 開新一輪這個瞬間） =================
+   down() 其餘所有呼叫端（逐字輸出時每隔幾個字、setControls() 換按鈕、商品卡片流程的
+   peekAnchorAbove()）都刻意維持「呼叫完 scrollTop 就已經是目標值」這個前提——css/style.css
+   的 .screen 也刻意不加 scroll-behavior:smooth，原因相同：瀏覽器原生的平滑捲動是非同步的，
+   設定完 scrollTop 後畫面不會馬上捲到那裡，這裡大量呼叫端（尤其逐字輸出時 TYPE_SCROLL_EVERY
+   個字就呼叫一次、peekAnchorAbove() 假設 down() 呼叫完當下位置已經是最終值）都會因此對不上。
+   但使用者送出回答、meSay() 把畫面整個捲去對齊新一輪頂端的這個瞬間，是唯一「一次性、大距離」
+   的跳動，太快切換容易讓使用者誤以為畫面重置、開了新對話——這裡改成自己控制的 rAF 動畫，
+   而不是交給瀏覽器的 scroll-behavior:smooth：每一影格都自己同步寫回 scrollTop，讀出來的值
+   永遠等於畫面當下真正捲到的位置，不會有原生平滑捲動那種「設定完但畫面還沒真的捲到」的落差；
+   down() 開頭一律先取消前一個還在跑的動畫，不管新呼叫是要接著動畫還是要瞬間跳定，都不會有
+   兩段動畫互相打架。只有 meSay() 會傳 {smooth:true}，其餘呼叫端不帶這個參數，維持跟以前
+   完全一樣的即時捲動，不影響既有依賴同步位置的邏輯。 */
+let scrollAnimFrame=null;
+const SCROLL_ANIM_MIN_MS=220,SCROLL_ANIM_MAX_MS=480,SCROLL_ANIM_PX_PER_MS=1.8;
+const easeOutCubic=t=>1-Math.pow(1-t,3);
+const prefersReducedMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animateScrollTop(el,target){
+  const from=el.scrollTop,distance=target-from;
+  if(Math.abs(distance)<1){el.scrollTop=target;updateScrollBtn();return;}
+  const duration=Math.min(SCROLL_ANIM_MAX_MS,Math.max(SCROLL_ANIM_MIN_MS,Math.abs(distance)/SCROLL_ANIM_PX_PER_MS));
+  const start=performance.now();
+  (function tick(now){
+    const t=Math.min(1,(now-start)/duration);
+    el.scrollTop=from+distance*easeOutCubic(t);
+    updateScrollBtn();
+    scrollAnimFrame=t<1?requestAnimationFrame(tick):null;
+  })(start);
+}
+function down(anchor,opts){
+  if(scrollAnimFrame){cancelAnimationFrame(scrollAnimFrame);scrollAnimFrame=null;}
   const s=screen();
   /* 一開始的資產初步分析（stageC()：問候語＋圓餅圖＋現金分析＋第一題）都還在 currentTurnEl
      建立之前——這一段是使用者進來後第一次看到的畫面，本身就是由上往下一段段長出來的單一整體，
@@ -161,13 +191,14 @@ function down(anchor){
   if(!currentTurnEl){maxScrollTop=Infinity;updateScrollBtn();return;}
   syncSpacer();
   const el=anchor||(chatBox&&chatBox.lastElementChild);
+  let target;
   if(el){
     const cRect=s.getBoundingClientRect(),eRect=el.getBoundingClientRect();
     /* 錨點高度達到 #screen 可視高度 80% 時就切成「貼齊底部＋保留最小間距」，不用等到
        實際超出、產生捲動軸才生效——低於 80% 時維持原本「頂到最上緣」，這種情況下錨點
        本來就矮，貼頂之後下方留白自然遠大於最小間距，不需要另外套用。 */
     if(eRect.height<=s.clientHeight*0.8){
-      s.scrollTop=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
+      target=Math.max(0,s.scrollTop+(eRect.top-cRect.top)-SCROLL_TOP_OFFSET);
     }else{
       /* 貼齊底部時故意用 chatBox（而非錨點自己）的下緣去算：錨點是 chatBox 最後一個子節點，
          它的下緣跟 chatBox 的下緣之間還隔著 .chat 的 padding-bottom，如果拿錨點自己的下緣
@@ -175,16 +206,21 @@ function down(anchor){
          chatBox 下緣去判斷）以為「還沒到底」，讓「回到最下方」按鈕跟著冒出來，剛好蓋在
          剛貼齊畫面下緣的選項上——用同一顆 chatBox 下緣去算，兩邊判斷基準才會一致 */
       const chatRect=chatBox.getBoundingClientRect();
-      s.scrollTop=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
+      target=Math.max(0,s.scrollTop+(chatRect.bottom-cRect.bottom)-(chatBottomPad()-bottomMinGap()));
     }
   }else{
-    s.scrollTop=s.scrollHeight;
+    target=s.scrollHeight;
   }
   /* down() 算完就是這一輪該停留的最深位置——再往下全是 scrollSpacer 借來的空白，同步成
      maxScrollTop，讓使用者自己往下滑時會被 clampScroll() 擋在這裡，不會滑進空白裡（見上方
-     maxScrollTop 宣告處的說明） */
-  maxScrollTop=s.scrollTop;
-  updateScrollBtn();
+     maxScrollTop 宣告處的說明）。不管走動畫還是即時捲動，這個目標值都一樣，先同步更新。 */
+  maxScrollTop=target;
+  if(opts&&opts.smooth&&!prefersReducedMotion()){
+    animateScrollTop(s,target);
+  }else{
+    s.scrollTop=target;
+    updateScrollBtn();
+  }
 }
 function isScreenAtBottom(){
   if(!chatBox)return true;
@@ -463,7 +499,7 @@ function aiAsk(question){
 function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
   startTurn();
   renderComponent('message/chat-bubble',text);
-  requestAnimationFrame(()=>down(currentTurnEl));
+  requestAnimationFrame(()=>down(currentTurnEl,{smooth:true}));
 }
 function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('button');
   b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
