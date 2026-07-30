@@ -243,13 +243,21 @@ function stageGList(){
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
+/* 商品卡片的「商品詳情」「立即試算」直接點下去、不經過 showNextSteps，跟其他所有互動
+   （三題釐清、下一步清單……）都會先用 meSay() 回顯使用者選了什麼不一致——點完卡片，
+   畫面上完全沒有「使用者剛才問了什麼」的痕跡，AI 的回覆感覺憑空冒出來。這裡讓卡片點擊
+   也比照辦理，先送出一句對應的訊息（「查看○○○○詳情」／「試算○○○○」），
+   再進入原本的內容渲染——這樣使用者看得到自己剛才問了什麼，也讓 meSay() 順便完成
+   startTurn()，不需要再另外用 opts.fresh／startTurn() 特別處理錨點（見 enterProductCalc()）。 */
 function showCatalogCards(items){
-  const onDetail=p=>enterProductDetail(p,items);
-  /* 從卡片列直接點「立即試算」時還沒有 meSay() 開新的一輪，跟 enterProductDetail 的
-     「試算這檔商品」次一步選項（已經由 meSay() 另起一輪）情況不同，這裡要另外標記
-     fresh:true，讓 enterProductCalc 知道要自己開新的一輪、把商品卡片帶到最上面
-     （見 enterProductCalc() 的說明） */
-  const onCalc=p=>enterProductCalc(p,items,{fresh:true});
+  const onDetail=p=>{
+    meSay(`查看${p.name}詳情`);
+    enterProductDetail(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});
+  };
+  const onCalc=p=>{
+    meSay(`試算${p.name}`);
+    enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});
+  };
   if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{
@@ -257,8 +265,19 @@ function showCatalogCards(items){
     down();settleTurn();
   }
 }
-function enterProductDetail(p,items){
+function enterProductDetail(p,items,opts){
+  /* 商品卡片的「商品詳情」「立即試算」永久留在對話紀錄裡可以重複點，見 engine.js 的
+     cardCancelToken 說明——這裡不是擋掉連續點擊，而是先中止前一次還沒打完的輸出，
+     換成顯示這一次最新點擊的內容 */
+  if(cardCancelToken)cardCancelToken.cancel();
+  const myToken=makeCancelToken();
+  cardCancelToken=myToken;
   clearControls();
+  opts=opts||{};
+  /* cardAnchor：呼叫端（showCatalogCards）在這之前已經用 meSay() 開了新的一輪、
+     留下一句「查看○○○○詳情」的回覆泡泡，這裡直接拿來當錨點，商品內容如果長過一個畫面，
+     貼齊底部時還能保留一點這句回覆泡泡的邊緣（見下面 peekAnchorAbove()） */
+  const cardAnchor=opts.anchor||null;
   const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
   const isDeposit=p.cat==='deposit';
   /* 定存商品介紹內文（feature 及以下欄位）不套用 **粗體** 強調——粗體會被 mdToHtml
@@ -285,13 +304,23 @@ function enterProductDetail(p,items){
   aiSay(messages,()=>{
     showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
       {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
+        /* title 維持通用標籤（清單上的顯示文字，保持簡短），echo 才是回覆泡泡實際要講的話——
+           帶出具體商品名稱「試算○○○○」，跟直接從卡片列點「立即試算」的回覆泡泡文字一致
+           （見 showCatalogCards()），讓兩條路徑的對話脈絡一樣清楚。
+           這裡執行的當下，showNextSteps 內部的 meSay() 剛把這一輪換成
+           [提問句「了解商品內容之後…」, 使用者回覆泡泡「試算○○○○」]，
+           currentTurnEl 目前最後一個元素就是那顆回覆泡泡，直接拿來當 enterProductCalc
+           的錨點，讓試算卡渲染完成、畫面貼齊底部之後，還能保留一點這顆泡泡的邊緣 */
+        echo:`試算${p.name}`,
         keywords:['試算','算','好','可以','ok','OK'],
-        onSelect:()=>{clearControls();enterProductCalc(p,items);}},
+        onSelect:()=>{clearControls();enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});}},
       {id:'back',title:'再看看其他產品',description:'看看其他商品',
         keywords:['返回','清單','其他','上一步','回去'],
         onSelect:()=>{clearControls();backToCatalogList(items);}}
     ]);
-  },{label:'為您整理商品資訊中'});
+    if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
+    if(cardCancelToken===myToken)cardCancelToken=null;
+  },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
   aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items),{label:'管家整理中'});
@@ -300,16 +329,21 @@ function backToCatalogList(items){
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
    外匯定存利率不隨年期變動，關掉近1年/近3年切換（showPeriodTabs:false） */
 function enterProductCalc(p,items,opts){
+  /* 商品卡片的「商品詳情」「立即試算」永久留在對話紀錄裡可以重複點，見 engine.js 的
+     cardCancelToken 說明——這裡不是擋掉連續點擊，而是先中止前一次還沒打完的輸出，
+     換成顯示這一次最新點擊的內容 */
+  if(cardCancelToken)cardCancelToken.cancel();
+  const myToken=makeCancelToken();
+  cardCancelToken=myToken;
   clearControls();
-  /* 從商品卡片列直接點「立即試算」時（opts.fresh，見 showCatalogCards），前面還沒有任何
-     meSay() 開新的一輪，試算內容會一路疊進「商品清單」那一整輪裡；等內容長過一個畫面，
-     down() 貼齊底部的邏輯會把最上面的商品卡片列整個推出畫面，使用者完全看不到剛才點的
-     是哪一張卡。這裡先用 startTurn() 另立新的一輪、把「剛才點的商品卡片（列）」——也就是
-     這一輪目前最後一個元素——帶到新的一輪最上面，記下來當 cardAnchor。
-     從商品詳情頁的「試算這檔商品」選項進來則不會帶 opts.fresh——那條路徑已經由
-     showNextSteps 內部的 meSay() 開過一輪新的，這裡不需要、也不應該再開一次，
-     否則會把 meSay() 特地留住的提問句擠出這一輪。 */
-  const cardAnchor=(opts&&opts.fresh)?startTurn().firstElementChild:null;
+  opts=opts||{};
+  /* cardAnchor：試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把「使用者剛才
+     點的是什麼」整個推出畫面上緣；這裡記住一個錨點元素，稍後在畫面穩定後幫忙保留它的邊緣
+     （見下面 peekAnchorAbove()）。兩種進入路徑（商品卡片列直接點「立即試算」／商品詳情頁
+     「試算這檔商品」選項）現在都會先用 meSay() 開一輪新的、留下一句回覆泡泡（見
+     showCatalogCards()／enterProductDetail() 的用法），呼叫端一律把那顆泡泡當 opts.anchor
+     傳進來即可，這裡不需要再自己另開一輪 */
+  const cardAnchor=opts.anchor||null;
   S.selectedProductCode=p.code;
   const tag={bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
@@ -338,7 +372,8 @@ function enterProductCalc(p,items,opts){
        讓使用者還能看到「這是延伸自哪張卡片」，等畫面穩定（下一輪重繪）後才修正，
        避免蓋掉 showNextSteps 剛算好的位置 */
     if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
-  },{label:'為您試算中',heavy:true});
+    if(cardCancelToken===myToken)cardCancelToken=null;
+  },{label:'為您試算中',heavy:true,cancelToken:myToken});
 }
 
 /* ================= 階段 H｜（路徑 2）補充更多資產資訊 ================= */
