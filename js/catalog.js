@@ -17,6 +17,13 @@
    - assetSize：小／中／大（對應最低申購門檻的資產規模建議）
    - tenor：僅 deposit 商品使用，顯示用的天期文字（如「7天」「12個月」）
    ============================================================ */
+/* 債券商品卡片（card/product）兩個統計格的標題，直接取自 Excel「商品對照矩陣」工作表的
+   欄位標題儲存格 H2（票面/配息率）／J2（參考買進價(%)），不要在 component-library.js 裡另外
+   寫死字串——之後 Excel 欄位標題如果改名，只要同步改這裡兩個值即可，不用去 render 函式裡找。
+   J2 標題本身帶了「(%)」，代表 refPrice 是「面額的百分之幾」的報價慣例（如 94 代表面額的
+   94%），不是絕對金額——儲存格數字本身是整數 94、沒有存成 0.94，顯示時要自己補上 % 後綴，
+   不能像 rate1y／return1y 那樣先乘以 100（那樣會變成 9400%，是錯的）。 */
+const BOND_CARD_LABELS={rate:'票面/配息率',price:'參考買進價(%)'};
 const CATALOG=[
   {code:'BD337',cat:'bond',name:'美林 Merrill Lynch BV',currency:'AUD',rate:0.051,rate1y:0.051,rate3y:0.051,refPrice:94,
     payFreq:'月配',minAmt:'10,000',maturity:'2044/2/1',callDate:'2029/2/1',
