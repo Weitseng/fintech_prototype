@@ -163,9 +163,14 @@ function chatBottomPad(){
    down() 開頭一律先取消前一個還在跑的動畫，不管新呼叫是要接著動畫還是要瞬間跳定，都不會有
    兩段動畫互相打架。只有 meSay() 會傳 {smooth:true}，其餘呼叫端不帶這個參數，維持跟以前
    完全一樣的即時捲動，不影響既有依賴同步位置的邏輯。 */
+/* 時長／曲線經使用者實測回饋調整過一次：原本 MIN 220ms／MAX 480ms／1.8px 每 ms，
+   常見的一輪距離（兩三百 px）算出來幾乎都卡在 220ms 下限，太快看起來還是像瞬跳；
+   改成 MIN 380ms／MAX 900ms／0.9px 每 ms，同樣的距離落在 400~600ms 左右，肉眼才
+   看得出明顯的位移過程。曲線也從 easeOutCubic 換成 easeOutQuart——四次方在尾段
+   減速更明顯，讓「滑到定位前逐漸變慢」的感覺更清楚，不是勻速跑到底才突然停。 */
 let scrollAnimFrame=null;
-const SCROLL_ANIM_MIN_MS=220,SCROLL_ANIM_MAX_MS=480,SCROLL_ANIM_PX_PER_MS=1.8;
-const easeOutCubic=t=>1-Math.pow(1-t,3);
+const SCROLL_ANIM_MIN_MS=380,SCROLL_ANIM_MAX_MS=900,SCROLL_ANIM_PX_PER_MS=0.9;
+const easeOutQuart=t=>1-Math.pow(1-t,4);
 const prefersReducedMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function animateScrollTop(el,target){
   const from=el.scrollTop,distance=target-from;
@@ -174,7 +179,7 @@ function animateScrollTop(el,target){
   const start=performance.now();
   (function tick(now){
     const t=Math.min(1,(now-start)/duration);
-    el.scrollTop=from+distance*easeOutCubic(t);
+    el.scrollTop=from+distance*easeOutQuart(t);
     updateScrollBtn();
     scrollAnimFrame=t<1?requestAnimationFrame(tick):null;
   })(start);
