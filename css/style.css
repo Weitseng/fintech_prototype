@@ -98,9 +98,14 @@ body{font-family:var(--font-cn);
   跟 #screen／#controls 一樣是 .app 的正常流內子項，佔掉的高度會自動反映在
   #screen 的 clientHeight 上，engine.js 的捲動計算（down()）不需要另外處理。
   標題用 position:absolute + left:50% 置中，不受右邊按鈕寬度影響，
-  保證「文字置中、按鈕貼右」同時成立，不用算兩邊寬度是否對稱 */
+  保證「文字置中、按鈕貼右」同時成立，不用算兩邊寬度是否對稱。
+  height 固定寫 58px（跟其他頁面原本靠 .reset 按鈕撐出來的高度一致）：.app-header-brand
+  是 position:absolute，本來就不會撐開 .app-header 的高度，開場頁把 .reset 設
+  display:none 隱藏後，flex 容器裡沒有東西撐高，header 會整個塌陷成只剩 padding
+  （量測只剩 25px）——固定 height 讓開場頁跟其他頁面的 header 高度永遠一致，
+  不會因為 .reset 顯示與否而跳動。 */
 .app-header{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;
-  padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider)}
+  height:58px;padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider)}
 .app-header-brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   display:flex;align-items:center;gap:var(--spacing-12)}
 .app-header-logo{width:28px;height:28px;display:block;flex-shrink:0}
@@ -148,8 +153,11 @@ body{font-family:var(--font-cn);
    原始比例（1080:1274，assets/opening-animation.mp4）精算，行動裝置（寬度隨視窗縮小）跟
    桌機／平板（寬度固定 776px 後）自然呈現不同高度。.opening-page 版面（見下方）會用
    flex 壓縮這個高度以塞進視窗，此時交給 object-fit:cover 裁切（允許裁切，見下方
-   .opening-page 的說明），維持置中比例，不變形。 */
-.selpage-hero{width:100%;aspect-ratio:1080/1274;margin-bottom:36px;overflow:hidden}
+   .opening-page 的說明），維持置中比例，不變形。
+   2026-07-30 依 Figma 更新（node 283:1077／283:1079）：拿掉標題上方的「凱基銀行 AI
+   智富管家」小字（kicker）後，影片區塊底部到標題之間的間距改成 24px（--spacing-24），
+   對應 Figma 目前標註的絕對座標差（974 - (68+882) = 24）。 */
+.selpage-hero{width:100%;aspect-ratio:1080/1274;margin-bottom:var(--spacing-24);overflow:hidden}
 .selpage-hero-video{display:block;width:100%;height:100%;object-fit:cover}
 .selpage-intro{text-align:center}
 /* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
@@ -164,6 +172,12 @@ body{font-family:var(--font-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-active)}
 .selpage h1{font-family:var(--font-cn);font-size:var(--type-headline-size);font-weight:var(--type-headline-weight-cn);
   margin:6px 0 4px;line-height:var(--type-headline-lh-cn);letter-spacing:var(--type-headline-ls-cn)}
+/* .selpage-intro（只有 stepA 開場頁在用，stepB 的 kicker/h1 是直接掛在 .selpage 下面，
+   不會受影響）h1 的 6px margin-top 原本是「kicker 跟標題」之間的小間距，開場頁的 kicker
+   拿掉後這個標題變成 .selpage-intro 的第一個元素，這裡歸零，讓上面 .selpage-hero 的
+   margin-bottom:24px 是唯一決定間距的來源——.opening-page 用 flex 排版，flex item 之間
+   不會自動 margin collapse，兩個 margin 疊加起來會變成 30px，不是 Figma 標註的 24px。 */
+.selpage-intro h1{margin-top:0}
 .selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);

@@ -16,6 +16,7 @@
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
   const p=wrap();p.className='selpage opening-page';
   p.innerHTML=`
     <div class="selpage-hero">
@@ -24,7 +25,6 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <div class="kicker">凱基銀行 AI 智富管家</div>
       <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
       <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     </div>
@@ -49,6 +49,7 @@ function buildSingleSelectList(container,options,onPick){
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
   clearControls();
+  document.querySelector('.reset').style.display='';
   const p=wrap();p.className='selpage';
   p.innerHTML=`
     <div class="kicker">開始之前</div>

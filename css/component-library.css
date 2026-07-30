@@ -83,18 +83,22 @@
 .calc-slider-wrap{width:100%;padding:9px 0}
 input.calc-slider{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:var(--radius-full);outline:none;
   background:linear-gradient(to right,var(--brand) 0,var(--brand) var(--fill,50%),var(--color-teal-500) var(--fill,50%),var(--color-teal-500) 100%)}
+/* 拖曳旋鈕（Figma node 202:835）：本體實測是 --color-container-general-active-primary
+   藍色（不是舊版沿用的白色），外面再加一圈白色 border 才會有對比、看得出邊框。
+   白色 border 的粗細（2px）在 Design Guideline 裡沒有對應的 border-width token
+   （css/tokens/ 目前只有 colors／typography／radius／shadow／spacing 五類），已跟需求方
+   確認：沒有 token 可套時，直接採用依 Figma 稿實測的 2px，顏色用既有的 --color-surface-white
+   token（不是自訂色碼）。
+   陰影固定用 --shadow-popover（Figma「Popover」效果樣式，css/tokens/shadow.css 完全對應：
+   0px 4px 16px 0px #0044ad14），Default／Hover／Dragging 三個狀態都是同一個值、
+   不再像先前版本那樣只在 :hover／:active 才切換陰影——頁面載入後旋鈕預設就要有陰影，
+   所以直接寫在基礎規則裡，不需要另外的 :hover/:active 選取器。 */
 input.calc-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;
-  background:var(--color-surface-white);box-shadow:var(--shadow-light);cursor:pointer;border:0}
-input.calc-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--color-surface-white);
-  box-shadow:var(--shadow-light);cursor:pointer;border:0}
-/* 拖曳旋鈕陰影（Figma node 202:835 標註的「Popover」效果樣式，css/tokens/shadow.css 的
-   --shadow-popover 剛好完全對應：0px 4px 16px 0px #0044ad14）：拖曳/觸控中（:active）
-   把陰影從預設的 --shadow-light 換成範圍更大、更明顯的 --shadow-popover，跟著旋鈕本身
-   的 pseudo-element 移動，不需要另外用 JS 算位置；放開後 :active 結束、陰影自動退回
-   --shadow-light，不用額外程式碼處理「拖曳結束後隱藏」。滑鼠 hover 時也先給同樣的陰影，
-   讓使用者在按下之前就能感受到這裡可以拖曳。 */
-input.calc-slider:hover::-webkit-slider-thumb,input.calc-slider:active::-webkit-slider-thumb{box-shadow:var(--shadow-popover)}
-input.calc-slider:hover::-moz-range-thumb,input.calc-slider:active::-moz-range-thumb{box-shadow:var(--shadow-popover)}
+  background:var(--color-container-general-active-primary);border:2px solid var(--color-surface-white);
+  box-shadow:var(--shadow-popover);cursor:pointer}
+input.calc-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;
+  background:var(--color-container-general-active-primary);border:2px solid var(--color-surface-white);
+  box-shadow:var(--shadow-popover);cursor:pointer}
 input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full);background:transparent}
 
 .calc-cards-row{display:flex;gap:var(--spacing-8);width:100%}
