@@ -275,7 +275,7 @@ let cardCancelToken=null;
 let turnLoadingShown=false;
 function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;turnLoadingShown=false;const s=screen();s.innerHTML='';
   chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
-  const disclaimer=document.createElement('p');disclaimer.className='analysis-disclaimer';
+  const disclaimer=document.createElement('p');disclaimer.className='analysis-disclaimer type-caption-r';
   disclaimer.innerHTML='本服務內容由 AI 自動生成，建議使用前請詳閱<span class="link">《AI 智富管家使用同意條款》</span>';
   chatBox.appendChild(disclaimer);
   scrollSpacer=document.createElement('div');scrollSpacer.className='scroll-spacer';s.appendChild(scrollSpacer);
