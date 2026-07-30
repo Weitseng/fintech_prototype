@@ -51,8 +51,11 @@ COMPONENTS['chart/pie']={render:renderPieChart};
    2026-07-29 依 Excel「精選債券基金_客戶屬性對照矩陣」原始欄位重新對應兩個統計格：
    - 第一格（rateLabel/rateStr）：債券＝「票面/配息率」讀 rate1y（債券的 rate1y 本來就等於
      Excel 真實票面利率，沒有另外造假，沿用即可）；基金＝「近一年報酬率」改讀 catalog.js
-     新增的 return1y（Excel 真實數字），不能沿用 rate1y——基金的 rate1y／rate3y 是試算卡
-     （card/calculator）專用的示範性參考值，非真實績效，兩者用途不同不要混用；
+     新增的 return1y（Excel 真實數字）——這裡固定讀 return1y、不讀 rate1y，是因為
+     card/calculator 統一讀 rate1y（跨債券/基金/定存共用同一套欄位名稱），card/product
+     統一讀 return1y，兩邊各自固定讀自己的欄位、不用判斷商品類別去挑欄位名稱；
+     2026-07-30 起兩者對基金而言數值上已相同（rate1y 也改回 Excel 真實數字，見
+     catalog.js 開頭說明），但這裡仍維持讀 return1y，維持既有的呼叫慣例；
      定存＝「年利率」讀 rate1y（銀行牌告利率，本來就是真的，不受影響）。
    - 第二格（stat2Label/stat2Value）：債券＝「參考買進價(%)」讀 catalog.js 新增的 refPrice，
      字尾補一個 % ——Excel 標題本身寫明這欄是「面額的百分之幾」（如 94 代表面額 94%），
@@ -137,6 +140,12 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
       </div>
     </div>
     <div class="calc-slider-wrap">
+      <div class="calc-slider-tip" aria-hidden="true">
+        <div class="calc-slider-tip-float">
+          <div class="calc-slider-tip-bubble-wrap"><div class="calc-slider-tip-bubble">拖曳調配比例</div></div>
+          <div class="calc-slider-tip-arrow"></div>
+        </div>
+      </div>
       <input type="range" class="calc-slider" min="0" max="100" value="${assetRatio}" aria-label="${tag}配置比例">
     </div>
     <div class="calc-cards-row">
@@ -174,6 +183,56 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   const slider=card.querySelector('.calc-slider');
   const emojiLayer=card.querySelector('.calc-emoji-layer');
   const toggle=card.querySelector('.calc-toggle');
+  let sliderTip=card.querySelector('.calc-slider-tip');
+  /* 拖曳提示 tooltip（Figma node 327:1108「taost」）：只在試算卡剛開啟、使用者還沒碰過
+     拉桿之前顯示，提醒可以拖曳調整比例；水平位置要對齊拉桿旋鈕目前所在的位置（旋鈕寬度
+     24px，見 css/component-library.css .calc-slider::-webkit-slider-thumb），旋鈕位置
+     隨 assetRatio 變動，所以要用 JS 算，不能寫死在 CSS 裡置中。
+     這裡故意不在拖曳（input 事件）時即時跟著旋鈕移動——需求是「使用者一碰拉桿，提示就消失
+     且這次卡片開啟期間不再出現」，只要卡片一渲染完成、量得到 offsetWidth 就定位一次即可，
+     使用者碰到拉桿的當下（mousedown／touchstart，早於 input 事件）提示就已經被移除了，
+     不會有拖曳中提示還留在畫面上、位置卻沒跟著旋鈕跑的情況。
+     垂直位置故意不用 CSS 寫死的 top 值：<input type="range"> 是 inline-replaced 元素，
+     受所在容器 line-height／baseline 對齊影響，實測跟「padding-top + 軌道高度一半」這種
+     純靠 box model 推算的理論值對不上（相差將近 10px），改成直接量測 slider 自己的
+     getBoundingClientRect() 相對 wrap 的位置，兩者一起用 JS 算，才會精準對齊旋鈕、
+     不受瀏覽器對 range input 的排版怪癖影響。 */
+  function positionSliderTip(){
+    if(!sliderTip)return;
+    const thumbW=24;
+    const trackW=slider.offsetWidth;
+    const pct=(assetRatio-0)/(100-0);
+    const centerX=thumbW/2+pct*(trackW-thumbW);
+    sliderTip.style.left=centerX+'px';
+    const wrap=slider.parentElement;
+    const wrapRect=wrap.getBoundingClientRect(),sliderRect=slider.getBoundingClientRect();
+    const thumbCenterY=(sliderRect.top-wrapRect.top)+sliderRect.height/2;
+    sliderTip.style.top=(thumbCenterY-thumbW/2)+'px';
+    /* 旋鈕拖到接近拉桿兩端（例如 95% 以上）時，泡泡若仍以旋鈕為中心置中，寬度會超出卡片
+       邊界被裁切——這裡讓箭頭固定指向旋鈕（上面算好的 centerX 不變），泡泡本身用
+       translateX 額外做「有超出邊界才平移」的修正，兩者分開處理，箭頭永遠準確指向旋鈕，
+       泡泡永遠不超出卡片，是常見 tooltip 元件（如 Popper/Floating UI）的做法。 */
+    const bubbleWrap=sliderTip.querySelector('.calc-slider-tip-bubble-wrap');
+    bubbleWrap.style.transform='';
+    const cardRect=card.getBoundingClientRect();
+    const bubbleRect=bubbleWrap.getBoundingClientRect();
+    const EDGE_PAD=8;
+    let shift=0;
+    if(bubbleRect.right>cardRect.right-EDGE_PAD)shift=(cardRect.right-EDGE_PAD)-bubbleRect.right;
+    else if(bubbleRect.left<cardRect.left+EDGE_PAD)shift=(cardRect.left+EDGE_PAD)-bubbleRect.left;
+    if(shift)bubbleWrap.style.transform=`translateX(${shift}px)`;
+  }
+  function dismissSliderTip(){
+    if(!sliderTip)return;
+    sliderTip.remove();
+    sliderTip=null;
+    window.removeEventListener('resize',positionSliderTip);
+  }
+  if(sliderTip){
+    slider.addEventListener('mousedown',dismissSliderTip,{once:true});
+    slider.addEventListener('touchstart',dismissSliderTip,{once:true,passive:true});
+    window.addEventListener('resize',positionSliderTip);
+  }
 
   function currentRate(){return showPeriodTabs?(period==='1y'?asset.rate1y:asset.rate3y):asset.rate1y;}
   /* 投資1年／投資3年切換的是「持有年期」，增長金額要跟著用年期累計（單利，不複利）：
@@ -243,7 +302,9 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   };
 
   refresh(true);
-  appendToChat(card);down();
+  appendToChat(card);
+  positionSliderTip();
+  down();
   return card;
 }
 COMPONENTS['card/calculator']={render:renderAssetVsDepositCalc};
@@ -399,7 +460,7 @@ function renderFeedbackQrCard(opts){
       <div class="fbqr-intro">
         <img class="fbqr-icon" src="assets/feedback-celebrate.svg" alt="">
         <div class="fbqr-copy">
-          <div class="fbqr-qr-title">非常感謝您的體驗</div>
+          <div class="fbqr-qr-title">感謝體驗凱基 AI 智富管家</div>
           <div class="fbqr-qr-desc">
             <p>您的寶貴意見是我們前進的動力！</p>
             <p>誠摯邀請您掃描 QR Code 填寫滿意度問卷</p>

@@ -80,7 +80,31 @@
 .calc-ratio-value .calc-num{font-family:var(--kgi-font-auto-headline-en-family),sans-serif;font-size:var(--kgi-font-auto-headline-en-size-rem);font-weight:var(--kgi-font-auto-headline-en-weight);line-height:var(--kgi-font-auto-headline-en-line-height);letter-spacing:var(--kgi-font-auto-headline-en-letter-spacing)}
 .calc-ratio-value .calc-pct{font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-en);line-height:var(--type-subtitle-lh-en)}
 
-.calc-slider-wrap{width:100%;padding:9px 0}
+.calc-slider-wrap{width:100%;padding:9px 0;position:relative}
+/* 拖曳提示 tooltip（Figma node 327:1108「taost」）：泡泡＋下方箭頭，固定在拉桿旋鈕正上方
+   10px（水平／垂直位置皆由 js/component-library.js positionSliderTip() 動態量測設定，
+   這裡不寫死 top，見該函式註解說明為什麼不能用純 CSS box model 推算）。
+   transform 用 translate(-50%, calc(-100% - 10px)) 把整組泡泡＋箭頭往上位移
+   「自身高度＋10px」，讓箭頭尖端精準落在 JS 設定的 top 位置（旋鈕頂緣）上方 10px，
+   不需要事先量出泡泡實際高度。pointer-events:none 避免蓋住底下可拖曳的旋鈕。 */
+.calc-slider-tip{position:absolute;transform:translate(-50%,calc(-100% - 10px));pointer-events:none;z-index:2}
+/* 浮動微動畫套在內層（不是外層 .calc-slider-tip），因為外層已經用 transform 做定位；
+   兩層各自獨立的 transform 才不會互相覆蓋——外層負責「定位在哪」，內層負責「原地上下浮動」。
+   上下 3px、1.6s 一輪、ease-in-out：Figma 靜態稿沒有標註動畫時間軸，專案 tokens 目前也
+   沒有 Motion Token 檔案可對照，這裡依需求「微幅、不能太快」自訂節奏，不是照抄某個 token。 */
+.calc-slider-tip-float{display:flex;flex-direction:column;align-items:center;animation:calcSliderTipFloat 1.6s ease-in-out infinite}
+@keyframes calcSliderTipFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+/* 泡泡外面多包一層可獨立位移的 wrap：旋鈕拖到接近拉桿兩端時，泡泡若還是以旋鈕為中心置中
+   會超出卡片邊界被裁切，見 js/component-library.js positionSliderTip() 的邊界修正——
+   只平移這層 wrap，箭頭（.calc-slider-tip-arrow，同層兄弟節點）維持原位、永遠準確指向旋鈕。 */
+.calc-slider-tip-bubble-wrap{display:inline-block}
+.calc-slider-tip-bubble{background:var(--color-navy-500);opacity:.8;color:var(--color-content-general-light-active);
+  border-radius:var(--radius-medium);box-shadow:var(--shadow-basic);padding:var(--spacing-4) var(--spacing-12);
+  font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);white-space:nowrap}
+.calc-slider-tip-arrow{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;
+  border-top:7px solid var(--color-navy-500)}
+@media (prefers-reduced-motion: reduce){.calc-slider-tip-float{animation:none}}
 input.calc-slider{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:var(--radius-full);outline:none;
   background:linear-gradient(to right,var(--brand) 0,var(--brand) var(--fill,50%),var(--color-teal-500) var(--fill,50%),var(--color-teal-500) 100%)}
 /* 拖曳旋鈕（Figma node 202:835）：本體實測是 --color-container-general-active-primary
