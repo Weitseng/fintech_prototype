@@ -230,7 +230,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    讓 .btn-primary（width:100%）撐滿到跟上面 .fbqr-qr-desc 說明文字同寬，而不是被
    父層的 align-items:center 縮回按鈕本身的內容寬度 */
 .fbqr-btn-mount{width:100%}
-.fbqr-qr-img{width:189px;height:189px;object-fit:cover}
+.fbqr-qr-img{width:210px;height:210px;object-fit:cover}
 .fbqr-qr-title{font-family:var(--font-cn);font-size:var(--type-headline-size);
   font-weight:var(--type-headline-weight-cn);line-height:var(--type-headline-lh-cn);color:var(--color-content-general-primary);text-align:center}
 .fbqr-qr-desc{font-family:var(--font-cn);font-size:var(--type-body-size);
