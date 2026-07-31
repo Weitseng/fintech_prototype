@@ -262,8 +262,16 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     slider.style.setProperty('--fill',assetRatio+'%');
     const rate=currentRate();
     const years=currentYears();
-    const depositRateLabel=(asset.cat==='deposit'&&asset.tenor!=='12個月')?`${asset.tenor}利率`:'年利率';
-    card.querySelector('.calc-fund-rate-label').textContent=showPeriodTabs?(period==='1y'?'近一年報酬':'近3年報酬'):depositRateLabel;
+    /* 標籤跟著商品類別走，不能只看 showPeriodTabs——債券也有投資1年/投資3年分頁
+       （showPeriodTabs 對債券同樣是 true，見 flow.js enterProductCalc()），但債券票面利率
+       固定不隨年期變動，不是「近一年/近3年報酬」這種基金示範績效的講法，改用跟商品卡片
+       （card/product）同一組 Excel 對應標題 BOND_CARD_LABELS.rate（票面/配息率），
+       兩邊呼叫端顯示的標題文字才會一致，不會像之前那樣債券試算卡還沿用基金的標籤字樣。 */
+    /* 定存不分天期一律顯示「年利率」，跟 card/product（見上方 renderProductCardDisplay()
+       的 rateLabel）同一套講法一致——銀行牌告利率本來就是以年化基礎報價，即使是 7天／
+       1個月這種短天期定存，業界慣例也是用「年利率」表示，不是把天期字樣接進標籤裡。 */
+    const fundRateLabel=asset.cat==='bond'?BOND_CARD_LABELS.rate:showPeriodTabs?(period==='1y'?'近一年報酬':'近3年報酬'):'年利率';
+    card.querySelector('.calc-fund-rate-label').textContent=fundRateLabel;
     card.querySelector('.calc-fund-rate-value').textContent=(rate*100).toFixed(2)+'%';
     const weighted=((assetRatio/100)*rate+(depositRatio/100)*CALC_CONFIG.depositRate)*years;
     card.querySelector('.calc-weighted').textContent=(weighted*100).toFixed(2)+'%';

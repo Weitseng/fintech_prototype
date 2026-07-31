@@ -155,8 +155,19 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   background:rgba(255,255,255,.2);border-radius:var(--radius-medium);padding:var(--spacing-12);font-size:var(--type-body-size);line-height:var(--type-body-lh-cn);font-weight:var(--type-body-r-weight-cn);color:var(--color-content-general-primary);
   text-align:center;box-shadow:var(--shadow-popover);font-family:var(--font-cn)}
 
+/* 放大 1.5 倍（scale）但保持右上角視覺邊界對齊原本 top:12px／right:12px 的位置：
+   position/top/right 這些「佔位用」的定位值都維持原尺寸（58x24）計算，不去改寬高本身；
+   純用 transform:scale(1.5) 做視覺放大，並把 transform-origin 從預設的正中心
+   改成 top right——這樣放大時只會往左、往下長，右上角那個點完全不動，
+   不需要另外手動回推新的 top/right 座標去做位移校正。 */
 .calc-toggle{position:absolute;top:12px;right:12px;width:58px;height:24px;border-radius:var(--radius-full);
-  background:var(--color-sky-blue-500);border:1px solid var(--color-sky-blue-500);display:flex;align-items:center;cursor:pointer;padding:0;z-index:2}
+  background:var(--color-sky-blue-500);border:1px solid var(--color-sky-blue-500);display:flex;align-items:center;cursor:pointer;padding:0;z-index:2;
+  transform:scale(1.5);transform-origin:top right}
+/* 320px 這類極窄機型（如 iPhone SE 第一代）實測 1.5 倍放大後會跟「資產有機會增長約」文字
+   重疊（見對應討論記錄），沿用 css/style.css .app-header-brand 同一個既有 400px 斷點
+   （專案裡處理「極窄機型版面擠壓」問題慣用的門檻），這個寬度以下維持原尺寸（scale(1)），
+   不縮小 toggle 本身尺寸，只是不放大，避免跟置中文字擠在一起。 */
+@media (max-width:400px){.calc-toggle{transform:scale(1)}}
 .calc-toggle-knob{position:absolute;top:0;left:0;width:28px;height:24px;border-radius:var(--radius-full);background:var(--color-surface-white);transition:left .2s ease}
 .calc-toggle.dinner .calc-toggle-knob{left:30px}
 .calc-toggle-icon{position:relative;z-index:1;flex:1;text-align:center;font-size:15px;line-height:24px;color:var(--color-content-general-light-active)}
