@@ -26,7 +26,7 @@ function stepA(){
     </div>
     <div class="selpage-intro">
       <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
-      <div class="lead">花 2 分鐘，讓「智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
+      <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   screen().innerHTML='';screen().appendChild(p);

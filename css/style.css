@@ -230,6 +230,13 @@ body{font-family:var(--font-cn);
 .ai-msg .md-ul li{margin:3px 0}
 /* 使用者發送訊息氣泡已改用 message/chat-bubble 元件（css/component-library.css .mcb-*） */
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* AI 回覆分段生成（見 js/engine.js typeOut()）：每一小段新出現的文字都是一個
+   .chunk-fade，只做 opacity 淡入、不帶位移，讓生成節奏感覺柔和而不是硬生生跳出來；
+   .chunk-host 只是取代原本文字節點位置的容器，不加任何視覺樣式，避免影響排版。 */
+.chunk-host{display:inline}
+.chunk-fade{display:inline;animation:chunkFade .22s ease}
+@keyframes chunkFade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.chunk-fade{animation:none}}
 /* 引言／提問句（markdown "> " 語法）：全站統一用這個樣式凸顯需要使用者留意或回答的句子，
    跟一般敘述性 ai-msg 區分開，不用底部色塊，改用跟標題相近的字級來凸顯 */
 .md-quote{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
@@ -285,8 +292,22 @@ body{font-family:var(--font-cn);
 .choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
   width:18px;height:18px;border-radius:var(--radius-small);border:1.5px solid var(--color-container-general-divider);background:var(--color-surface-white);transition:.15s}
 .choice.checkopt.sel::before{background:var(--color-container-general-active-primary);border-color:var(--color-container-general-active-primary)}
-.choice.checkopt.sel::after{content:'✓';position:absolute;left:16.5px;top:50%;transform:translateY(-50%);
-  color:var(--color-content-general-light-active);font-size:12px;font-weight:800;line-height:1}
+/* 打勾符號改用 SVG 遮罩（mask-image）畫出來，不再用「✓」文字字元——文字字元的視覺
+   置中受字型影響：這裡的字型堆疊第一順位是中文字型（Microsoft JhengHei 等），中文字型
+   繪製 ✓ 這類符號字元時，字符本身在自己的字身框（advance box）裡經常不是左右對稱的，
+   即使用 transform:translate(-50%,-50%) 把「字身框」置中，肉眼看到的墨跡（實際打勾的線條）
+   還是會偏左，這正是先前只調整 transform 卻沒解決偏左問題的原因。改成 SVG 遮罩後，
+   置中依據的是 SVG 本身精確的座標（Material 對勾圖示，視覺上左右對稱），
+   搭配固定的 width/height + mask-size:contain + mask-position:center，
+   不管字型、瀏覽器怎麼變，勾勾的「幾何」中心都會準確對齊核取方塊正中央。
+   left 從方框幾何中心 23px 再加 1.5px：對勾圖案右上那筆斜線比左下那筆短撇長、
+   視覺重量偏右上，即使幾何置中，肉眼仍會覺得整體偏左，這裡額外做一點點
+   「視覺置中」的手動微調（optical alignment），不是算錯，是刻意補償。 */
+.choice.checkopt.sel::after{content:'';position:absolute;left:24.5px;top:50%;
+  width:12px;height:12px;transform:translate(-50%,-50%);
+  background:var(--color-content-general-light-active);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
 .choice:disabled{opacity:.4;cursor:not-allowed}
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
 
