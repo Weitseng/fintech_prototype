@@ -162,14 +162,47 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    不需要另外手動回推新的 top/right 座標去做位移校正。 */
 .calc-toggle{position:absolute;top:12px;right:12px;width:58px;height:24px;border-radius:var(--radius-full);
   background:var(--color-sky-blue-500);border:1px solid var(--color-sky-blue-500);display:flex;align-items:center;cursor:pointer;padding:0;z-index:2;
-  transform:scale(1.5);transform-origin:top right}
+  transform:scale(1.5);transform-origin:top right;transition:filter .15s}
 /* 320px 這類極窄機型（如 iPhone SE 第一代）實測 1.5 倍放大後會跟「資產有機會增長約」文字
    重疊（見對應討論記錄），沿用 css/style.css .app-header-brand 同一個既有 400px 斷點
    （專案裡處理「極窄機型版面擠壓」問題慣用的門檻），這個寬度以下維持原尺寸（scale(1)），
    不縮小 toggle 本身尺寸，只是不放大，避免跟置中文字擠在一起。 */
 @media (max-width:400px){.calc-toggle{transform:scale(1)}}
-.calc-toggle-knob{position:absolute;top:0;left:0;width:28px;height:24px;border-radius:var(--radius-full);background:var(--color-surface-white);transition:left .2s ease}
-.calc-toggle.dinner .calc-toggle-knob{left:30px}
+.calc-toggle:active{filter:brightness(.92)}
+/* 2026-07-31 客戶反應看不出這顆膠囊可以點擊切換——它安靜待在卡片右上角，跟其他純裝飾
+   的圖示很像，沒有任何暗示自己是可互動元件。這裡不加文字提示泡泡：面板上緣本來就已經
+   跟「資產有機會增長約」文字擠在一起（見上方 400px 斷點註解），再疊一顆提示泡泡只會
+   進一步跟文字重疊；改用不佔版面（box-shadow／transform 都不影響 layout）的動態提示，
+   使用者第一次碰觸（mousedown/touchstart，早於 click）就會被移除，見
+   js/component-library.js toggle 的 .attract 綁定，不會長期留在畫面上造成干擾。
+   光暈顏色沿用既有 --shadow-popover 同一組品牌藍（--color-sky-blue-600 / #0044AD），
+   沒有另外新增顏色。 */
+.calc-toggle.attract{animation:calcToggleGlow 1.8s ease-in-out infinite}
+@keyframes calcToggleGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(0,68,173,.45)}
+  50%{box-shadow:0 0 0 7px rgba(0,68,173,0)}
+}
+@media (prefers-reduced-motion: reduce){.calc-toggle.attract{animation:none}}
+/* 旋鈕滑動改用彈性 easing（原本是線性 .2s ease）：切換的當下要有「跳一下」的手感回饋，
+   呼應客戶要求的「增添樂趣」，純視覺調整，不影響 left 值本身的切換邏輯。
+   2026-07-31 高度微調：.calc-toggle 是 border-box（見 css/style.css 全域 *{box-sizing:border-box}），
+   height:24px 已含上下各 1px border，實際可放內容的內距高度只有 22px；knob 原本 top:0／
+   height:24px 直接套用外層數字，等於比內距高度多出 2px，結果 knob 頂部貼齊 track 內緣、
+   底部還會再超出 track 邊框，視覺上是「切齊／溢出」而不是「包在裡面」。改成 knob 上下各
+   留 --spacing-2（2px）的呼吸空間（top:2px，height 從 24 減到 18＝22 內距高度再扣掉上下
+   各 2px），knob 才會真正被 track 的圓角膠囊邊框包覆，而不是跟外框同高切齊。
+   2026-07-31 左右內距比照上下對齊：同一顆 track，內距寬度（扣掉左右各 1px border）是
+   58-2=56px；knob 原本 left:0／30、width:28px 是直接沿用外層 58px 概算出來的數字，
+   drink 態貼著內距左緣完全沒有留白、dinner 態（30+28=58）還會超出內距右緣 2px，
+   跟修正前的上下高度是同一種「贴齊/溢出」問題，只是這次是左右。
+   改成跟垂直方向同一組 --spacing-2（2px）呼吸空間：knob 寬度縮成 26px
+   （56 內距寬度 - 左右各 2px 呼吸空間 - 中間切齊處，剛好讓 drink／dinner 兩個位置在
+   輪播圖示的中線 28px 處無縫交接，不需要額外處理中間縫隙），
+   drink 態 left:2px、dinner 態 left:28px（56-26-2=28，算式對得起來，非隨意數字），
+   兩個狀態下 knob 離 track 左右邊框都固定留 2px 內距＋1px border＝3px 視覺間距，
+   跟上下已經是的 3px 間距完全一致。 */
+.calc-toggle-knob{position:absolute;top:var(--spacing-2);left:var(--spacing-2);width:26px;height:18px;border-radius:var(--radius-full);background:var(--color-surface-white);transition:left .32s cubic-bezier(.34,1.56,.64,1)}
+.calc-toggle.dinner .calc-toggle-knob{left:28px}
 .calc-toggle-icon{position:relative;z-index:1;flex:1;text-align:center;font-size:15px;line-height:24px;color:var(--color-content-general-light-active)}
 
 .calc-disclaimer{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);width:100%}

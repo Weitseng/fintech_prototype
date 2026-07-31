@@ -308,6 +308,13 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     toggle.classList.toggle('dinner',mode==='dinner');
     refresh(true);
   };
+  /* 客戶反應不知道右上角這顆膠囊可以點——加 .attract 觸發呼吸光暈＋搖擺提示使用者這裡
+     可以互動（見 css/component-library.css .calc-toggle.attract），在使用者第一次
+     碰觸（mousedown/touchstart，早於 click）就移除，跟上面 sliderTip 的 dismiss 手法
+     一致：一旦碰過就不再需要提示，同一張卡片開啟期間也不會再出現。 */
+  toggle.classList.add('attract');
+  toggle.addEventListener('mousedown',()=>toggle.classList.remove('attract'),{once:true});
+  toggle.addEventListener('touchstart',()=>toggle.classList.remove('attract'),{once:true,passive:true});
 
   refresh(true);
   appendToChat(card);
