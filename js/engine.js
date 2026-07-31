@@ -64,7 +64,7 @@ const ctrls=()=>document.getElementById('controls');
    不是「收掉墊高、被動夾回」，所以不會有那次額外的跳動。 */
 const SCROLL_TOP_OFFSET=12;
 const AT_BOTTOM_THRESHOLD=40;
-let scrollBtn=null,scrollSpacer=null;
+let scrollBtn=null,scrollSpacer=null,chatFadeWrap=null;
 /* maxScrollTop：使用者手動捲動（滑鼠滾輪／觸控）目前允許捲到的最深位置，由 down() 每次
    算完「這一輪該停在哪」之後同步更新。scrollSpacer 會刻意撐出比實際內容更多的捲動空間
    （見 syncSpacer()），讓 down() 能把新一輪頂到最上緣；但那塊多出來的空間本身是空白的，
@@ -234,7 +234,15 @@ function isScreenAtBottom(){
 }
 function updateScrollBtn(){
   if(!scrollBtn)return;
-  scrollBtn.classList.toggle('show',!isScreenAtBottom());
+  const atBottom=isScreenAtBottom();
+  scrollBtn.classList.toggle('show',!atBottom);
+  /* 漸層遮罩只在使用者真正位於「對話真正的底部」時才顯示（見 css/style.css
+     .chat-fade-wrap 的說明）：這個遮罩用 position:sticky 貼在 #screen 可視範圍的底部，
+     如果不額外判斷，使用者往上捲回歷史訊息時，遮罩會一路跟著貼在「目前捲到哪裡」的
+     底部，把使用者正在重讀的舊訊息也淡出，讓人誤以為那段話被截斷——實際上只是恰好
+     捲到那裡而已。跟「回到最下方」按鈕共用同一個 isScreenAtBottom() 判斷，兩者狀態
+     互補：在底部時看不到按鈕、看得到遮罩；往上捲離開底部時換成看得到按鈕、遮罩消失。 */
+  if(chatFadeWrap)chatFadeWrap.classList.toggle('show',atBottom);
 }
 function scrollToBottom(){
   const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
@@ -357,12 +365,21 @@ function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTo
   disclaimer.innerHTML='本服務內容由 AI 自動生成，建議使用前請詳閱<span class="link">《AI 智富管家使用同意條款》</span>';
   chatBox.appendChild(disclaimer);
   scrollSpacer=document.createElement('div');scrollSpacer.className='scroll-spacer';s.appendChild(scrollSpacer);
+  /* 訊息區域底部的漸層漸消遮罩（見 css/style.css .chat-fade-wrap／.chat-fade 的說明）：
+     只在使用者真正位於對話底部時才顯示（見 updateScrollBtn()），保存參照才能在那裡切換
+     .show class，不能像原本以為的「純視覺、不需要參照」——沒有這層可見度判斷，使用者
+     往上捲看歷史訊息時，這個 sticky 遮罩會貼著「目前捲到哪裡」的底部，把正在重讀的舊
+     訊息也淡出，讓人誤以為內容被截斷。 */
+  chatFadeWrap=document.createElement('div');chatFadeWrap.className='chat-fade-wrap';chatFadeWrap.setAttribute('aria-hidden','true');
+  const fade=document.createElement('div');fade.className='chat-fade';
+  chatFadeWrap.appendChild(fade);s.appendChild(chatFadeWrap);
   const scrollWrap=document.createElement('div');scrollWrap.className='scroll-bottom-wrap';
   scrollBtn=document.createElement('button');
   scrollBtn.type='button';scrollBtn.className='scroll-bottom-btn';scrollBtn.setAttribute('aria-label','回到最下方');
   scrollBtn.textContent='↓';scrollBtn.onclick=scrollToBottom;
   scrollWrap.appendChild(scrollBtn);s.appendChild(scrollWrap);
   s.onscroll=clampScroll;
+  updateScrollBtn();
   stageC();}
 /* opts.label：依情境自訂 loading 文字（保底預設「管家思考中」，理論上每個呼叫都該自帶 label，
    保底值只是防呆，不該常態出現）；

@@ -107,17 +107,22 @@ body{font-family:var(--font-cn);
 .app-header{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;
   height:58px;padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider)}
 .app-header-brand{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  display:flex;align-items:center;gap:var(--spacing-12)}
-/* 完整 logo lockup（Figma node 320:1220「Logo」）：圖示標記＋「凱基銀行」文字圖＋分隔線＋
-   「AI 智富管家」文字圖，四張 SVG 依序排列，皆為既有的向量圖層匯出，尺寸依設計稿原比例。
-   Figma 原始結構把圖示＋「凱基銀行」文字圖多包一層子群組，但兩層的間距都是同一個 12px，
-   拉平成同一排 flex（沿用 .app-header-brand 既有的 gap:12px）視覺效果完全一致，DOM 更精簡。
+  width:278.263px;height:35px}
+/* 完整 logo lockup（2026-07-30 更新為 Figma node 324:1152「Logo」）：圖示標記＋「凱基銀行」
+   文字圖＋分隔線＋「AI 智富管家」文字圖，皆為既有的向量圖層匯出。圖示與「凱基銀行」文字圖
+   跟前一版（320:1220）完全相同（比對匯出檔案內容逐位元組一致，未變動）；分隔線與
+   「AI 智富管家」文字圖這次改版尺寸放大了一些。
+   這版 Figma 稿是用絕對座標排版，「AI 智富管家」文字圖並非在 35px 列高中垂直置中
+   （top:10.59px，而非置中應有的 9.02px），改用絕對定位逐一還原四個圖層在 Figma 裡的
+   精確座標，不再沿用前一版 flex+gap 置中的排版方式，避免跟實際稿子的視覺基準線對不齊。
+   .app-header-brand 的 width/height 對應四個圖層合起來的外框尺寸（276.81+101.453 寬、
+   圖示 35px 高），讓外層 translate(-50%,-50%) 置中時基準正確。
    標題文字改回圖片呈現後不再套用 Typography Token，.app-header-brand 加上
    role="img"+aria-label 讓整組 lockup 對螢幕報讀軟體仍有可讀的替代文字。 */
-.app-header-logo-icon{width:35px;height:35px;display:block;flex-shrink:0}
-.app-header-logo-kgib{width:105px;height:21px;display:block;flex-shrink:0}
-.app-header-logo-divider{width:1px;height:28px;display:block;flex-shrink:0}
-.app-header-logo-ai{width:84.544px;height:14.13px;display:block;flex-shrink:0}
+.app-header-logo-icon{position:absolute;left:0;top:0;width:35px;height:35px;display:block}
+.app-header-logo-kgib{position:absolute;left:47px;top:7px;width:105px;height:21px;display:block}
+.app-header-logo-divider{position:absolute;left:164px;top:2.42px;width:0.793px;height:30.154px;display:block}
+.app-header-logo-ai{position:absolute;left:176.81px;top:10.59px;width:101.453px;height:16.956px;display:block}
 .reset{flex-shrink:0;font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);
   background:var(--color-container-general-filter-inactive-grey);border:0;color:var(--color-content-general-secondary);
@@ -138,6 +143,26 @@ body{font-family:var(--font-cn);
 /* 讓任何一輪都能被捲到畫面最上方用的墊高區，高度由 engine.js syncSpacer() 動態同步為
    #screen 的 clientHeight；使用者不會直接看到它，只會感覺到「這一輪比較短時，下面先留白」 */
 .scroll-spacer{width:100%;pointer-events:none}
+/* 訊息區域底部漸層漸消遮罩：讓最底部的訊息內容由清晰漸變到跟背景色一致，避免文字被輸入框
+   生硬截斷。跟下面 .scroll-bottom-wrap 同一招——外層 wrap 用 position:sticky + height:0
+   貼在 #screen 可視範圍的底部，不佔用任何捲動高度（不會被算進 scrollHeight，不影響
+   down()／isScreenAtBottom() 這些依賴捲動高度的判斷）；實際的漸層色塊用 position:absolute
+   往上長出遮罩高度。純視覺效果，pointer-events:none 不擋捲動；文字本身沒有被裁切或從 DOM
+   移除，捲動時一樣看得到完整內容，只是畫面靜止時視覺上呈現淡出效果。
+   z-index 比 .scroll-bottom-wrap（5）低，讓「回到最下方」按鈕能疊在遮罩之上、不被淡化。
+   漸層色沿用背景色 token --color-surface-white（頁面／.app 本身的背景色），從透明漸變到
+   這個顏色的不透明狀態；Design Guideline 目前沒有另外定義 Overlay/Gradient 類的 token，
+   故直接用既有的背景色 token 組 linear-gradient，不自訂顏色。
+   高度依斷點切換：Web/Tablet 60px、App（手機，沿用既有 max-width:768px 斷點）30px。
+   預設隱藏（opacity:0），只有 engine.js updateScrollBtn() 判斷使用者「真正位於對話底部」
+   時才加上 .show——sticky 定位只能保證遮罩「貼在目前可視範圍的底部」，但使用者往上捲看
+   歷史訊息時，可視範圍底部只是恰好捲到的舊內容，不是真正的對話結尾，這種情況遮罩必須
+   隱藏，否則會讓舊訊息也出現淡出效果、誤以為內容被截斷（實際發生過的問題）。 */
+.chat-fade-wrap{height:0;overflow:visible;position:sticky;bottom:0;pointer-events:none;z-index:3}
+.chat-fade{position:absolute;bottom:0;left:0;right:0;height:60px;opacity:0;transition:opacity .15s ease;
+  background:linear-gradient(to bottom,transparent,var(--color-surface-white));pointer-events:none}
+.chat-fade-wrap.show .chat-fade{opacity:1}
+@media (max-width:768px){.chat-fade{height:30px}}
 /* 新訊息出現時捲到「該則訊息的頂端」而非最底部，讓使用者從頭讀起，不強迫捲到底；
    這顆按鈕只在使用者不在最底部時浮現，點擊後捲到底部並自動消失（見 engine.js down()/updateScrollBtn()）。
    外層 wrap 高度固定為 0（sticky 但不佔版面），避免按鈕自己的高度被算進 #screen 的 scrollHeight，
