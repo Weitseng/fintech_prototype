@@ -187,8 +187,8 @@ function ch_d3(){
        kw:['領息','到期','穩定','固定','確定','債']},
       {label:'希望定期定額分散風險、追求收益潛能',val:'想以定期定額分散風險、追求收益潛能',next:()=>resolveAttribute('fund','A'),
        kw:['定期定額','分散風險','收益潛能','成長','基金','潛力']},
-      {label:'兩者都可以，或想搭配著看',val:'都可以／想搭配',next:()=>resolveAttribute('combo','AB'),
-       kw:['都可以','搭配','混合','都要','兩個都']}
+      {label:'兩者都可以，還沒決定要選哪一種',val:'都可以／還沒決定',next:()=>resolveAttribute('combo','AB'),
+       kw:['都可以','搭配','混合','都要','兩個都','還沒決定','不知道','都想看看']}
     ];
     const popover=renderComponent('popover/option-select',question,opts,opt=>{
       popover.remove();S.q3=opt.val;
@@ -228,6 +228,8 @@ function stageE(){
   aiSay(messages,()=>{
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
+      : S.recoType==='combo'
+      ? '所以我不會建議您把這筆資金全部押在同一個地方，會先留一部分在穩定的活存，其餘的部分再配置在債券或基金——等一下您可以先看看兩份清單，找到您能安心持有的比例。'
       : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
     aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
   },{label:'為您分析比較適合的方向中',heavy:true});
@@ -281,6 +283,14 @@ function stageGList(){
    也比照辦理，先送出一句對應的訊息（「查看○○○○詳情」／「試算○○○○」），
    再進入原本的內容渲染——這樣使用者看得到自己剛才問了什麼，也讓 meSay() 順便完成
    startTurn()，不需要再另外用 opts.fresh／startTurn() 特別處理錨點（見 enterProductCalc()）。 */
+/* combo（債券＋基金）清單裡兩種商品類別混在同一橫向清單，使用者分不出哪張是債券、哪張是基金
+   （見客戶回報）。這裡在渲染前把 items 依 cat 分組，同一分類分別成一列、列上方加一個分類標籤，
+   單一分類的清單（bond-only／fund-only／deposit）維持原本樣式不變，不受影響。 */
+function appendCatalogGroupLabel(text){
+  const el=document.createElement('div');el.className='pcard-group-label';el.textContent=text;
+  appendToChat(el);
+}
+const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
 function showCatalogCards(items){
   const onDetail=p=>{
     meSay(`查看${p.name}詳情`);
@@ -290,6 +300,20 @@ function showCatalogCards(items){
     meSay(`試算${p.name}`);
     enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});
   };
+  const cats=[...new Set(items.map(p=>p.cat))];
+  if(cats.length>1){
+    cats.forEach(cat=>{
+      appendCatalogGroupLabel(CATALOG_CAT_LABEL[cat]||cat);
+      const group=items.filter(p=>p.cat===cat);
+      if(group.length>1){
+        renderComponentRow('card/product',group,onDetail,onCalc);
+      }else{
+        appendToChat(renderComponent('card/product',group[0],onDetail,onCalc));
+      }
+    });
+    down();settleTurn();
+    return;
+  }
   if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{

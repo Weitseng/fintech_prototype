@@ -59,6 +59,12 @@
   -webkit-overflow-scrolling:touch;margin:var(--spacing-24) -20px;padding:4px 20px var(--spacing-16);scrollbar-width:none}
 .pcard-row::-webkit-scrollbar{display:none}
 .pcard-row .pcard{flex-shrink:0;scroll-snap-align:start}
+/* combo 清單分組標籤（債券／基金各一列）：緊接在標籤後的 .pcard-row 不需要再算一次上邊距，
+   組間距改由標籤自己的上邊距統一負責，避免跟 .pcard-row 本身的上邊距疊加成雙倍空白 */
+.pcard-group-label{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
+  line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary);margin:var(--spacing-24) 0 0}
+.pcard-group-label:first-child{margin-top:0}
+.pcard-group-label+.pcard-row{margin-top:var(--spacing-8)}
 
 /* card/calculator（Figma node 202:709）：基金 vs 定存 互動試算卡 */
 .calc-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;
