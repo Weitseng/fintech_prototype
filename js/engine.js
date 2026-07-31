@@ -232,17 +232,29 @@ function isScreenAtBottom(){
   const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
   return chatRect.bottom-cRect.bottom<AT_BOTTOM_THRESHOLD;
 }
+/* 漸層遮罩要顯示，除了「沒有捲回歷史訊息」（isScreenAtBottom()）之外，還要另外確認
+   chatBox 下緣「真的貼近」#screen 下緣，不能只看 isScreenAtBottom() 這一個條件。
+   isScreenAtBottom() 的 <AT_BOTTOM_THRESHOLD 是單邊判斷，內容還很短、離 #screen 下緣
+   有一大截空白時（例如剛進入對話、還沒有任何一輪、或這一輪內容經 down() 判定「裝得下」
+   而被頂到畫面上緣）也會算「在底部」（因為根本沒東西可以再往下捲）——這種情況下遮罩
+   （position:sticky）沒有足夠的捲動溢出可以真正貼齊 #screen 下緣，會直接照文件流跟著
+   排在 chatBox 最後一則訊息後面，疊在文字尾端，而不是真的貼在輸入框正上方，
+   這正是使用者回報「明明沒有置底，訊息結尾卻出現淡出效果」的成因。
+   這裡改成同時檢查「chatBox 下緣到 #screen 下緣的距離」是否落在 down() 貼齊底部時
+   預期的範圍內（bottomMinGap() 前後留一點容許值）——只有這個距離夠小，才代表內容真的
+   延伸到貼近下緣、sticky 機制真的有在作用，才顯示遮罩；距離一旦明顯大於這個範圍，
+   代表下面還有一大段空白（不管是內容還很短、還是這一輪被頂到上緣所致），遮罩就該隱藏。 */
+const CHAT_FADE_GAP_TOLERANCE=24;
+function shouldShowChatFade(){
+  if(!chatBox)return false;
+  const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
+  const gap=cRect.bottom-chatRect.bottom;
+  return gap>-AT_BOTTOM_THRESHOLD&&gap<=bottomMinGap()+CHAT_FADE_GAP_TOLERANCE;
+}
 function updateScrollBtn(){
   if(!scrollBtn)return;
-  const atBottom=isScreenAtBottom();
-  scrollBtn.classList.toggle('show',!atBottom);
-  /* 漸層遮罩只在使用者真正位於「對話真正的底部」時才顯示（見 css/style.css
-     .chat-fade-wrap 的說明）：這個遮罩用 position:sticky 貼在 #screen 可視範圍的底部，
-     如果不額外判斷，使用者往上捲回歷史訊息時，遮罩會一路跟著貼在「目前捲到哪裡」的
-     底部，把使用者正在重讀的舊訊息也淡出，讓人誤以為那段話被截斷——實際上只是恰好
-     捲到那裡而已。跟「回到最下方」按鈕共用同一個 isScreenAtBottom() 判斷，兩者狀態
-     互補：在底部時看不到按鈕、看得到遮罩；往上捲離開底部時換成看得到按鈕、遮罩消失。 */
-  if(chatFadeWrap)chatFadeWrap.classList.toggle('show',atBottom);
+  scrollBtn.classList.toggle('show',!isScreenAtBottom());
+  if(chatFadeWrap)chatFadeWrap.classList.toggle('show',shouldShowChatFade());
 }
 function scrollToBottom(){
   const s=screen(),cRect=s.getBoundingClientRect(),chatRect=chatBox.getBoundingClientRect();
