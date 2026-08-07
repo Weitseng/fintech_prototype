@@ -23,7 +23,7 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcard-tags{display:flex;flex-wrap:wrap;gap:var(--spacing-4) var(--spacing-8)}
 .pcard-tag{display:inline-flex;align-items:center;height:24px;padding:2px 8px;
-  border:1px solid #96c8fa;border-radius:100px;font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:#3773dc;white-space:nowrap}
+  border:1px solid var(--color-sky-blue-300);border-radius:var(--radius-full);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-tag-highlight);white-space:nowrap}
 .pcard-stats{display:flex;gap:16px}
 .pcard-stat{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
 .pcard-stat-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:#4f607b}
@@ -41,7 +41,6 @@
   -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none;
   scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
   導致卡片邊緣比上方文字多凸出 20px、對不齊；scroll-padding 讓瀏覽器把 padding 算進 snap 的安全範圍 */
-  border:1px solid var(--color-sky-blue-300);border-radius:var(--radius-full);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-tag-highlight);white-space:nowrap}
 .pcard-stats{display:flex;gap:var(--spacing-16)}
 .pcard-stat{flex:1;display:flex;flex-direction:column;gap:var(--spacing-4);min-width:0}
 .pcard-stat-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary)}
@@ -215,7 +214,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 
 /* bar/chat-input（Figma node 215:872）底部輸入/對話列，含 Enable／Disable 兩種狀態，
    兩狀態共用同一份 DOM（見 js/component-library.js renderInputChatBar），只切 class 避免版面跳動 */
-.icb{background:var(--color-surface-white);border-top:1px solid var(--color-container-general-divider);box-shadow:var(--shadow-basic);
+.icb{background:var(--color-surface-grey);border-top:1px solid var(--color-container-general-divider);box-shadow:var(--shadow-basic);
   display:flex;flex-direction:column;align-items:center;gap:0;
   padding:0 var(--spacing-16) calc(var(--spacing-12) + env(safe-area-inset-bottom));flex-shrink:0}
 .icb-row{display:flex;gap:var(--spacing-12);align-items:center;width:100%;padding:var(--spacing-12) 0}
@@ -236,7 +235,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 /* message/chat-bubble（Figma node 219:747）使用者發送訊息氣泡，靠右對齊；
    系統回覆訊息（.ai-msg／.md-quote，見 css/style.css）是不同樣式，不要共用 */
 .mcb-row{display:flex;justify-content:flex-end;margin:var(--spacing-24) 0;animation:fade .4s ease}
-.mcb{max-width:84%;background:var(--color-surface-blue);border-radius:var(--radius-small);padding:var(--spacing-8) var(--spacing-16);
+.mcb{max-width:84%;background:var(--color-surface-grey);border-radius:var(--radius-small);padding:var(--spacing-8) var(--spacing-16);
   font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);
   color:var(--color-content-general-primary);white-space:normal;overflow-wrap:break-word;word-break:break-word}
 
@@ -262,7 +261,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .nsl-item-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--spacing-4)}
 .nsl-item-title{font-family:var(--kgi-font-auto-body-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;font-weight:var(--kgi-font-auto-body-regular-tc-weight);font-size:var(--kgi-font-auto-body-regular-tc-size-rem);line-height:var(--kgi-font-auto-body-regular-tc-line-height);letter-spacing:var(--kgi-font-auto-body-regular-tc-letter-spacing);color:var(--color-content-general-primary)}
 .nsl-item-desc{font-family:var(--kgi-font-auto-caption-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;font-weight:var(--kgi-font-auto-caption-regular-tc-weight);font-size:var(--kgi-font-auto-caption-regular-tc-size-rem);line-height:var(--kgi-font-auto-caption-regular-tc-line-height);letter-spacing:var(--kgi-font-auto-caption-regular-tc-letter-spacing);color:var(--color-content-general-secondary)}
-.nsl-chevron{flex-shrink:0;width:20px;height:20px}
+.nsl-chevron{flex-shrink:0;width:20px;height:20px;color:var(--color-content-general-primary)}
 
 /* button/primary（Figma node 246:876）全站共用主要行動按鈕（CTA），4 個 variant：Default／Hover／Pressed／disable。
    寬度改為與上方文字內容等寬（撐滿掛載容器），高度仍為 Hug（依內容＋padding 自動撐開）；

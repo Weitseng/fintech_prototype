@@ -27,9 +27,9 @@ function renderPieChart(investedPct,amount){
   const inv=Math.round(amount*investedPct/100),cash=amount-inv;
   const PIE_GAP_PCT=0.4;
   const pieBg=`conic-gradient(transparent 0% ${PIE_GAP_PCT}%,`+
-    `#3773dc ${PIE_GAP_PCT}% ${investedPct-PIE_GAP_PCT}%,`+
+    `var(--color-chart-blue-2nd) ${PIE_GAP_PCT}% ${investedPct-PIE_GAP_PCT}%,`+
     `transparent ${investedPct-PIE_GAP_PCT}% ${investedPct+PIE_GAP_PCT}%,`+
-    `#55a784 ${investedPct+PIE_GAP_PCT}% ${100-PIE_GAP_PCT}%,`+
+    `var(--color-chart-teal-2nd) ${investedPct+PIE_GAP_PCT}% ${100-PIE_GAP_PCT}%,`+
     `transparent ${100-PIE_GAP_PCT}% 100%)`;
   const card=document.createElement('div');card.className='pie-card';
   card.innerHTML=`<div class="pie-overview">
@@ -37,8 +37,8 @@ function renderPieChart(investedPct,amount){
         <div class="pie-hole"><div><div class="pie-value">${cashPct}%</div><div class="pie-label">現金留存</div></div></div>
       </div>
       <div class="pie-legend">
-        <div class="pie-legend-item"><span class="pie-dot" style="background:#3773dc"></span><span class="pie-legend-text">投資配置 <span class="pie-amt">$${inv.toLocaleString()}</span></span></div>
-        <div class="pie-legend-item"><span class="pie-dot" style="background:#55a784"></span><span class="pie-legend-text">現金留存 <span class="pie-amt">$${cash.toLocaleString()}</span></span></div>
+        <div class="pie-legend-item"><span class="pie-dot" style="background:var(--color-chart-blue-2nd)"></span><span class="pie-legend-text">投資配置 <span class="pie-amt">$${inv.toLocaleString()}</span></span></div>
+        <div class="pie-legend-item"><span class="pie-dot" style="background:var(--color-chart-teal-2nd)"></span><span class="pie-legend-text">現金留存 <span class="pie-amt">$${cash.toLocaleString()}</span></span></div>
       </div>
     </div>`;
   appendToChat(card);down();
@@ -402,7 +402,7 @@ COMPONENTS['message/chat-bubble']={render:renderMessageChatBubble};
    樣式依文字規格另行還原：低對比灰階＋半透明）。
    items：[{id, title, description, state, onSelect}]；opts：{className}。 */
 const NSL_ICON_CHEVRON=`<svg class="nsl-chevron" viewBox="0 0 7.6011 13.4344" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M0.883883 0.883883L6.71722 6.71722L0.883883 12.5505" stroke="#041C43" stroke-width="1.25" stroke-linecap="square"/>
+  <path d="M0.883883 0.883883L6.71722 6.71722L0.883883 12.5505" stroke="currentColor" stroke-width="1.25" stroke-linecap="square"/>
 </svg>`;
 function renderNextStepList(heading,items,opts){
   opts=opts||{};

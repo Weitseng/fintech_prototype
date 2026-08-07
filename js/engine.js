@@ -491,6 +491,29 @@ function typeOut(text,cb,cancelToken){
     else{if(cancelToken)cancelToken.onCancel(null);cb();}
   })();
 }
+/* loading/cube-loader（見 css/style.css .cube-loader 開頭註解）：只有 js/flow.js stageC()
+   的第一個 aiSay() 呼叫（stepB 按下「立即分析」之後、進入對話的第一個 loading）會傳
+   opts.loader==='cube' 用到這個函式，其他呼叫端一律不傳，維持下方 aiSay() 原本的
+   發光球樣式，兩者互斥。title／subtitle 給預設值（沿用使用者提供的參考文案），
+   讓呼叫端可以不傳，也保留之後若要換文案時的彈性。 */
+function renderCubeLoader(title,subtitle){
+  const t=document.createElement('div');t.className='cube-loader';
+  const FACES=[['front','cyan'],['back','cyan'],['right','purple'],['left','purple'],['top','indigo'],['bottom','indigo']];
+  t.innerHTML=`<div class="cube-loader-scene">
+      <div class="cube-loader-spin">
+        <div class="cube-loader-core"></div>
+        ${FACES.map(([side,color])=>`<div class="cube-loader-side cube-loader-side--${side}"><div class="cube-loader-face cube-loader-face--${color}"></div></div>`).join('')}
+      </div>
+      <div class="cube-loader-shadow"></div>
+    </div>
+    <div class="cube-loader-text">
+      <h3 class="cube-loader-title"></h3>
+      <p class="cube-loader-subtitle"></p>
+    </div>`;
+  t.querySelector('.cube-loader-title').textContent=title||'資產彙整分析中';
+  t.querySelector('.cube-loader-subtitle').textContent=subtitle||'正在整合您的資產數據，請稍候…';
+  return t;
+}
 function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
@@ -503,18 +526,30 @@ function aiSay(msgs,done,opts){
     const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);},cancelToken);};
     if(i>0||turnLoadingShown){startTyping();return;}
     turnLoadingShown=true;
-    const t=document.createElement('div');t.className='typing';
-    const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
-    const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
-    const labelText=label+'...';
-    const labelEl=document.createElement('span');labelEl.className='typing-label t-shimmer';
-    labelEl.textContent=labelText;labelEl.setAttribute('data-text',labelText);
-    t.appendChild(labelEl);
+    let t,destroyLoader;
+    if(opts.loader==='cube'){
+      t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
+      destroyLoader=()=>{};
+    }else{
+      t=document.createElement('div');t.className='typing';
+      const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
+      const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
+      const labelText=label+'...';
+      const labelEl=document.createElement('span');labelEl.className='typing-label t-shimmer';
+      labelEl.textContent=labelText;labelEl.setAttribute('data-text',labelText);
+      t.appendChild(labelEl);
+      destroyLoader=()=>orb.destroy();
+    }
     /* 這裡故意不呼叫 down()：如果使用者才剛回答完問題，meSay() 已經把畫面捲到「提問＋回答」對齊頂端，
        這裡如果又捲一次會把那組畫面往上推、蓋掉剛才特地留住的提問。等真正的訊息換上來才需要捲動。 */
     appendToChat(t);
-    if(cancelToken)cancelToken.onCancel(()=>{orb.destroy();t.remove();});
+    if(cancelToken)cancelToken.onCancel(()=>{destroyLoader();t.remove();});
     const heavy=opts.heavy||msgs[i].length>LONG_MSG_LEN;
+    /* opts.loadingMs：明確指定這次 loading 要停留多久（毫秒），蓋掉下面 BASE_DELAY/HEAVY_EXTRA
+       的預設換算。目前只有 js/flow.js stageC() 的 cube loader 會傳這個值——那個 loading
+       是整段體驗的第一印象，需要比一般 heavy 訊息（900+1300=2200ms）更精準地停在使用者要求的
+       時長，不是「大概變長」，而是明確的秒數；其他呼叫端都不傳，維持原本的預設換算不受影響。 */
+    const loadingMs=opts.loadingMs!=null?opts.loadingMs:BASE_DELAY+(heavy?HEAVY_EXTRA:0);
     setTimeout(()=>{
       if(cancelToken&&cancelToken.cancelled)return;
       /* 每一段訊息換上來都呼叫 down()：down() 現在一律用「這一輪的容器」（currentTurnEl）
@@ -528,9 +563,9 @@ function aiSay(msgs,done,opts){
          重複呼叫只是算出同一個位置，不會有任何跳動——這跟舊版「每則訊息各自當錨點」
          不一樣，那樣才會把使用者正在讀的前一段推到畫面外，這裡因為錨點永遠是同一個容器，
          不會有這個問題。 */
-      orb.destroy();t.remove();
+      destroyLoader();t.remove();
       startTyping();
-    },BASE_DELAY+(heavy?HEAVY_EXTRA:0));
+    },loadingMs);
   })();
 }
 /* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
