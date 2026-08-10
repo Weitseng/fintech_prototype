@@ -543,12 +543,14 @@ function reconcileWithOriginal(adjusted){
   const origRank=RECOTYPE_RANK[S.recoType]||RECOTYPE_RANK.bond;
   const hRank=RECOTYPE_RANK[result];
   const diff=hRank-origRank;
+  /* reason 只留實質理由，「原本方向→調整後方向」的對比已經由 stageH3() 另外用一句話講，
+     這裡不重複講一次，避免同一件事被講兩次 */
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='*行內原本的風險評估偏保守，但他行資產顯示您已具備豐富的多元投資經驗。*因此在原本的判斷基礎上調高一個層級，同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
+    reason='*他行資產顯示您已具備豐富的多元投資經驗，*同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
-    reason='*行內原本的風險評估偏積極，但他行資產顯示您目前的投資經驗或占比仍偏保守。*因此在原本的判斷基礎上調低一個層級，先以較穩健的方向打好基礎，之後可以再逐步調整。';
+    reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*先以較穩健的方向打好基礎，之後可以再逐步調整。';
   }
   return{result,reason};
 }
@@ -588,23 +590,42 @@ function stageH2(){
 }
 
 /* ================= H-3 試算與轉入建議 =================
-   資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現 */
+   資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現。
+   【方向若改變，補一張新方向的 RECO_CARD】原本這裡不論方向有沒有變，都只有純文字的
+   h2Reason，使用者看不到「原本是基金、現在改成債券」這種明確的前後對比，也少了 stageE()
+   當初那張視覺化的商品介紹卡。現在比對 S.recoTypeH（他行資產納入後的結果）跟 S.recoType
+   （行內三題問完的原始方向）：
+   - 方向有變：先用一句話講清楚「原本→現在」，再補上新方向的 RECO_CARD（呼應 stageE()），
+     h2Reason 只留實質理由、不再重複「原本…現在調整為…」這句已經在新增的一句話裡講過的話
+   - 方向沒變：不重講一次、不重出一次卡片（stageE() 已經出過），直接用 h2Reason 補充依據即可 */
 function stageH3(){
-  const prod=PRODUCT_DATA[S.recoTypeH];
-  const calcLabel=calcLabelFor(prod);
+  const origProd=PRODUCT_DATA[S.recoType];
+  const newProd=PRODUCT_DATA[S.recoTypeH];
+  const changed=S.recoTypeH!==S.recoType;
+  const calcLabel=calcLabelFor(newProd);
   const recap=`幫您把目前掌握到的資產樣貌整理一下：
 - 凱基銀行資產級距：${S.assetRange||'—'}，現金比例：${S.cashRatio||'—'}
 - 其他銀行資產級距：${S.h1Amt||'—'}，投資比例：${S.h1Ratio||'—'}
 - 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
-  const bridge=S.recoTypeH==='deposit'
-    ? `綜合看下來，可先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
-  aiSay([recap,S.h2Reason,bridge],()=>{
-    showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
-      {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
-        keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
-        onSelect:()=>{clearControls();stageH3List();}}
-    ]);
+  const messages=[recap];
+  if(changed){
+    messages.push(`原本方向是 <b>${origProd.tag}</b>，考量您在其他銀行的資產狀況，這裡調整為 <b>${newProd.tag}</b>：`);
+  }
+  messages.push(S.h2Reason);
+  aiSay(messages,()=>{
+    if(changed){
+      renderComponent('card/recommendation',RECO_CARD[S.recoTypeH]);
+    }
+    const bridge=S.recoTypeH==='deposit'
+      ? `綜合看下來，可先以 <b>${newProd.name}</b> 為主，讓資金穩定累積。`
+      : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${newProd.tag}，找到您能安心持有的比例。`;
+    aiSay([bridge],()=>{
+      showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
+        {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
+          keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
+          onSelect:()=>{clearControls();stageH3List();}}
+      ]);
+    },{label:'為您規劃資金配置中'});
   },{label:'為您彙整資產資料中',heavy:true});
 }
 /* 補充路徑的風險承受度沿用 D 階段 ch_d2() 已收集的 S.q2（見 riskToleranceFromQ2()），不能無視使用者
