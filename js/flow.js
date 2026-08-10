@@ -236,11 +236,13 @@ function stageE(){
   }
   aiSay(messages,()=>{
     renderComponent('card/recommendation',S.recoType==='combo'?[RECO_CARD.bond,RECO_CARD.fund]:RECO_CARD[S.recoType]);
+    /* 【AI_Behavior_Instruction v1.1 §9.6】商品情境不用「我建議／我不會建議」，改用中性的
+       「可先……」「不宜……」等描述，決策權仍保留給使用者（拉桿試算可自行調整） */
     const bridge=S.recoType==='deposit'
-      ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
+      ? `這筆資金可先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : S.recoType==='combo'
-      ? '另外，我不會建議您把這筆資金全部押在同一個地方，會先留一部分在穩定的活存，其餘的部分再配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
-      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
+      ? '另外，這筆資金不宜全部押在同一個地方，可以先留一部分在穩定的活存，其餘的部分再評估配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
+      : `這筆資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
     aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
@@ -274,22 +276,27 @@ function stageG(){
 function riskToleranceFromQ2(){
   return S.q2==='可接受淨值明顯波動換取成長'?'積極':'穩健';
 }
+/* 【AI_Behavior_Instruction v1.1 §6.7／§8.9】商品清單層一律用中性語氣「以下整理本行商品供您參考」，
+   不用「為您篩選」「幫您篩出」等個人化篩選語氣；風險層級說明也拿掉「篩」字，只客觀說明目前顯示的風險範圍 */
+function riskRangeNote(tolerance){
+  return tolerance==='穩健'
+    ?'目前顯示的商品風險等級以「穩健」為主；若可選商品較少，會依序放寬資產規模與風險層級以符合最少呈現檔數，商品卡片仍會標示實際風險等級，方便您辨別。'
+    :'目前顯示的商品風險等級涵蓋穩健到積極，選擇較為多元。';
+}
 function stageGList(){
   const cats=S.recoType==='combo'?['bond','fund']:[S.recoType];
   const tolerance=riskToleranceFromQ2();
   const items=matchCatalogAtLeast(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange),2);
-  const riskNote=tolerance==='穩健'
-    ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內；若符合的商品較少，會依序放寬資產規模與風險層級再補足，商品卡片仍會標示實際風險等級，方便您辨別。'
-    :'考量您能接受較明顯的波動、也想追求更高的成長空間，這裡的篩選範圍涵蓋穩健到積極的商品，讓您有更多元的選擇。';
+  const riskNote=riskRangeNote(tolerance);
   const intro={
-    bond:`我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    fund:`我依您能接受的波動程度與資金規模，從資產類別、配息方式幫您篩出幾檔基金。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    combo:`我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    deposit:'我整理了本行美元定存的天期與利率供您參考，您可以先看看各天期的商品詳情，或直接試算：'
-  }[S.recoType]||'依您剛才的回答，我幫您整理了幾檔符合需求的商品，您可以先看看商品詳情，或直接試算：';
+    bond:`以下整理本行債券商品供您參考，包含信評、天期與配息頻率等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    fund:`以下整理本行基金商品供您參考，包含資產類別與配息方式等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    combo:`以下分別整理債券與基金商品供您參考，方便您搭配著看。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看各天期的商品詳情，或直接進一步試算：'
+  }[S.recoType]||'以下整理符合條件的商品供您參考，您可以先查看商品詳情，或直接進一步試算：';
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'為您篩選商品中'});
+  },{label:'商品清單整理中'});
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
@@ -307,6 +314,20 @@ function appendCatalogGroupLabel(text){
   appendToChat(el);
 }
 const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
+/* 【AI_Behavior_Instruction v1.1 §8.10】基金商品清單、配息型商品清單後方必須完整保留法定警語，
+   不得省略或改寫；依 items 組成判斷要附加哪些警語，任何商品清單（G／H 兩條路徑、返回清單）
+   都經過這裡，不用在每個呼叫端各自補一次 */
+function catalogDisclaimerLines(items){
+  const lines=[];
+  if(items.some(p=>p.cat==='fund')){
+    lines.push('投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。');
+    lines.push('基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。');
+  }
+  if(items.some(p=>p.payFreq==='月配'||p.payFreq==='季配'||p.payFreq==='半年配')){
+    lines.push('配息可能包含本金，實際組成請以公開說明書為準。');
+  }
+  return lines;
+}
 function showCatalogCards(items){
   const onDetail=p=>{
     meSay(`查看${p.name}詳情`);
@@ -327,13 +348,15 @@ function showCatalogCards(items){
         appendToChat(renderComponent('card/product',group[0],onDetail,onCalc));
       }
     });
-    down();settleTurn();
-    return;
-  }
-  if(items.length>1){
+  }else if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{
     appendToChat(renderComponent('card/product',items[0],onDetail,onCalc));
+  }
+  const disclaimers=catalogDisclaimerLines(items);
+  if(disclaimers.length){
+    aiSay([disclaimers.join('\n\n')],()=>{down();settleTurn();},{label:'管家整理中'});
+  }else{
     down();settleTurn();
   }
 }
@@ -395,7 +418,7 @@ function enterProductDetail(p,items,opts){
   },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
-  aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items),{label:'管家整理中'});
+  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),{label:'管家整理中'});
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -572,8 +595,8 @@ function stageH3(){
 - 其他銀行資產級距：${S.h1Amt||'—'}，投資比例：${S.h1Ratio||'—'}
 - 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
   const bridge=S.recoTypeH==='deposit'
-    ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
+    ? `綜合看下來，可先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
+    : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
   aiSay([recap,S.h2Reason,bridge],()=>{
     showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
       {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
@@ -588,15 +611,13 @@ function stageH3(){
 function stageH3List(){
   const tolerance=riskToleranceFromQ2();
   const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed(tolerance),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
-  const riskNote=tolerance==='穩健'
-    ?'考量您的風險承受度，這裡先篩出風險等級屬於「穩健」的商品，若清單較少，會依序放寬資產規模與風險層級再補足。'
-    :'考量您在本行與其他銀行的整體資產配置、投資經驗與風險承受度，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
+  const riskNote=riskRangeNote(tolerance);
   const intro={
-    bond:`納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    fund:`納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    deposit:'納入您整體的資產狀況，我整理了本行美元定存的天期與利率供您參考，您可以先看看商品詳情，或直接試算：'
+    bond:`以下整理本行債券商品供您參考，包含信評、天期與配息頻率等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    fund:`以下整理本行基金商品供您參考，包含資產類別與配息方式等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看商品詳情，或直接進一步試算：'
   }[S.recoTypeH];
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'為您篩選商品中'});
+  },{label:'商品清單整理中'});
 }
