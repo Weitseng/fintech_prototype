@@ -2,10 +2,11 @@
    共用流程層（三人共用，異動請走 PR 讓大家 review）
    開場、提問、屬性分流、商品清單→試算→CTA 的整套連接邏輯都在這裡，
    確保不論分流到屬性 A/B/C/AB，走起來的節奏與語氣都一致。
-   - 只使用 engine.js／catalog.js 提供的工具，商品內容一律讀 PRODUCT_DATA / RECO_REASON / CATALOG
+   - 只使用 engine.js／catalog.js 提供的工具，商品內容一律讀 PRODUCT_DATA / RECO_CARD / CATALOG
    - 三人各自的內容放在 content-attr-a.js／content-attr-b.js／content-attr-c.js，不要寫在這裡
-   - 階段性小結不用卡片，直接用 aiSay + **粗體** 融入對話；不要顯示屬性標籤（A/B/C/AB），
-     用 RECO_REASON／h2Reason 這種敘述性文字告訴使用者他的特質就好
+   - 階段性小結不用卡片，直接用 aiSay + **粗體** 融入對話；不要顯示屬性標籤（A/B/C/AB）。
+     stageE() 的初步推薦改用 card/recommendation 卡片（RECO_CARD）取代大段文字說明；
+     其他階段性小結（如 h2Reason）仍維持敘述性文字，不受影響
    - 全程用「您」稱呼使用者；每個提問前盡量說明「為什麼問這個」，每個結論後盡量說明「為什麼是這個結論」，
      避免讓使用者覺得資訊是憑空出現、或感覺是在硬推商品
    - 選項按鈕的「顯示文字」跟「內部存值（S.q1/S.q2/S.q3）」是分開的：
@@ -208,8 +209,14 @@ function resolveAttribute(recoType,attr){
 }
 
 /* ================= 階段 E｜屬性分流與初步推薦 =================
-   不顯示屬性標籤（A/B/C/AB）；流程是：先反映使用者剛才說的需求 → RECO_REASON 解釋為什麼適合
-   → 帶出「配置」的具體做法（呼應 ch_d1 先前提過的概念，也預告等一下的拉桿）→ 才給出商品方向 */
+   不顯示屬性標籤（A/B/C/AB）；流程是：先反映使用者剛才說的需求 → 用 card/recommendation 卡片
+   （見 js/component-library.js、RECO_CARD）取代原本 RECO_REASON 那一大段標題＋條列的
+   markdown 說明——使用者回饋「文字太多太饒口」，改成一張視覺化卡片交代完標題／情境副標／
+   特色清單，比整段文字打字動畫快讀完 → 帶出「配置」的具體做法（呼應 ch_d1 先前提過的概念，
+   也預告等一下的拉桿）→ 才給出商品方向。
+   combo（債券＋基金搭配）沒有自己的卡片資料——直接在這裡組 [RECO_CARD.bond,RECO_CARD.fund]
+   兩張卡，維持「combo 內容橫跨 A／B 兩人負責的資料」這個既有慣例，不在 RECO_CARD 裡另外
+   重複定義一份 combo 專用資料。 */
 function timeframeNote(){
   return {'一年內':'比較快就可能會用到','一年以上':'短期內應該不會用到','還不確定':'還不確定什麼時候會用到'}[S.q1]||'還沒有明確的使用時間';
 }
@@ -224,8 +231,11 @@ function stageE(){
   if(S.horizonOverride){
     messages.push('不過債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息，若中途提前賣出，可能無法拿回全部本金。考量這筆資金一年內就可能會用到，這裡改為規劃彈性較高、以收益與穩健為主的基金，同樣能兼顧資金運用的靈活度。');
   }
-  messages.push(RECO_REASON[S.recoType]);
+  if(S.recoType==='combo'){
+    messages.push('您還沒有特別偏好哪一種，債券與基金剛好分屬不同特性，可以先都看看再決定：');
+  }
   aiSay(messages,()=>{
+    renderComponent('card/recommendation',S.recoType==='combo'?[RECO_CARD.bond,RECO_CARD.fund]:RECO_CARD[S.recoType]);
     const bridge=S.recoType==='deposit'
       ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : S.recoType==='combo'

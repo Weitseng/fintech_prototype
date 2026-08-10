@@ -46,6 +46,52 @@ function renderPieChart(investedPct,amount){
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
 
+/* ---- card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）----
+   AI 完成資產評估、推薦適合方向時使用，取代原本 RECO_REASON 那一大段標題＋條列文字的 markdown
+   說明（見 js/flow.js stageE()）：使用者回饋文字太多太饒口，改成一張「左圖右字」卡片，
+   左側是商品名＋色條＋幾何品牌標記，右側是標題／資金情境副標／特色勾選清單，一次評估後只
+   顯示這一種商品對應的卡片（combo／債券＋基金搭配情境例外，見下方 renderRecommendationCard）。
+   純展示卡，不可點擊、無 hover/focus 樣式；樣式收斂在 css/component-library.css 的
+   .kgi-card 命名空間，不與站內既有的 Design Guideline token 混用——交接文件裡的色票是
+   這組卡片自己的識別配色（每個 type 一組強調色），站內目前的 token 沒有完全對應的顏色，
+   混用會破壞這組卡片刻意做出的「深色霓虹光暈」視覺效果，故照文件原色實作，不另外抽 token。
+   data 格式：{type:'bond'|'fund'|'fx', name, title, subtitle, features:[...]}
+   （見 js/content-attr-a.js／-b.js／-c.js 的 RECO_CARD.fund／.bond／.deposit）。 */
+const KGI_CARD_TICK_SVG=`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="currentColor" opacity="0.2"/><circle cx="10" cy="10" r="9.2" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.5"/><path d="M6.3 10.2l2.5 2.5 5-5.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const KGI_CARD_MARK_SVG=`<svg class="kgi-card__mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <polygon points="0,50 50,0 50,100" fill="currentColor" opacity="0.16"/>
+  <polygon points="50,0 100,0 100,50" fill="currentColor" opacity="0.10"/>
+  <polygon points="50,0 100,50 50,50" fill="currentColor" opacity="0.24"/>
+  <polygon points="50,50 100,50 50,100" fill="currentColor" opacity="0.07"/>
+</svg>`;
+function renderRecommendationCardEl(data){
+  const card=document.createElement('article');card.className=`kgi-card kgi-card--${data.type}`;
+  card.innerHTML=`<div class="kgi-card__visual">
+      <div class="kgi-card__name">${data.name}</div>
+      <span class="kgi-card__accent"></span>
+      ${KGI_CARD_MARK_SVG}
+    </div>
+    <div class="kgi-card__body">
+      <h3 class="kgi-card__title">${data.title}</h3>
+      <p class="kgi-card__sub">${data.subtitle}</p>
+      <ul class="kgi-card__feats">
+        ${data.features.map(f=>`<li class="kgi-card__feat"><span class="kgi-card__tick">${KGI_CARD_TICK_SVG}</span>${f}</li>`).join('')}
+      </ul>
+    </div>`;
+  return card;
+}
+/* data 可以是單一物件（一般情境，只推薦一種商品）或物件陣列（combo：債券＋基金兩張卡並列，
+   見 js/flow.js stageE() 的呼叫方式），兩種輸入都用同一個 .kgi-card-group 容器包起來，
+   垂直排列、共用同一組間距，呼叫端不需要自己判斷是不是陣列。 */
+function renderRecommendationCard(data){
+  const list=Array.isArray(data)?data:[data];
+  const group=document.createElement('div');group.className='kgi-card-group';
+  list.forEach(d=>group.appendChild(renderRecommendationCardEl(d)));
+  appendToChat(group);down();
+  return group;
+}
+COMPONENTS['card/recommendation']={render:renderRecommendationCard};
+
 /* ---- card/product（Figma node 178:664）ProductCard_Display ----
    名稱＋配息頻率／幣別標籤、雙數值、商品詳情／立即試算膠囊按鈕，基金與債券共用同一元件。
    2026-07-29 依 Excel「精選債券基金_客戶屬性對照矩陣」原始欄位重新對應兩個統計格：

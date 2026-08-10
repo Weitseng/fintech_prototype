@@ -6,25 +6,20 @@
    ============================================================ */
 
 /* ================= 商品資料區（凱基智富管家） =================
-   PRODUCT_DATA／RECO_REASON 依「使用者屬性」分 key：
+   PRODUCT_DATA／RECO_CARD 依「使用者屬性」分 key：
    - deposit（屬性 C）由 content-attr-c.js 填入
    - bond（屬性 B）由 content-attr-b.js 填入
    - fund（屬性 A）由 content-attr-a.js 填入
-   - combo（屬性 AB，橫跨債券＋基金）內容橫跨兩人，暫由三人共同維護，先放在這裡
-   這裡只宣告容器＋combo，不要在這裡加 deposit/bond/fund，請到對應的 content-attr-*.js 加。
+   - combo（屬性 AB，橫跨債券＋基金）沒有自己的 RECO_CARD 資料——推薦時直接在
+     js/flow.js stageE() 組 [RECO_CARD.bond,RECO_CARD.fund] 兩張卡，不在這裡另外重複定義。
+   這裡只宣告容器＋combo 的 PRODUCT_DATA，不要在這裡加 deposit/bond/fund，請到對應的
+   content-attr-*.js 加；RECO_CARD 的資料格式（type/name/title/subtitle/features）
+   見 css/component-library.css card/recommendation 元件的說明。
 */
 const PRODUCT_DATA={
   combo:{key:'combo',name:'債券＋基金搭配',tag:'債券＋基金',rate:0.0525,color:'#5c34c2',colorDark:'#3d2488'}
 };
-const RECO_REASON={
-  combo:`## 債券與基金都可能是適合您的方向
-您還沒有特別偏好哪一種，債券與基金剛好分屬不同特性，可以先都看看再決定：
-
-- **債券**：提供相對穩定的配息與明確到期時間，適合重視穩定現金流
-- **基金**：參與市場整體成長機會，長期潛力通常高於定存或債券，但淨值會隨市場波動
-
-我會分別列出幾檔債券與基金供您比較；實務上通常會建議先聚焦在一種類型、試算後再決定。`
-};
+const RECO_CARD={};
 
 /* ================= 全域對話狀態 =================
    欄位皆由 flow.js（共用流程）讀寫，三人的 content-attr-*.js 不需要碰這裡。
