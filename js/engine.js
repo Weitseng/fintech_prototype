@@ -6,25 +6,20 @@
    ============================================================ */
 
 /* ================= 商品資料區（凱基智富管家） =================
-   PRODUCT_DATA／RECO_REASON 依「使用者屬性」分 key：
+   PRODUCT_DATA／RECO_CARD 依「使用者屬性」分 key：
    - deposit（屬性 C）由 content-attr-c.js 填入
    - bond（屬性 B）由 content-attr-b.js 填入
    - fund（屬性 A）由 content-attr-a.js 填入
-   - combo（屬性 AB，橫跨債券＋基金）內容橫跨兩人，暫由三人共同維護，先放在這裡
-   這裡只宣告容器＋combo，不要在這裡加 deposit/bond/fund，請到對應的 content-attr-*.js 加。
+   - combo（屬性 AB，橫跨債券＋基金）沒有自己的 RECO_CARD 資料——推薦時直接在
+     js/flow.js stageE() 組 [RECO_CARD.bond,RECO_CARD.fund] 兩張卡，不在這裡另外重複定義。
+   這裡只宣告容器＋combo 的 PRODUCT_DATA，不要在這裡加 deposit/bond/fund，請到對應的
+   content-attr-*.js 加；RECO_CARD 的資料格式（type/name/title/subtitle/features）
+   見 css/component-library.css card/recommendation 元件的說明。
 */
 const PRODUCT_DATA={
   combo:{key:'combo',name:'債券＋基金搭配',tag:'債券＋基金',rate:0.0525,color:'#5c34c2',colorDark:'#3d2488'}
 };
-const RECO_REASON={
-  combo:`## 債券與基金都可能是適合您的方向
-您還沒有特別偏好哪一種，債券與基金剛好分屬不同特性，可以先都看看再決定：
-
-- **債券**：提供相對穩定的配息與明確到期時間，適合重視穩定現金流
-- **基金**：參與市場整體成長機會，長期潛力通常高於定存或債券，但淨值會隨市場波動
-
-我會分別列出幾檔債券與基金供您比較；實務上通常會建議先聚焦在一種類型、試算後再決定。`
-};
+const RECO_CARD={};
 
 /* ================= 全域對話狀態 =================
    欄位皆由 flow.js（共用流程）讀寫，三人的 content-attr-*.js 不需要碰這裡。
@@ -491,6 +486,29 @@ function typeOut(text,cb,cancelToken){
     else{if(cancelToken)cancelToken.onCancel(null);cb();}
   })();
 }
+/* loading/cube-loader（見 css/style.css .cube-loader 開頭註解）：只有 js/flow.js stageC()
+   的第一個 aiSay() 呼叫（stepB 按下「立即分析」之後、進入對話的第一個 loading）會傳
+   opts.loader==='cube' 用到這個函式，其他呼叫端一律不傳，維持下方 aiSay() 原本的
+   發光球樣式，兩者互斥。title／subtitle 給預設值（沿用使用者提供的參考文案），
+   讓呼叫端可以不傳，也保留之後若要換文案時的彈性。 */
+function renderCubeLoader(title,subtitle){
+  const t=document.createElement('div');t.className='cube-loader';
+  const FACES=[['front','cyan'],['back','cyan'],['right','purple'],['left','purple'],['top','indigo'],['bottom','indigo']];
+  t.innerHTML=`<div class="cube-loader-scene">
+      <div class="cube-loader-spin">
+        <div class="cube-loader-core"></div>
+        ${FACES.map(([side,color])=>`<div class="cube-loader-side cube-loader-side--${side}"><div class="cube-loader-face cube-loader-face--${color}"></div></div>`).join('')}
+      </div>
+      <div class="cube-loader-shadow"></div>
+    </div>
+    <div class="cube-loader-text">
+      <h3 class="cube-loader-title"></h3>
+      <p class="cube-loader-subtitle"></p>
+    </div>`;
+  t.querySelector('.cube-loader-title').textContent=title||'資產彙整分析中';
+  t.querySelector('.cube-loader-subtitle').textContent=subtitle||'正在整合您的資產數據，請稍候…';
+  return t;
+}
 function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
@@ -503,18 +521,30 @@ function aiSay(msgs,done,opts){
     const startTyping=()=>{typeOut(msgs[i],()=>{i++;setTimeout(next,MSG_GAP);},cancelToken);};
     if(i>0||turnLoadingShown){startTyping();return;}
     turnLoadingShown=true;
-    const t=document.createElement('div');t.className='typing';
-    const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
-    const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
-    const labelText=label+'...';
-    const labelEl=document.createElement('span');labelEl.className='typing-label t-shimmer';
-    labelEl.textContent=labelText;labelEl.setAttribute('data-text',labelText);
-    t.appendChild(labelEl);
+    let t,destroyLoader;
+    if(opts.loader==='cube'){
+      t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
+      destroyLoader=()=>{};
+    }else{
+      t=document.createElement('div');t.className='typing';
+      const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
+      const orb=mountShapingOrb(orbHost,{size:24,speed:5,color:'#0044AD',density:1.05,dotScale:2.15});
+      const labelText=label+'...';
+      const labelEl=document.createElement('span');labelEl.className='typing-label t-shimmer';
+      labelEl.textContent=labelText;labelEl.setAttribute('data-text',labelText);
+      t.appendChild(labelEl);
+      destroyLoader=()=>orb.destroy();
+    }
     /* 這裡故意不呼叫 down()：如果使用者才剛回答完問題，meSay() 已經把畫面捲到「提問＋回答」對齊頂端，
        這裡如果又捲一次會把那組畫面往上推、蓋掉剛才特地留住的提問。等真正的訊息換上來才需要捲動。 */
     appendToChat(t);
-    if(cancelToken)cancelToken.onCancel(()=>{orb.destroy();t.remove();});
+    if(cancelToken)cancelToken.onCancel(()=>{destroyLoader();t.remove();});
     const heavy=opts.heavy||msgs[i].length>LONG_MSG_LEN;
+    /* opts.loadingMs：明確指定這次 loading 要停留多久（毫秒），蓋掉下面 BASE_DELAY/HEAVY_EXTRA
+       的預設換算。目前只有 js/flow.js stageC() 的 cube loader 會傳這個值——那個 loading
+       是整段體驗的第一印象，需要比一般 heavy 訊息（900+1300=2200ms）更精準地停在使用者要求的
+       時長，不是「大概變長」，而是明確的秒數；其他呼叫端都不傳，維持原本的預設換算不受影響。 */
+    const loadingMs=opts.loadingMs!=null?opts.loadingMs:BASE_DELAY+(heavy?HEAVY_EXTRA:0);
     setTimeout(()=>{
       if(cancelToken&&cancelToken.cancelled)return;
       /* 每一段訊息換上來都呼叫 down()：down() 現在一律用「這一輪的容器」（currentTurnEl）
@@ -528,9 +558,9 @@ function aiSay(msgs,done,opts){
          重複呼叫只是算出同一個位置，不會有任何跳動——這跟舊版「每則訊息各自當錨點」
          不一樣，那樣才會把使用者正在讀的前一段推到畫面外，這裡因為錨點永遠是同一個容器，
          不會有這個問題。 */
-      orb.destroy();t.remove();
+      destroyLoader();t.remove();
       startTyping();
-    },BASE_DELAY+(heavy?HEAVY_EXTRA:0));
+    },loadingMs);
   })();
 }
 /* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
