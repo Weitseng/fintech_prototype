@@ -268,12 +268,18 @@ function stageF(){
 function stageG(){
   stageGList();
 }
+/* riskAllowed() 只分「穩健」（僅收斂到穩健）跟其他（全部開放，等同'積極'），
+   所以除了使用者明確選了「可接受淨值明顯波動換取成長」，其餘（含最保守的「完全不能接受本金波動」）
+   都要收斂成'穩健'——不能反過來讓最保守的答案掉進「全部開放」。 */
+function riskToleranceFromQ2(){
+  return S.q2==='可接受淨值明顯波動換取成長'?'積極':'穩健';
+}
 function stageGList(){
   const cats=S.recoType==='combo'?['bond','fund']:[S.recoType];
-  const tolerance=S.q2==='可接受小幅波動'?'穩健':'積極';
+  const tolerance=riskToleranceFromQ2();
   const items=matchCatalogAtLeast(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange),2);
   const riskNote=tolerance==='穩健'
-    ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內。'
+    ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內；若符合的商品較少，會依序放寬資產規模與風險層級再補足，商品卡片仍會標示實際風險等級，方便您辨別。'
     :'考量您能接受較明顯的波動、也想追求更高的成長空間，這裡的篩選範圍涵蓋穩健到積極的商品，讓您有更多元的選擇。';
   const intro={
     bond:`我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券。${riskNote}您可以先看看商品詳情，或直接試算：`,
@@ -473,7 +479,10 @@ const H2_OPTIONS=[
   {key:'fund',label:'基金',cat:'growth'},
   {key:'bond',label:'債券',cat:'bond'}
 ];
-/* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）*/
+/* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）
+   H2_OPTIONS 裡每個選項的 cat 只會是 'growth' 或 'bond'，所以只要 keys.length>0，hasGrowth 跟 hasBond
+   兩者至少一個為真——下面 hasGrowth&&!hasBond／hasBond 這兩個分支已經涵蓋 keys.length>0 的所有情況，
+   不會再落到最後的 deposit fallback，這裡就不寫那段永遠不會執行的 dead code，避免誤導以為還有第三條路徑 */
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='oversea_stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
@@ -483,10 +492,7 @@ function classifyH2(keys){
   if(hasGrowth&&!hasBond){
     return{result:'bond',reason:'*目前配置偏重成長型資產，穩定收益的部位相對較少。*建議補上一部分債券部位，透過穩定的配息現金流，平衡整體資產的波動程度。'};
   }
-  if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
-    return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
-  }
-  return{result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+  return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
@@ -576,11 +582,15 @@ function stageH3(){
     ]);
   },{label:'為您彙整資產資料中',heavy:true});
 }
-/* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
+/* 補充路徑的風險承受度沿用 D 階段 ch_d2() 已收集的 S.q2（見 riskToleranceFromQ2()），不能無視使用者
+   實際填的風險承受度而直接開放全部風險層級；資產規模則取本行／他行兩邊級距較大的一邊；
    資產樣貌已在 stageH3 呈現過，這裡只帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
 function stageH3List(){
-  const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
-  const riskNote='考量您在本行與其他銀行的整體資產配置與投資經驗，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
+  const tolerance=riskToleranceFromQ2();
+  const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed(tolerance),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
+  const riskNote=tolerance==='穩健'
+    ?'考量您的風險承受度，這裡先篩出風險等級屬於「穩健」的商品，若清單較少，會依序放寬資產規模與風險層級再補足。'
+    :'考量您在本行與其他銀行的整體資產配置、投資經驗與風險承受度，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
   const intro={
     bond:`納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
     fund:`納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,

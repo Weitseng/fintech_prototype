@@ -109,7 +109,9 @@ COMPONENTS['card/recommendation']={render:renderRecommendationCard};
      基金＝「基金淨值」讀 catalog.js 新增的 nav，直接輸出數字本身，不額外加單位——
      對應 Excel 儲存格是 General 格式，沒有幣別符號；定存＝「最高限額」讀 maxAmt（不受影響）。
    - 原本債券／基金共用的「投資類型」（investType 陣列組字串）已被上述真實數字取代，
-     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。
+     不再顯示於卡片；investType 仍保留在 catalog.js 作為商品分類中繼資料（收益／平衡／成長），
+     但目前沒有任何篩選/分流函式讀取它（matchCatalog() 只比對 cat／risk／assetSize）——
+     若之後要依這個欄位收斂推薦清單，要在 catalog.js 的篩選函式裡另外接上讀取邏輯。
    - 債券的兩個標題字串不要寫死在這裡，改讀 catalog.js 的 BOND_CARD_LABELS——那兩個值
      直接對應 Excel 工作表的欄位標題儲存格（H2／J2），之後 Excel 標題改名只要改那邊。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
