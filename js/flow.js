@@ -94,11 +94,16 @@ function monthLabel(monthsAgo){
   const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-monthsAgo);
   return `${d.getMonth()+1}月`;
 }
+/* 到期當月的定存利息仍是照定存利率領到的（到期日當天才轉為活存），到期後的閒置月份
+   才會是活存利率——原本到期當月（splitIndex 那個月）就已經算進 after，等於到期那個月
+   還沒領到定存利息就被算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案
+   對不起來（N 個月閒置應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始
+   才是連續 N 個月的 after。 */
 function maturedDepositIncome(est){
   const principal=Math.round((est.lo+est.hi)/2);
   const before=principal*MATURED_DEPOSIT_RATE/12;
   const after=principal*IDLE_DEMAND_RATE/12;
-  const labels=[monthLabel(MATURED_MONTHS+1),monthLabel(MATURED_MONTHS)],values=[before,after];
+  const labels=[monthLabel(MATURED_MONTHS+1),monthLabel(MATURED_MONTHS)],values=[before,before];
   for(let m=MATURED_MONTHS-1;m>=0;m--){
     labels.push(monthLabel(m));
     values.push(after);

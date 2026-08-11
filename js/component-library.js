@@ -645,32 +645,25 @@ function renderOptionPopover(question,options,onPick){
      才能確保捲得到需要的位置，不受限於當下內容剛好多長。
      重疊量要拿「目前最後一段內容」的下緣去跟浮動選單的上緣比較，不能拿 #screen 自己的
      可視範圍下緣（sRect.bottom）去比——後者是視窗本身的固定邊界，不會因為 #screen 捲動而
-     改變，拿它算出來的重疊量是個常數，每次重試都會誤判成「還沒捲夠」而不斷疊加捲動量，
-     最後捲過頭、把原本的內容整段捲出畫面外。改成量 chatBox 最後一個子節點（實際內容的
-     尾端，會隨 #screen 捲動而跟著在畫面上移動）的下緣，這個值才會隨著每次捲動趨近於零，
-     重試才會收斂而不是越捲越多。 */
-  const settle=attempt=>{
+     改變，拿它算出來的重疊量是個常數。
+     捲動改呼叫 animateScrollTop()（跟一般對話輪次 down({smooth:true}) 同一套緩動＋時長
+     計算），取代原本 s.scrollTop=... 的瞬間跳轉——使用者回報「剛生成圖表那段捲到最下面
+     太快」，直接設定 scrollTop 是零時間跳轉，改用平滑捲動比較不突兀；maxScrollTop 直接
+     訂在算好的目標值（而不是動畫途中當下的 s.scrollTop），這樣 clampScroll() 才不會在
+     動畫還沒跑完時就把它夾回動畫起點，跟平滑捲動互相打架。 */
+  requestAnimationFrame(()=>{
     const s=screen();
     syncSpacer();
     const last=chatBox&&chatBox.lastElementChild;
     if(!last)return;
     const contentBottom=last.getBoundingClientRect().bottom,popRect=wrap.getBoundingClientRect();
     const overlap=contentBottom-popRect.top;
-    if(overlap>0){
-      s.scrollTop=Math.min(s.scrollHeight-s.clientHeight,s.scrollTop+overlap+16);
-    }
-    if(overlap>4&&attempt<5){
-      requestAnimationFrame(()=>settle(attempt+1));
-    }else{
-      /* 定住這裡算好的位置：syncSpacer() 借來的緩衝空間比實際需要的還大，如果不設上限，
-         使用者自己手動往下滑（滑鼠滾輪／觸控）會滑進那塊空白裡，畫面變成整頁空白只剩
-         輸入框（見使用者回報：往下滑太多沒限制）。跟一般對話輪次（down()）同一套做法，
-         把 maxScrollTop 訂在目前這個位置，clampScroll() 就會擋下超過這裡的手動捲動；
-         往上重讀歷史內容不受影響。 */
-      maxScrollTop=s.scrollTop;
-    }
-  };
-  requestAnimationFrame(()=>settle(0));
+    if(overlap<=0)return;
+    const target=Math.min(s.scrollHeight-s.clientHeight,s.scrollTop+overlap+16);
+    maxScrollTop=target;
+    if(prefersReducedMotion())s.scrollTop=target;
+    else animateScrollTop(s,target);
+  });
   return wrap;
 }
 COMPONENTS['popover/option-select']={render:renderOptionPopover};
