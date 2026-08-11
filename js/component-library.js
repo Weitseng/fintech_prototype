@@ -246,7 +246,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:#68c89e"></span>活存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-teal-500)"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>

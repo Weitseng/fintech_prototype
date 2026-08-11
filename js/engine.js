@@ -509,6 +509,22 @@ function renderCubeLoader(title,subtitle){
   t.querySelector('.cube-loader-subtitle').textContent=subtitle||'正在整合您的資產數據，請稍候…';
   return t;
 }
+/* loading/globe-loader（js/globe-loader.js mountInteractiveGlobe()，畫布繪製邏輯見該檔
+   開頭註解）：只有 js/flow.js stageGList() 產出商品清單前的 aiSay() 呼叫會傳
+   opts.loader==='globe' 用到，讓使用者覺得系統正在從各地蒐集債券／基金／定存資訊，
+   不是憑空生出清單。回傳值除了 DOM 節點本身，還多帶一個 destroy 方法（掛在同一個物件上，
+   而不是像 renderCubeLoader 那樣回傳純 DOM）——globe 是持續跑 rAF 的 canvas 動畫，
+   loading 結束或被取消時必須主動停掉，跟下面 aiSay() 對「發光球」typing 分支呼叫
+   orb.destroy() 是同一個道理，只是 cube-loader 純靠 CSS animation 不需要 JS 清理。 */
+function renderGlobeLoader(title,subtitle){
+  const t=document.createElement('div');t.className='globe-loader';
+  const globe=mountInteractiveGlobe(t,{size:168}); // 把 canvas 掛成 t 的第一個子節點
+  t.insertAdjacentHTML('beforeend','<div class="globe-loader-text"><h3 class="globe-loader-title"></h3><p class="globe-loader-subtitle"></p></div>');
+  t.querySelector('.globe-loader-title').textContent=title||'全球商品資料整合中';
+  t.querySelector('.globe-loader-subtitle').textContent=subtitle||'正在為您彙整各地債券、基金、定存資訊，請稍候…';
+  t.destroy=globe.destroy;
+  return t;
+}
 function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
@@ -525,6 +541,9 @@ function aiSay(msgs,done,opts){
     if(opts.loader==='cube'){
       t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
       destroyLoader=()=>{};
+    }else if(opts.loader==='globe'){
+      t=renderGlobeLoader(opts.globeTitle,opts.globeSubtitle);
+      destroyLoader=()=>t.destroy();
     }else{
       t=document.createElement('div');t.className='typing';
       const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);

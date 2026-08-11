@@ -2,7 +2,7 @@
    2026-07-27 依 Figma 更新：圖表與圖例間距 16px→24px，新增 Popover 陰影 token（跟 .pcard／.calc-result-sentence 同一組陰影值）。
    顏色／圓角／陰影／間距已改用 One KGI Design Guideline token（css/tokens/）。 */
 .pie-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
-  display:flex;flex-direction:column;align-items:center}
+  display:flex;flex-direction:column;align-items:center;animation:fade .4s ease}
 .pie-overview{display:flex;gap:var(--spacing-24);align-items:center;justify-content:center}
 .pie-chart{width:180px;height:180px;border-radius:50%;flex-shrink:0;position:relative;transition:background .5s ease}
 .pie-chart .pie-hole{position:absolute;inset:13px;background:var(--color-surface-white);border-radius:50%;display:grid;place-items:center;text-align:center}
@@ -23,7 +23,7 @@
    一眼可辨。格線／粗圓角線條／曲線下漸層填色／圖表邊框參考使用者提供的 fl_chart
    LineChartSample2 範例視覺（FlGridData／barWidth 5／isStrokeCapRound／belowBarData／FlBorderData）。 */
 .linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
-  display:flex;flex-direction:column}
+  display:flex;flex-direction:column;animation:fade .4s ease}
 .linechart-svg{width:100%;height:auto;display:block;overflow:visible}
 .linechart-border{fill:none;stroke:var(--color-container-general-divider);stroke-width:1}
 .linechart-grid-line{stroke:var(--color-container-general-divider);stroke-width:1;opacity:.5}
@@ -147,23 +147,6 @@
 .pcard-tags{display:flex;flex-wrap:wrap;gap:var(--spacing-4) var(--spacing-8)}
 .pcard-tag{display:inline-flex;align-items:center;height:24px;padding:2px 8px;
   border:1px solid var(--color-sky-blue-300);border-radius:var(--radius-full);font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-tag-highlight);white-space:nowrap}
-.pcard-stats{display:flex;gap:16px}
-.pcard-stat{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
-.pcard-stat-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:#4f607b}
-.pcard-stat-value{font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-en);line-height:var(--type-subtitle-lh-en);color:#041c43}
-.pcard-stat-value.ascend{color:#dd4f2c}
-.pcard-actions{display:flex;gap:12px;justify-content:flex-end}
-.pcard-btn{border:0;background:#fff;color:var(--brand);font-weight:var(--type-body-r-weight-cn);font-size:var(--type-body-size);
-  padding:8px 20px;border-radius:20px;cursor:pointer;transition:.15s;font-family:inherit}
-.pcard-btn.pcard-btn-light{background:#dceaff}
-@media (hover:hover) and (pointer:fine){
-  .pcard-btn:hover{background:#f2f6ff}
-  .pcard-btn.pcard-btn-light:hover{background:#c6ddfb}
-}
-.pcard-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
-  -webkit-overflow-scrolling:touch;margin:24px -20px;padding:4px 20px 16px;scrollbar-width:none;
-  scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
-  導致卡片邊緣比上方文字多凸出 20px、對不齊；scroll-padding 讓瀏覽器把 padding 算進 snap 的安全範圍 */
 .pcard-stats{display:flex;gap:var(--spacing-16)}
 .pcard-stat{flex:1;display:flex;flex-direction:column;gap:var(--spacing-4);min-width:0}
 .pcard-stat-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary)}
@@ -172,13 +155,23 @@
 .pcard-actions{display:flex;gap:var(--spacing-12);justify-content:flex-end}
 .pcard-btn{border:0;background:var(--color-container-card-white);color:var(--color-content-general-active);font-weight:var(--type-body-r-weight-cn);font-size:var(--type-body-size);
   padding:8px 20px;border-radius:var(--radius-full);cursor:pointer;transition:.15s;font-family:inherit}
+/* pcard-btn-light（「立即試算」實心膠囊按鈕）：底色 --color-container-general-active-secondary
+   在 Dark Mode 對應到一塊飽和藍（--color-blue-300d），跟 .pcard-btn 預設沿用的
+   --color-content-general-active 文字色（--color-sky-blue-400）同屬藍色系、明暗度接近，
+   文字幾乎融進底色裡（實測對比度僅約 1.4:1，遠低於 WCAG AA 文字最低要求的 4.5:1）。
+   Light Mode 下底色是淡藍色（--color-blue-0），配同一個文字變數對比度沒問題，故只在
+   Dark Mode 覆寫文字色，改用 --color-content-general-light-active（深色容器內文字，即白色），
+   跟 .btn-primary／.icb-send 等「實心藍底」元件的文字處理方式一致。 */
+[data-theme="dark"] .pcard-btn.pcard-btn-light{color:var(--color-content-general-light-active)}
 .pcard-btn.pcard-btn-light{background:var(--color-container-general-active-secondary)}
 @media (hover:hover) and (pointer:fine){
   .pcard-btn:hover{background:var(--color-surface-blue)}
   .pcard-btn.pcard-btn-light:hover{background:var(--color-sky-blue-200)}
 }
 .pcard-row{display:flex;gap:var(--spacing-12);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
-  -webkit-overflow-scrolling:touch;margin:var(--spacing-24) -20px;padding:4px 20px var(--spacing-16);scrollbar-width:none}
+  -webkit-overflow-scrolling:touch;margin:var(--spacing-24) -20px;padding:4px 20px var(--spacing-16);scrollbar-width:none;
+  scroll-padding-inline:20px} /* 沒有這行，scroll-snap-align:start 會在剛渲染時自動把第一張卡片的捲動位置吃掉左側 20px padding，
+  導致卡片邊緣比上方文字多凸出 20px、對不齊；scroll-padding 讓瀏覽器把 padding 算進 snap 的安全範圍 */
 .pcard-row::-webkit-scrollbar{display:none}
 .pcard-row .pcard{flex-shrink:0;scroll-snap-align:start}
 /* combo 清單分組標籤（債券／基金各一列）：緊接在標籤後的 .pcard-row 不需要再算一次上邊距，

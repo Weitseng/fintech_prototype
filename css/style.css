@@ -9,10 +9,13 @@
 
   /* .t-shimmer（見下方 .typing-label）：淡出色需跟它所在的背景一致，
      這裡背景固定是 Surface White，如果之後 .typing-label 換到別的背景上，
-     這裡要跟著改 */
+     這裡要跟著改。改用 color-mix 讀 --color-surface-white token（比照下方 .controls
+     漸層底色同一招）而不是寫死 rgba(255,255,255,.92)——Dark Mode 下 Surface White
+     token 會變成接近黑色的深色，寫死的白色淡出色在深色背景上會變成一道刺眼的白色閃光，
+     而不是「淡出融入背景」的效果，用 token 才能讓兩種模式都正確融入各自的背景色。 */
   --shimmer-dur:1100ms; --shimmer-band:400%; --shimmer-ease:linear;
   --shimmer-base: var(--color-container-general-active-primary);
-  --shimmer-fade: rgba(255,255,255,.92);
+  --shimmer-fade: color-mix(in srgb, var(--color-surface-white) 92%, transparent);
 
   /* 字級系統：直接對應 One KGI Typography Tokens 的 auto（Web/mWeb 依螢幕寬度
      自動切換）token，數字或英文文字包在 .num 內會自動切換到對應的 EN 值，
@@ -241,13 +244,6 @@ body{font-family:var(--font-cn);
    一起判斷要不要頂到畫面最上緣（理由見 engine.js down() 上方的註解）。
    不疊加任何視覺樣式（無 padding/margin/border/min-height），避免影響裡面訊息原本的排版。 */
 .turn{display:block}
-.ai-msg{font-size:15.5px;line-height:1.75;color:var(--ink);margin:16px 0;animation:fade .4s ease}
-.ai-msg b,.ai-msg strong{color:var(--ink);font-weight:800}
-.ai-msg em{font-style:normal;color:var(--brand);font-weight:700} /* AI 回答裡唯一保留藍字的地方：總結／結論句用單星號 *...* 標記，
-  其餘（覆述使用者選項、條列關鍵詞、資料數值）一律用雙星號 **...**，顏色跟隨上面的 content primary（--ink），不再是藍字 */
-.ai-msg .md-h1{font-size:17.5px;font-weight:800;margin:2px 0 8px;line-height:1.4}
-.ai-msg .md-h2{font-size:17.5px;font-weight:800;margin:2px 0 6px;line-height:1.4}
-.ai-msg .md-h3{font-size:17.5px;font-weight:700;margin:2px 0 6px;line-height:1.4}
 .ai-msg{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
   color:var(--color-content-general-primary);margin:16px 0;animation:fade .4s ease}
@@ -293,8 +289,14 @@ body{font-family:var(--font-cn);
    顏色沿用參考程式碼原本的青／紫／靛霓虹色（Tailwind cyan/purple/indigo 400/500），
    這組配色是這個獨立設計的識別特徵，不是站內語意色，故不套用 Design Guideline 的
    Content/Container token，直接沿用參考稿指定的色碼。 */
+/* min-height：這個 loading 一出現時，#screen 裡在它之前只有頂端的 AI 生成內容警語
+   （.analysis-disclaimer），下面直到輸入列都還是空的——原本 .cube-loader 只靠內距撐出
+   高度，內容自然貼在警語正下方、明顯偏上。這裡用 dvh 給它一個接近可視區域高度的
+   min-height，讓既有的 justify-content:center 有足夠空間可以把立方體＋文字往可視範圍
+   中間推，不用去改動 #screen／.turn 的排版結構（那一段的捲動高度計算很細，見
+   engine.js down()／syncSpacer() 的說明，能不動就不動）。 */
 .cube-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:32px;padding:24px 12px 8px;perspective:1200px;animation:fade .4s ease}
+  gap:32px;padding:24px 12px 8px;min-height:56dvh;perspective:1200px;animation:fade .4s ease}
 .cube-loader-scene{position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d}
 .cube-loader-spin{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:cubeLoaderSpin 8s linear infinite}
 .cube-loader-core{position:absolute;inset:0;margin:auto;width:32px;height:32px;background:#fff;border-radius:50%;
@@ -323,6 +325,18 @@ body{font-family:var(--font-cn);
 @media (prefers-reduced-motion: reduce){
   .cube-loader-spin,.cube-loader-face,.cube-loader-core,.cube-loader-shadow{animation:none}
 }
+
+/* loading/globe-loader：畫布繪製邏輯在 js/globe-loader.js（mountInteractiveGlobe()），
+   這裡只負責外層排版跟標題／說明文字樣式，比照 .cube-loader-text／-title／-subtitle
+   同一組寫法，唯一差異是顏色改接 Design Guideline 既有的 Content token（不是 cube-loader
+   那組獨立於站內色票之外的青紫靛霓虹色——見 js/globe-loader.js 開頭註解），這樣文字在
+   Dark Mode 下會自動跟著站內其他文字一起變色，不需要另外維護一組色碼。 */
+.globe-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:16px 12px 8px;animation:fade .4s ease}
+.globe-loader-canvas{display:block;cursor:default}
+.globe-loader-text{display:flex;flex-direction:column;align-items:center;gap:4px}
+.globe-loader-title{font-family:var(--font-cn);font-size:14px;font-weight:600;letter-spacing:.15em;color:var(--color-content-general-primary)}
+.globe-loader-subtitle{font-family:var(--font-cn);font-size:12px;color:var(--color-content-general-secondary);text-align:center}
 
 /* Blue shimmer text — reversed sweep（來源：thinking-orbs demo/shimmer-blue.css）。
    套用在「管家思考/分析中」的 .typing-label 上：底色是實色 --shimmer-base，

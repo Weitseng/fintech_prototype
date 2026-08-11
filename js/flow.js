@@ -126,36 +126,48 @@ function stageC(){
       if(myGen!==flowGen)return;
       /* 圓餅圖（資產現況）＋折線圖（到期後被動收益趨勢）先後接續呈現，兩張圖都看完
          再接結論文字，而不是圖中間插一段文字打斷——兩張圖本來就是同一件事的兩個角度
-         （現況／趨勢），連著看更容易一次建立完整印象 */
+         （現況／趨勢），連著看更容易一次建立完整印象。
+         兩張圖原本是同一個 tick 內連續呼叫，畫面上會同時「爆出來」，看不出兩者是先後
+         兩個獨立資訊；改用 setTimeout 讓折線圖延遲一小段再出現（.pie-card／.linechart-card
+         都已加上跟站內其他卡片一致的 animation:fade .4s ease），視覺上才有「先看完現況、
+         再接著看趨勢」的先後順序感，延遲值抓在淡入動畫跑完（.4s）之後一點點，不是憑感覺亂抓。 */
       renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
-      renderComponent('chart/line',income.labels,income.values,income.splitIndex,{splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
-      aiSay([maturedDepositInsight(income)],()=>{
-        /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
-           node 306:1102「問題回答優化」），不再走 #controls／setControls()：
-           選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
-           畫面呈現方式跟其他既有提問（如 showNextSteps()）一致，不影響版面高度。 */
-        const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
-        const opts=[
-          {label:'先放著，可能是備用金或短期要用',
-           ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
-           kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
-          {label:'想加減賺一點零用錢，風險不要太高',
-           ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
-           kw:['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']},
-          {label:'想讓這筆錢成長更多，可以承擔一些風險',
-           ack:'*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
-           kw:['提升價值','價值提升','增值','成長','積極','提高','承擔風險']},
-          {label:'還沒想法，想先聽看看建議',
-           ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
-           kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
-        ];
-        const popover=renderComponent('popover/option-select',question,opts,opt=>{
-          popover.remove();
-          aiAsk(question);
-          meSay(opt.label);
-          aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
-        });
-      },{label:'為您分析資產配置中',heavy:true});
+      setTimeout(()=>{
+        if(myGen!==flowGen)return;
+        renderComponent('chart/line',income.labels,income.values,income.splitIndex,{splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+        /* 結論文字的 aiSay() 也要挪進這個 setTimeout 裡、接在折線圖後面才呼叫——
+           這一輪稍早的 cube-loader 已經把 turnLoadingShown 設成 true，aiSay() 內部
+           看到這個旗標就會直接開始逐字打字、不會再多等 BASE_DELAY，如果沒搬進來，
+           結論文字會在折線圖淡入之前（甚至同一 tick）就搶先開始打字，畫面上會變成
+           「文字先動、圖後補上」，順序反而更亂，跟折線圖延遲出現的用意互相矛盾。 */
+        aiSay([maturedDepositInsight(income)],()=>{
+          /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
+             node 306:1102「問題回答優化」），不再走 #controls／setControls()：
+             選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
+             畫面呈現方式跟其他既有提問（如 showNextSteps()）一致，不影響版面高度。 */
+          const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
+          const opts=[
+            {label:'先放著，可能是備用金或短期要用',
+             ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
+             kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
+            {label:'想加減賺一點零用錢，風險不要太高',
+             ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
+             kw:['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']},
+            {label:'想讓這筆錢成長更多，可以承擔一些風險',
+             ack:'*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
+             kw:['提升價值','價值提升','增值','成長','積極','提高','承擔風險']},
+            {label:'還沒想法，想先聽看看建議',
+             ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
+             kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
+          ];
+          const popover=renderComponent('popover/option-select',question,opts,opt=>{
+            popover.remove();
+            aiAsk(question);
+            meSay(opt.label);
+            aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+          });
+        },{label:'為您分析資產配置中',heavy:true});
+      },450);
     },700);
   },{loader:'cube',loadingMs:4000});
 }
@@ -322,9 +334,21 @@ function stageGList(){
     combo:`以下分別整理債券與基金商品供您參考，方便您搭配著看。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
     deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看各天期的商品詳情，或直接進一步試算：'
   }[S.recoType]||'以下整理符合條件的商品供您參考，您可以先查看商品詳情，或直接進一步試算：';
+  /* 這裡的 loading 改用 loading/globe-loader（見 js/globe-loader.js、js/engine.js
+     renderGlobeLoader()），取代原本的發光球 .typing 樣式——商品清單是從各種商品（債券／
+     基金／定存）資料裡篩選出來的，用一顆持續轉動、據點間有資料流動的地球，比單純的
+     「思考中」發光球更能傳達「系統正在幫您跨管道蒐集資料」的感覺。loadingMs 明確給
+     2400ms（比預設的 900ms 長，讓地球動畫有足夠時間被看到；比 stageC() 開場的 4000ms
+     短，因為這裡不是整段體驗的第一印象，不需要撐那麼久）。 */
+  const globeSubtitle={
+    bond:'正在為您彙整各地債券商品資訊，請稍候…',
+    fund:'正在為您彙整各地基金商品資訊，請稍候…',
+    combo:'正在為您彙整各地債券與基金商品資訊，請稍候…',
+    deposit:'正在為您彙整各天期定存利率資訊，請稍候…'
+  }[S.recoType]||'正在為您彙整各地商品資訊，請稍候…';
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'商品清單整理中'});
+  },{loader:'globe',loadingMs:2400,globeSubtitle});
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
