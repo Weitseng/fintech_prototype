@@ -509,6 +509,22 @@ function renderCubeLoader(title,subtitle){
   t.querySelector('.cube-loader-subtitle').textContent=subtitle||'正在整合您的資產數據，請稍候…';
   return t;
 }
+/* loading/globe-loader（js/globe-loader.js mountInteractiveGlobe()，畫布繪製邏輯見該檔
+   開頭註解）：只有 js/flow.js stageGList() 產出商品清單前的 aiSay() 呼叫會傳
+   opts.loader==='globe' 用到，讓使用者覺得系統正在從各地蒐集債券／基金／定存資訊，
+   不是憑空生出清單。回傳值除了 DOM 節點本身，還多帶一個 destroy 方法（掛在同一個物件上，
+   而不是像 renderCubeLoader 那樣回傳純 DOM）——globe 是持續跑 rAF 的 canvas 動畫，
+   loading 結束或被取消時必須主動停掉，跟下面 aiSay() 對「發光球」typing 分支呼叫
+   orb.destroy() 是同一個道理，只是 cube-loader 純靠 CSS animation 不需要 JS 清理。 */
+function renderGlobeLoader(title,subtitle){
+  const t=document.createElement('div');t.className='globe-loader';
+  const globe=mountInteractiveGlobe(t,{size:168}); // 把 canvas 掛成 t 的第一個子節點
+  t.insertAdjacentHTML('beforeend','<div class="globe-loader-text"><h3 class="globe-loader-title"></h3><p class="globe-loader-subtitle"></p></div>');
+  t.querySelector('.globe-loader-title').textContent=title||'全球商品資料整合中';
+  t.querySelector('.globe-loader-subtitle').textContent=subtitle||'正在為您彙整各地債券、基金、定存資訊，請稍候…';
+  t.destroy=globe.destroy;
+  return t;
+}
 function aiSay(msgs,done,opts){
   opts=opts||{};
   const cancelToken=opts.cancelToken;
@@ -525,6 +541,9 @@ function aiSay(msgs,done,opts){
     if(opts.loader==='cube'){
       t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
       destroyLoader=()=>{};
+    }else if(opts.loader==='globe'){
+      t=renderGlobeLoader(opts.globeTitle,opts.globeSubtitle);
+      destroyLoader=()=>t.destroy();
     }else{
       t=document.createElement('div');t.className='typing';
       const orbHost=document.createElement('span');orbHost.className='typing-orb';t.appendChild(orbHost);
@@ -609,10 +628,12 @@ function fmt(n){return Math.round(n).toLocaleString('en-US');}
 function fmtPct(n){return (Math.round(n*100)/100).toString();}
 /* 依 D-1（資金動用時間）決定留在活存的比例：可用時間越短，活存佔比越高 */
 function keepPctFor(){return {high:70,mid:40,low:15}[S.depositWeight||'mid'];}
+/* 【AI_Behavior_Instruction v1.1 §9.6】商品情境不用「我建議」，改用中性的「先預設……」描述，
+   決策權仍保留給使用者（下方拉桿可自行調整） */
 function investRationale(tag){
   const reason={high:'考量這筆資金可能在一年內就會用到',mid:'考量這筆資金的使用時間還不確定',low:'考量這筆資金一年以上都不會用到'}[S.depositWeight||'mid'];
   const keepPct=keepPctFor(),investPct=100-keepPct;
-  return `${reason}，我建議先保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成您覺得合適的配置。`;
+  return `${reason}，這裡先預設保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成合適的配置。`;
 }
 /* 試算卡（債券／基金／外匯定存 vs 活存）已改用 card/calculator 元件（js/component-library.js）呈現，
    見 flow.js 的 enterProductCalc() */

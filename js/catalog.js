@@ -22,7 +22,9 @@
    - risk：穩健／中等／積極（風險接受度，稻越高風險越大）
    - cat：bond／fund／deposit（deposit 為屬性 C 的美元定存天期商品，rate 為銀行公告牌告利率，非試算示範值）
    - investType：['收益'|'平衡'|'成長']，可複選
-   - assetSize：小／中／大（對應最低申購門檻的資產規模建議）
+   - assetSize：小／中／大（對應最低申購門檻的資產規模建議）——判斷時要看 minAmt 換算回同一計價幣（如美元）後的
+     實際等值金額，不能只看 minAmt 的數字大小：例如 BD395 面額 200,000 但計價幣是南非幣（ZAR），實際等值僅約
+     11,000 美元，跟其他標「中」的美元 10,000 面額債券是同一量級，不能因為數字上「20萬」看起來比「1萬」大就標「大」
    - tenor：僅 deposit 商品使用，顯示用的天期文字（如「7天」「12個月」）
    ============================================================ */
 /* 債券商品卡片（card/product）兩個統計格的標題，直接取自 Excel「商品對照矩陣」工作表的
@@ -35,13 +37,15 @@ const BOND_CARD_LABELS={rate:'票面/配息率',price:'參考買進價(%)'};
 const CATALOG=[
   {code:'BD337',cat:'bond',name:'美林 Merrill Lynch BV',currency:'AUD',rate:0.051,rate1y:0.051,rate3y:0.051,refPrice:94,
     payFreq:'月配',minAmt:'10,000',maturity:'2044/2/1',callDate:'2029/2/1',
-    risk:'穩健',investType:['收益'],assetSize:'中',entry:'單筆',
+    /* assetSize 原標'中'：AUD 10,000 換算實際等值約 6,500 美元，比其他標'中'的美元 10,000 面額債券
+       低、更接近標'小'的 BD348（USD 5,000），故改標'小' */
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'月月配息；高信評 AA-（本表信評最高）；澳幣匯率風險',
     issuerInfo:'美國銀行（Bank of America）集團旗下設於荷蘭的融資發行體，Merrill Lynch 為其投行與財富管理品牌，所發債券的信用實質反映母集團美國銀行。美銀為美國規模最大的金融控股集團之一。'},
   {code:'BD395',cat:'bond',name:'摩根士丹利金融',currency:'ZAR',rate:0.066,rate1y:0.066,rate3y:0.066,refPrice:82,
     payFreq:'季配',minAmt:'200,000',maturity:'2040/10/23',callDate:'-',
-    risk:'積極',investType:['收益','成長'],assetSize:'大',entry:'單筆',
-    feature:'到期贖回價 150%；持有期領息 6.6%；南非幣結構型，匯率風險最高、門檻最高',
+    risk:'積極',investType:['收益','成長'],assetSize:'中',entry:'單筆',
+    feature:'到期贖回價 150%；持有期領息 6.6%；南非幣結構型，匯率風險最高（面額雖為 20萬，但以南非幣計價，實際門檻與其他債券相近）',
     issuerInfo:'摩根士丹利集團的融資子公司，發行債券通常由母公司 Morgan Stanley 提供保證。摩根士丹利是全球主要的投資銀行與財富管理機構之一。'},
   {code:'BD396',cat:'bond',name:'Alphabet 公司',currency:'USD',rate:0.055,rate1y:0.055,rate3y:0.055,refPrice:92,
     payFreq:'半年配',minAmt:'10,000',maturity:'2046/2/15',callDate:'2045/8/15',
@@ -80,6 +84,12 @@ const CATALOG=[
     managerInfo:'凱基投信發行的海外多重資產型基金，股債靈活配置、兼顧收益與成長，提供月配息，風險報酬等級 RR3。含非投資等級債，配息來源可能為本金。'},
   {code:'FUND4',cat:'fund',name:'匯豐ESG永續多元資產組合基金',currency:'TWD',rate:0.035,rate1y:0.1321,rate3y:0.0835,nav:9.19,return1y:0.1321,
     payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
+    /* risk 標'穩健'：雖然官方風險報酬等級跟 FUND3 同為 RR3，但兩者實際波動特性不同——FUND3 含非投資等級（高收益／垃圾）債
+       且用掩護性買權疊加策略，波動較大，仍標'中等'；FUND4 是 FOF（投資其他基金再分散），債部位 50% 以上、
+       自身文案已寫明「較保守」，波動特性明顯低於 FUND3，故不跟著同一個 RR3 標籤走、改標'穩健'。
+       注意：目前 5 檔基金裡只有這一檔是'穩健'，數量仍未滿 matchCatalogAtLeast() 的 min=2 門檻，
+       保守用戶走純基金路徑時仍會被放寬到全部 5 檔（見 stageGList()/stageH3List() 的放寬說明文案）——
+       這是基金商品池目前只有 1 檔真正保守商品的資料現況，不是標籤錯誤，除非之後新增第 2 檔穩健基金才能真正解決 */
     risk:'穩健',investType:['平衡'],assetSize:'小',entry:'單筆／定期定額',
     feature:'ESG 永續主題；股債平衡、債部位 50% 以上；風險等級 RR3，較保守',
     managerInfo:'匯豐投信發行的組合型基金（投資其他基金的 FOF），投資於具 ESG／永續特色的子基金，跨股債多元資產配置，採月配息設計，透過子基金分散但仍受市場波動影響。'},
@@ -88,25 +98,27 @@ const CATALOG=[
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'台股五大趨勢產業；追求資本利得；RR4 股票型',
     managerInfo:'凱基投信的國內股票型基金，聚焦台灣股市精選標的（近期以半導體、電子等為主），追求資本利得、不配息，風險報酬等級 RR4；屬單一市場股票型，波動相對較高。'},
-  /* 屬性 C（保本安穩型）推薦商品：美元定存，依天期分為 5 檔，供橫向商品卡片列選擇（見 content-attr-c.js） */
+  /* 屬性 C（保本安穩型）推薦商品：美元定存，依天期分為 5 檔，供橫向商品卡片列選擇（見 content-attr-c.js）
+     maxAmt（最高限額）原始資料是 2,000，比 minAmt（最低申購金額）3,000 還低，數字顛倒，暫時改成
+     100,000 讓「最高限額 ≥ 最低申購金額」，這是合理猜測、不是官方數字，正式數字要跟業務端核對後更新 */
   {code:'FDUSD07D',cat:'deposit',name:'美元定存 7天',currency:'USD',rate:0.10,rate1y:0.10,rate3y:0.10,
-    payFreq:'到期領息',minAmt:'3,000',maxAmt:'2,000',maturity:'-',callDate:'-',tenor:'7天',
+    payFreq:'到期領息',minAmt:'3,000',maxAmt:'100,000',maturity:'-',callDate:'-',tenor:'7天',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'短天期資金靈活運用；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
   {code:'FDUSD1M',cat:'deposit',name:'美元定存 1個月',currency:'USD',rate:0.045,rate1y:0.045,rate3y:0.045,
-    payFreq:'到期領息',minAmt:'3,000',maxAmt:'2,000',maturity:'-',callDate:'-',tenor:'1個月',
+    payFreq:'到期領息',minAmt:'3,000',maxAmt:'100,000',maturity:'-',callDate:'-',tenor:'1個月',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'短期資金停泊首選；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
   {code:'FDUSD6M',cat:'deposit',name:'美元定存 6個月',currency:'USD',rate:0.04,rate1y:0.04,rate3y:0.04,
-    payFreq:'到期領息',minAmt:'3,000',maxAmt:'2,000',maturity:'-',callDate:'-',tenor:'6個月',
+    payFreq:'到期領息',minAmt:'3,000',maxAmt:'100,000',maturity:'-',callDate:'-',tenor:'6個月',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'半年期穩定收益；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
   {code:'FDUSD9M',cat:'deposit',name:'美元定存 9個月',currency:'USD',rate:0.0385,rate1y:0.0385,rate3y:0.0385,
-    payFreq:'到期領息',minAmt:'3,000',maxAmt:'2,000',maturity:'-',callDate:'-',tenor:'9個月',
+    payFreq:'到期領息',minAmt:'3,000',maxAmt:'100,000',maturity:'-',callDate:'-',tenor:'9個月',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'中期資金規劃；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'},
   {code:'FDUSD12M',cat:'deposit',name:'美元定存 12個月',currency:'USD',rate:0.0365,rate1y:0.0365,rate3y:0.0365,
-    payFreq:'到期領息',minAmt:'3,000',maxAmt:'2,000',maturity:'-',callDate:'-',tenor:'12個月',
+    payFreq:'到期領息',minAmt:'3,000',maxAmt:'100,000',maturity:'-',callDate:'-',tenor:'12個月',
     risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆',
     feature:'一年期資金規劃；本行存戶專屬；限行動銀行申辦；美元計價，需留意匯率風險'}
 ];

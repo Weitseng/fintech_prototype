@@ -10,5 +10,5 @@ PRODUCT_DATA.fund={key:'fund',name:'凱基核心成長基金組合',tag:'基金'
    取代原本 RECO_REASON.fund 那段標題＋條列文字：type 決定卡片配色 modifier（.kgi-card--fund），
    features 建議維持 3–4 條、每條盡量一句話講完，不要又寫成長段落——卡片本身已經有標題／
    副標／清單三層視覺區分，不需要在 features 文字裡再重複「基金可能適合您」這種鋪陳句。 */
-RECO_CARD.fund={type:'fund',name:'基金',title:'專業代操，一次分散布局',subtitle:'適合想參與市場成長、進出保有彈性的資金',
+RECO_CARD.fund={type:'fund',name:'基金',title:'多種組合，一次分散布局',subtitle:'適合想參與市場成長、進出保有彈性的資金',
   features:['專業經理人操盤選股','一次投資即分散多檔標的','門檻低、可定期定額','流動性佳、可隨時申贖']};

@@ -22,7 +22,8 @@ function renderComponentRow(name,items,...args){
    transparent 才會接成一個完整間隔。PIE_GAP_PCT 是每側留白的角度佔比（% of 360°），
    目前只有兩個色塊、兩筆真實資料落點都遠離 0%／100%（見 flow.js stageC()：investedPct
    實際範圍約 8–80），不會出現留白大於色塊本身的情況，故不另外處理極端值 clamp。 */
-function renderPieChart(investedPct,amount){
+function renderPieChart(investedPct,amount,opts){
+  opts=opts||{};
   const cashPct=100-investedPct;
   const inv=Math.round(amount*investedPct/100),cash=amount-inv;
   const PIE_GAP_PCT=0.4;
@@ -32,7 +33,7 @@ function renderPieChart(investedPct,amount){
     `var(--color-chart-teal-2nd) ${investedPct+PIE_GAP_PCT}% ${100-PIE_GAP_PCT}%,`+
     `transparent ${100-PIE_GAP_PCT}% 100%)`;
   const card=document.createElement('div');card.className='pie-card';
-  card.innerHTML=`<div class="pie-overview">
+  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<div class="pie-overview">
       <div class="pie-chart" style="background:${pieBg}">
         <div class="pie-hole"><div><div class="pie-value">${cashPct}%</div><div class="pie-label">現金留存</div></div></div>
       </div>
@@ -45,6 +46,68 @@ function renderPieChart(investedPct,amount){
   return card;
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
+
+/* ---- chart/line（定存到期後被動收益趨勢折線圖，見 js/flow.js stageC()）----
+   視覺參考使用者提供的 fl_chart LineChartSample2 範例（格線、粗圓角線條＋漸層、
+   曲線下方漸層填色、圖表邊框），移植成這裡的 inline SVG 寫法。
+   全線統一藍色（不用紅色標示到期前後差異，避免顏色語意混淆）；到期時間點仍用一條
+   虛線＋標籤標示，讓下降的瞬間一眼可辨，不需要額外圖例說明。
+   這裡的資料本身是「到期前一點＋到期後連續四個持平點」，不是連續起伏的數列，套用
+   fl_chart 的貝茲曲線平滑（isCurved）對這種資料不會有視覺差異（頂多是同一條斜直線／
+   水平線的另一種畫法），所以沒有實作曲線平滑；格線、漸層填色、粗圓角線條、邊框這幾項
+   確實會讓視覺更接近參考圖，都有做。
+   純展示用途（不可互動），卡片沿用 .pie-card 同一組間距／陰影 token，維持跟圓餅圖一致的卡片感。 */
+let lineChartIdSeq=0;
+function renderLineChart(labels,values,splitIndex,opts){
+  opts=opts||{};
+  const chartId=++lineChartIdSeq;
+  /* H 原本是 220（跟圓餅圖比例相近），但這張圖只有 5 個點、不需要那麼高，疊在圓餅圖＋
+     文字說明後面，畫面還沒開始換行的初次分析階段又容易跟浮動選單擠在同一個視窗高度裡
+     （見 renderOptionPopover() 的說明），改矮一點（150）讓整段內容更容易一次容納 */
+  const W=600,H=150,PAD_L=16,PAD_R=16,PAD_T=30,PAD_B=22;
+  const innerW=W-PAD_L-PAD_R,innerH=H-PAD_T-PAD_B;
+  const baseline=H-PAD_B;
+  const maxV=Math.max(...values)*1.2||1;
+  const n=values.length;
+  const xAt=i=>PAD_L+(n===1?innerW/2:innerW*i/(n-1));
+  const yAt=v=>PAD_T+innerH-(innerH*v/maxV);
+  const pts=values.map((v,i)=>({x:xAt(i),y:yAt(v)}));
+  const linePath=pts.map((p,idx)=>`${idx===0?'M':'L'}${p.x},${p.y}`).join(' ');
+  const areaPath=`${linePath} L${pts[pts.length-1].x},${baseline} L${pts[0].x},${baseline} Z`;
+  const fmtAmt=v=>'$'+Math.round(v).toLocaleString();
+  const dots=pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--color-chart-blue-2nd)"/>
+      <text x="${p.x}" y="${p.y-14}" text-anchor="middle" class="linechart-value">${fmtAmt(values[i])}</text>`).join('');
+  /* 格線：橫向抓幾個等分刻度（不特別對齊整數金額，示意用），縱向對齊每個資料點，
+     呼應參考圖的 FlGridData（水平＋垂直格線） */
+  const H_GRID_LINES=3;
+  const hGrid=Array.from({length:H_GRID_LINES+1},(_,i)=>{
+    const y=PAD_T+innerH*i/H_GRID_LINES;
+    return `<line x1="${PAD_L}" y1="${y}" x2="${W-PAD_R}" y2="${y}" class="linechart-grid-line"/>`;
+  }).join('');
+  const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-line"/>`).join('');
+  const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
+  const splitX=splitIndex!=null?xAt(splitIndex):null;
+  const card=document.createElement('div');card.className='linechart-card';
+  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<svg viewBox="0 0 ${W} ${H}" class="linechart-svg" role="img" aria-label="${opts.ariaLabel||'趨勢圖'}">
+      <defs>
+        <linearGradient id="lc-fill-${chartId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <rect x="${PAD_L}" y="${PAD_T}" width="${innerW}" height="${innerH}" class="linechart-border"/>
+      ${hGrid}${vGrid}
+      ${splitX!=null?`<line x1="${splitX}" y1="${PAD_T-14}" x2="${splitX}" y2="${baseline}" class="linechart-split-line"/>
+      <text x="${splitX}" y="${PAD_T-20}" text-anchor="middle" class="linechart-split-label">${opts.splitLabel||''}</text>`:''}
+      <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
+      <path d="${linePath}" class="linechart-line"/>
+      ${dots}
+      ${xLabels}
+    </svg>`;
+  appendToChat(card);down();
+  return card;
+}
+COMPONENTS['chart/line']={render:renderLineChart};
 
 /* ---- card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）----
    AI 完成資產評估、推薦適合方向時使用，取代原本 RECO_REASON 那一大段標題＋條列文字的 markdown
@@ -109,7 +172,9 @@ COMPONENTS['card/recommendation']={render:renderRecommendationCard};
      基金＝「基金淨值」讀 catalog.js 新增的 nav，直接輸出數字本身，不額外加單位——
      對應 Excel 儲存格是 General 格式，沒有幣別符號；定存＝「最高限額」讀 maxAmt（不受影響）。
    - 原本債券／基金共用的「投資類型」（investType 陣列組字串）已被上述真實數字取代，
-     不再顯示於卡片；investType 仍保留在 catalog.js，其他地方（分流邏輯）持續使用。
+     不再顯示於卡片；investType 仍保留在 catalog.js 作為商品分類中繼資料（收益／平衡／成長），
+     但目前沒有任何篩選/分流函式讀取它（matchCatalog() 只比對 cat／risk／assetSize）——
+     若之後要依這個欄位收斂推薦清單，要在 catalog.js 的篩選函式裡另外接上讀取邏輯。
    - 債券的兩個標題字串不要寫死在這裡，改讀 catalog.js 的 BOND_CARD_LABELS——那兩個值
      直接對應 Excel 工作表的欄位標題儲存格（H2／J2），之後 Excel 標題改名只要改那邊。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
@@ -181,7 +246,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:#68c89e"></span>活存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-teal-500)"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>
@@ -567,6 +632,37 @@ function renderOptionPopover(question,options,onPick){
       if(activePopover===wrap)activePopover=null;
       onPick(opt);
     },opt.kw));
+  });
+  /* 這個浮動選單釘在畫面底部（.opt-popover-wrap 是 position:absolute; bottom:16px，跟
+     #screen 的捲動內容是分開的兩層），不會因為 #screen 內容變多而自動往下讓位。如果它
+     前面已經生成的內容（例如 stageC() 的圓餅圖＋文字＋折線圖）比視窗還高，浮動選單就會
+     直接疊在那段內容的尾端上面，把使用者還沒看完的東西蓋住（見使用者回報：折線圖後半段
+     被選項彈窗蓋住）。這裡量一下浮動選單實際疊進 #screen 可視範圍多少，就把 #screen
+     往下捲開等量的距離，讓內容自己讓出這塊位置——只有真的疊到才會捲動，原本內容夠短、
+     不會被蓋到的情況（大部分既有提問）完全不受影響。
+     先呼叫 syncSpacer()：內容＋浮動選單合計高度若超過視窗，單靠原生 scrollHeight 捲不夠遠
+     （會被夾在「捲到底了還是差一截」），借用跟一般對話輪次（down()）同一套捲動緩衝空間，
+     才能確保捲得到需要的位置，不受限於當下內容剛好多長。
+     重疊量要拿「目前最後一段內容」的下緣去跟浮動選單的上緣比較，不能拿 #screen 自己的
+     可視範圍下緣（sRect.bottom）去比——後者是視窗本身的固定邊界，不會因為 #screen 捲動而
+     改變，拿它算出來的重疊量是個常數。
+     捲動改呼叫 animateScrollTop()（跟一般對話輪次 down({smooth:true}) 同一套緩動＋時長
+     計算），取代原本 s.scrollTop=... 的瞬間跳轉——使用者回報「剛生成圖表那段捲到最下面
+     太快」，直接設定 scrollTop 是零時間跳轉，改用平滑捲動比較不突兀；maxScrollTop 直接
+     訂在算好的目標值（而不是動畫途中當下的 s.scrollTop），這樣 clampScroll() 才不會在
+     動畫還沒跑完時就把它夾回動畫起點，跟平滑捲動互相打架。 */
+  requestAnimationFrame(()=>{
+    const s=screen();
+    syncSpacer();
+    const last=chatBox&&chatBox.lastElementChild;
+    if(!last)return;
+    const contentBottom=last.getBoundingClientRect().bottom,popRect=wrap.getBoundingClientRect();
+    const overlap=contentBottom-popRect.top;
+    if(overlap<=0)return;
+    const target=Math.min(s.scrollHeight-s.clientHeight,s.scrollTop+overlap+16);
+    maxScrollTop=target;
+    if(prefersReducedMotion())s.scrollTop=target;
+    else animateScrollTop(s,target);
   });
   return wrap;
 }

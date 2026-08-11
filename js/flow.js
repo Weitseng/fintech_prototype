@@ -10,8 +10,11 @@
    - 全程用「您」稱呼使用者；每個提問前盡量說明「為什麼問這個」，每個結論後盡量說明「為什麼是這個結論」，
      避免讓使用者覺得資訊是憑空出現、或感覺是在硬推商品
    - 選項按鈕的「顯示文字」跟「內部存值（S.q1/S.q2/S.q3）」是分開的：
-     顯示文字可以自然順暢，但存進 S 的值必須維持原本的短字串，後面 timeframeNote()／riskNote 等
+     顯示文字可以自然順暢，但存進 S 的值必須維持原本的短字串，後面 riskToleranceFromQ2()等
      地方都是拿這個短字串做精準比對，改文案時不要連內部值一起改
+   - 【AI_Behavior_Instruction v1.1 §6.5】ch_d1/ch_d2 每題答完都已經用一句話講過那題答案的
+     含義（時間彈性、風險考量），stageE() 開場不要再把 S.q1/S.q2 的含義整段重述一次——
+     那是同一個概念講第三遍，改成直接帶出方向，讓對話往前推進而不是原地重複
    ============================================================ */
 
 /* ================= 階段 A｜開始體驗頁 ================= */
@@ -77,57 +80,94 @@ function idleEstimate(){
   const est=base*pct;
   return {lo:Math.round(est*0.8/50000)*50000,hi:Math.round(est*1.2/50000)*50000,pct:Math.round(pct*100)};
 }
-function cashInsight(){
-  return {
-    '95% 以上':`## 現金比例極高，實質購買力可能被通膨侵蝕
-您的資產幾乎全數放在活存或定存，資金運用上有最高的安全性與流動性，但長期持有仍有兩點需要留意：
-
-- **通膨侵蝕購買力**：活存年利率通常不到 1%，長期低於物價上漲速度，實質購買力可能持續下降
-- **幾乎未參與市場成長**：這筆資金目前幾乎沒有任何投資參與，等於完全放棄了潛在的成長機會
-
-接下來，我們可以一起看看如何讓這筆閒置資金運用得更有效率。`,
-    '50–95%':`## 現金比例偏高，實質購買力可能被通膨侵蝕
-您的資產配置目前仍以保守的活存／定存為主。這樣的安排安全性較高，但也代表有一部分資金的成長效率有限，若重新規劃，這筆資金應有機會發揮更高的價值。`,
-    '5–50%':`## 現金與投資配置已相對均衡
-您目前的資金配置已有一定基礎，仍有一小部分資金留在低利率帳戶中。若一併規劃這部分資金，整體效益有機會進一步提升。`,
-    '5% 以下':`## 現金比例極低，資金運用效率高
-您的現金比例幾乎趨近於零，顯示資金幾乎已全數投入。若能一併檢視剩餘的閒置部位，整體資產配置可以更完整。`
-  }[S.cashRatio]||'';
+/* 【定存到期情境｜示範數值】固定示範用：到期已 3 個月、到期前後利率為示範數字，之後
+   接上使用者實際的定存到期日／實際利率時，這幾個常數要換成動態帶入，計算方式不用改。
+   principal 沿用 idleEstimate() 算出的閒置金額中點，讓這筆「到期定存」跟圓餅圖的
+   「現金留存」是同一筆錢，兩個視覺化不會各講各的、對不起數字。 */
+const MATURED_MONTHS=3;
+const MATURED_DEPOSIT_RATE=0.03;  // 到期前：一般台幣定存利率（示範值）
+const IDLE_DEMAND_RATE=0.008;     // 到期後：資金轉入一般活存的利率（示範值），遠低於定存
+/* 橫軸改用實際月份（幾月）取代「到期前／1個月後」這種相對描述，使用者一眼就能對應
+   到自己記憶中的時間點，不用先在腦中換算「現在」是哪個月。從本月往回推算，monthsAgo=0
+   是本月；設回每月 1 號再減月份，避免遇到大月最後一天減月份時被 JS Date 自動進位到下個月。 */
+function monthLabel(monthsAgo){
+  const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-monthsAgo);
+  return `${d.getMonth()+1}月`;
+}
+/* 到期當月的定存利息仍是照定存利率領到的（到期日當天才轉為活存），到期後的閒置月份
+   才會是活存利率——原本到期當月（splitIndex 那個月）就已經算進 after，等於到期那個月
+   還沒領到定存利息就被算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案
+   對不起來（N 個月閒置應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始
+   才是連續 N 個月的 after。 */
+function maturedDepositIncome(est){
+  const principal=Math.round((est.lo+est.hi)/2);
+  const before=principal*MATURED_DEPOSIT_RATE/12;
+  const after=principal*IDLE_DEMAND_RATE/12;
+  const labels=[monthLabel(MATURED_MONTHS+1),monthLabel(MATURED_MONTHS)],values=[before,before];
+  for(let m=MATURED_MONTHS-1;m>=0;m--){
+    labels.push(monthLabel(m));
+    values.push(after);
+  }
+  return {principal,before,after,labels,values,splitIndex:1};
+}
+/* 【AI_Behavior_Instruction v1.1 §9.4 Information Organization】先直接告訴使用者發生了什麼事
+   （您有一筆定存已經到期），再說明影響，而不是直接丟一個「## 標題」報告式開場——後者跳過了
+   「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。 */
+function maturedDepositInsight(income){
+  const beforeAmt=`NT$${fmt(Math.round(income.before))}`,afterAmt=`NT$${fmt(Math.round(income.after))}`;
+  return `依您的資產情境來看，您有一筆定存已經到期 **${MATURED_MONTHS} 個月**了，這段時間資金一直停留在一般活存，被動收益明顯下降：到期前這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，到期後只剩約 **${afterAmt}**。`;
 }
 function stageC(){
   const est=idleEstimate();
+  const income=maturedDepositIncome(est);
   const myGen=flowGen;
   aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
     setTimeout(()=>{
       if(myGen!==flowGen)return;
-      renderComponent('chart/pie',100-est.pct,assetMid());
-      aiSay([`${cashInsight()}\n\n依您的資產級距與現金比例推估，您目前大概有一筆 **NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}** 的資金，一直是用比較低的利率方式閒置著。`],()=>{
-        /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
-           node 306:1102「問題回答優化」），不再走 #controls／setControls()：
-           選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
-           畫面呈現方式跟其他既有提問（如 showNextSteps()）一致，不影響版面高度。 */
-        const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
-        const opts=[
-          {label:'先放著，可能是備用金或短期要用',
-           ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
-           kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
-          {label:'想加減賺一點零用錢，風險不要太高',
-           ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
-           kw:['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']},
-          {label:'想讓這筆錢成長更多，可以承擔一些風險',
-           ack:'*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
-           kw:['提升價值','價值提升','增值','成長','積極','提高','承擔風險']},
-          {label:'還沒想法，想先聽看看建議',
-           ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
-           kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
-        ];
-        const popover=renderComponent('popover/option-select',question,opts,opt=>{
-          popover.remove();
-          aiAsk(question);
-          meSay(opt.label);
-          aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
-        });
-      },{label:'為您分析資產配置中',heavy:true});
+      /* 圓餅圖（資產現況）＋折線圖（到期後被動收益趨勢）先後接續呈現，兩張圖都看完
+         再接結論文字，而不是圖中間插一段文字打斷——兩張圖本來就是同一件事的兩個角度
+         （現況／趨勢），連著看更容易一次建立完整印象。
+         兩張圖原本是同一個 tick 內連續呼叫，畫面上會同時「爆出來」，看不出兩者是先後
+         兩個獨立資訊；改用 setTimeout 讓折線圖延遲一小段再出現（.pie-card／.linechart-card
+         都已加上跟站內其他卡片一致的 animation:fade .4s ease），視覺上才有「先看完現況、
+         再接著看趨勢」的先後順序感，延遲值抓在淡入動畫跑完（.4s）之後一點點，不是憑感覺亂抓。 */
+      renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
+      setTimeout(()=>{
+        if(myGen!==flowGen)return;
+        renderComponent('chart/line',income.labels,income.values,income.splitIndex,{splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+        /* 結論文字的 aiSay() 也要挪進這個 setTimeout 裡、接在折線圖後面才呼叫——
+           這一輪稍早的 cube-loader 已經把 turnLoadingShown 設成 true，aiSay() 內部
+           看到這個旗標就會直接開始逐字打字、不會再多等 BASE_DELAY，如果沒搬進來，
+           結論文字會在折線圖淡入之前（甚至同一 tick）就搶先開始打字，畫面上會變成
+           「文字先動、圖後補上」，順序反而更亂，跟折線圖延遲出現的用意互相矛盾。 */
+        aiSay([maturedDepositInsight(income)],()=>{
+          /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
+             node 306:1102「問題回答優化」），不再走 #controls／setControls()：
+             選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
+             畫面呈現方式跟其他既有提問（如 showNextSteps()）一致，不影響版面高度。 */
+          const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
+          const opts=[
+            {label:'先放著，可能是備用金或短期要用',
+             ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
+             kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
+            {label:'想加減賺一點零用錢，風險不要太高',
+             ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
+             kw:['零用錢','零花','加減賺','賺一點','小賺','零頭','風險不要太高']},
+            {label:'想讓這筆錢成長更多，可以承擔一些風險',
+             ack:'*了解，這屬於積極成長的方向。*我會在您能接受的風險範圍內，協助您比較具備成長潛力的工具。',
+             kw:['提升價值','價值提升','增值','成長','積極','提高','承擔風險']},
+            {label:'還沒想法，想先聽看看建議',
+             ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
+             kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
+          ];
+          const popover=renderComponent('popover/option-select',question,opts,opt=>{
+            popover.remove();
+            aiAsk(question);
+            meSay(opt.label);
+            aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+          });
+        },{label:'為您分析資產配置中',heavy:true});
+      },450);
     },700);
   },{loader:'cube',loadingMs:4000});
 }
@@ -163,14 +203,18 @@ function ch_d2(){
   aiSay(["接下來想了解一下您的風險承受度："],()=>{
     const question="如果市場出現下跌，您能接受的跌幅程度大概是？";
     const opts=[
+      /* 【AI_Behavior_Instruction v1.1 §6.5】小幅波動／明顯波動兩個分支後面還有 ch_d3 決定
+         實際方向，這裡的 ack 只單純承接風險承受度本身，不要預先劇透方向（債券／基金），
+         不然 ch_d3 選完、stageE() 帶出方向時，等於同一個結論講第三次；
+         完全不能接受波動這支不會再走 ch_d3，直接進 stageE()，方向在這裡講一次就好 */
       {label:'完全不能接受本金有任何波動',val:'完全不能接受本金波動',
-       ack:'*這代表本金安全是您最優先的考量。*我會以「完全保本與高穩定」的商品為主，為您規劃方向。',
+       ack:'*這代表本金安全是您最優先的考量，會以完全保本與高穩定的商品為主。*',
        next:()=>resolveConservative(),kw:['不能','保本','不要波動','不想虧','零風險','安全','不能虧','怕']},
       {label:'可以接受小幅波動（跌幅約 10%～30%）',val:'可接受小幅波動',
-       ack:'*了解，您能接受一定程度的波動。*我們可以在維持資產穩健的前提下，適度搭配收益型商品。',
+       ack:'*了解，您能接受一定程度的波動。*',
        next:()=>ch_d3(),kw:['小波動','可以接受','還好','一點點','小幅','ok','OK','接受','10%','20%','30%','跌幅']},
       {label:'可以接受明顯波動（跌幅 30% 以上），以換取長期成長機會',val:'可接受淨值明顯波動換取成長',
-       ack:'*了解，您能接受較大幅度的波動，以換取成長機會。*成長型商品會是較適合的方向，協助您評估資產增值的潛力。',
+       ack:'*了解，您能接受較大幅度的波動，以換取成長機會。*',
        next:()=>ch_d3(),kw:['明顯波動','高報酬','沒問題','敢','中等','可以波動','衝','成長','30%以上','40%','50%']}
     ];
     const popover=renderComponent('popover/option-select',question,opts,opt=>{
@@ -209,25 +253,21 @@ function resolveAttribute(recoType,attr){
 }
 
 /* ================= 階段 E｜屬性分流與初步推薦 =================
-   不顯示屬性標籤（A/B/C/AB）；流程是：先反映使用者剛才說的需求 → 用 card/recommendation 卡片
+   不顯示屬性標籤（A/B/C/AB）；流程是：一句話帶出方向 → 用 card/recommendation 卡片
    （見 js/component-library.js、RECO_CARD）取代原本 RECO_REASON 那一大段標題＋條列的
    markdown 說明——使用者回饋「文字太多太饒口」，改成一張視覺化卡片交代完標題／情境副標／
-   特色清單，比整段文字打字動畫快讀完 → 帶出「配置」的具體做法（呼應 ch_d1 先前提過的概念，
-   也預告等一下的拉桿）→ 才給出商品方向。
+   特色清單，比整段文字打字動畫快讀完；「為什麼適合」已經在 ch_d1/ch_d2 的 ack 與卡片
+   subtitle 裡講過，這裡不再重述使用者剛才的回答 → 帶出「配置」的具體做法（呼應 ch_d1
+   先前提過的概念，也預告等一下的拉桿）→ 才給出商品方向。
    combo（債券＋基金搭配）沒有自己的卡片資料——直接在這裡組 [RECO_CARD.bond,RECO_CARD.fund]
    兩張卡，維持「combo 內容橫跨 A／B 兩人負責的資料」這個既有慣例，不在 RECO_CARD 裡另外
    重複定義一份 combo 專用資料。 */
-function timeframeNote(){
-  return {'一年內':'比較快就可能會用到','一年以上':'短期內應該不會用到','還不確定':'還不確定什麼時候會用到'}[S.q1]||'還沒有明確的使用時間';
-}
 function stageE(){
   const prod=PRODUCT_DATA[S.recoType];
-  const riskNote={
-    '完全不能接受本金波動':'也希望本金完全穩定、不能有任何波動',
-    '可接受小幅波動':'也能接受小幅度的波動，只是還是希望以相對穩健為主',
-    '可接受淨值明顯波動換取成長':'也願意承擔比較明顯的波動，換取更大的成長空間'
-  }[S.q2]||'也能接受一定程度的波動，換取成長的機會';
-  const messages=[`綜合您剛才的回答——這筆資金${timeframeNote()}，${riskNote}，我來幫您分析一下比較合適的方向。`];
+  /* 【AI_Behavior_Instruction v1.1 §6.5】不在這裡重述 S.q1/S.q2 的含義——ch_d1/ch_d2 的
+     ack 已經各講過一次，卡片本身的 subtitle 也會呼應適合情境，這裡只需要一句話帶出方向、
+     往下接卡片，避免同一個概念重複第三次 */
+  const messages=['為您整理了比較適合的方向：'];
   if(S.horizonOverride){
     messages.push('不過債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息，若中途提前賣出，可能無法拿回全部本金。考量這筆資金一年內就可能會用到，這裡改為規劃彈性較高、以收益與穩健為主的基金，同樣能兼顧資金運用的靈活度。');
   }
@@ -236,11 +276,13 @@ function stageE(){
   }
   aiSay(messages,()=>{
     renderComponent('card/recommendation',S.recoType==='combo'?[RECO_CARD.bond,RECO_CARD.fund]:RECO_CARD[S.recoType]);
+    /* 【AI_Behavior_Instruction v1.1 §9.6】商品情境不用「我建議／我不會建議」，改用中性的
+       「可先……」「不宜……」等描述，決策權仍保留給使用者（拉桿試算可自行調整） */
     const bridge=S.recoType==='deposit'
-      ? `所以這筆資金，我會建議先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
+      ? `這筆資金可先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : S.recoType==='combo'
-      ? '另外，我不會建議您把這筆資金全部押在同一個地方，會先留一部分在穩定的活存，其餘的部分再配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
-      : `所以我不會建議您把這筆資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
+      ? '另外，這筆資金不宜全部押在同一個地方，可以先留一部分在穩定的活存，其餘的部分再評估配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
+      : `這筆資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
     aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
@@ -268,22 +310,45 @@ function stageF(){
 function stageG(){
   stageGList();
 }
+/* riskAllowed() 只分「穩健」（僅收斂到穩健）跟其他（全部開放，等同'積極'），
+   所以除了使用者明確選了「可接受淨值明顯波動換取成長」，其餘（含最保守的「完全不能接受本金波動」）
+   都要收斂成'穩健'——不能反過來讓最保守的答案掉進「全部開放」。 */
+function riskToleranceFromQ2(){
+  return S.q2==='可接受淨值明顯波動換取成長'?'積極':'穩健';
+}
+/* 【AI_Behavior_Instruction v1.1 §6.7／§8.9】商品清單層一律用中性語氣「以下整理本行商品供您參考」，
+   不用「為您篩選」「幫您篩出」等個人化篩選語氣；風險層級說明也拿掉「篩」字，只客觀說明目前顯示的風險範圍 */
+function riskRangeNote(tolerance){
+  return tolerance==='穩健'
+    ?'目前顯示的商品風險等級以「穩健」為主；若可選商品較少，會依序放寬資產規模與風險層級以符合最少呈現檔數，商品卡片仍會標示實際風險等級，方便您辨別。'
+    :'目前顯示的商品風險等級涵蓋穩健到積極，選擇較為多元。';
+}
 function stageGList(){
   const cats=S.recoType==='combo'?['bond','fund']:[S.recoType];
-  const tolerance=S.q2==='可接受小幅波動'?'穩健':'積極';
+  const tolerance=riskToleranceFromQ2();
   const items=matchCatalogAtLeast(cats,riskAllowed(tolerance),assetTierAllowed(S.assetRange),2);
-  const riskNote=tolerance==='穩健'
-    ?'考量您能接受的波動幅度較小，這裡先篩出風險等級屬於「穩健」的商品，讓波動程度落在您能安心承受的範圍內。'
-    :'考量您能接受較明顯的波動、也想追求更高的成長空間，這裡的篩選範圍涵蓋穩健到積極的商品，讓您有更多元的選擇。';
+  const riskNote=riskRangeNote(tolerance);
   const intro={
-    bond:`我依您能接受的波動程度與資金規模，從信評、天期、配息頻率幫您篩出幾檔債券。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    fund:`我依您能接受的波動程度與資金規模，從資產類別、配息方式幫您篩出幾檔基金。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    combo:`我依您能接受的波動程度與資金規模，分別從債券與基金裡各篩出幾檔，讓您可以搭配著看。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    deposit:'我整理了本行美元定存的天期與利率供您參考，您可以先看看各天期的商品詳情，或直接試算：'
-  }[S.recoType]||'依您剛才的回答，我幫您整理了幾檔符合需求的商品，您可以先看看商品詳情，或直接試算：';
+    bond:`以下整理本行債券商品供您參考，包含信評、天期與配息頻率等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    fund:`以下整理本行基金商品供您參考，包含資產類別與配息方式等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    combo:`以下分別整理債券與基金商品供您參考，方便您搭配著看。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看各天期的商品詳情，或直接進一步試算：'
+  }[S.recoType]||'以下整理符合條件的商品供您參考，您可以先查看商品詳情，或直接進一步試算：';
+  /* 這裡的 loading 改用 loading/globe-loader（見 js/globe-loader.js、js/engine.js
+     renderGlobeLoader()），取代原本的發光球 .typing 樣式——商品清單是從各種商品（債券／
+     基金／定存）資料裡篩選出來的，用一顆持續轉動、據點間有資料流動的地球，比單純的
+     「思考中」發光球更能傳達「系統正在幫您跨管道蒐集資料」的感覺。loadingMs 明確給
+     2400ms（比預設的 900ms 長，讓地球動畫有足夠時間被看到；比 stageC() 開場的 4000ms
+     短，因為這裡不是整段體驗的第一印象，不需要撐那麼久）。 */
+  const globeSubtitle={
+    bond:'正在為您彙整各地債券商品資訊，請稍候…',
+    fund:'正在為您彙整各地基金商品資訊，請稍候…',
+    combo:'正在為您彙整各地債券與基金商品資訊，請稍候…',
+    deposit:'正在為您彙整各天期定存利率資訊，請稍候…'
+  }[S.recoType]||'正在為您彙整各地商品資訊，請稍候…';
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'為您篩選商品中'});
+  },{loader:'globe',loadingMs:2400,globeSubtitle});
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
@@ -301,6 +366,20 @@ function appendCatalogGroupLabel(text){
   appendToChat(el);
 }
 const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
+/* 【AI_Behavior_Instruction v1.1 §8.10】基金商品清單、配息型商品清單後方必須完整保留法定警語，
+   不得省略或改寫；依 items 組成判斷要附加哪些警語，任何商品清單（G／H 兩條路徑、返回清單）
+   都經過這裡，不用在每個呼叫端各自補一次 */
+function catalogDisclaimerLines(items){
+  const lines=[];
+  if(items.some(p=>p.cat==='fund')){
+    lines.push('投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。');
+    lines.push('基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。');
+  }
+  if(items.some(p=>p.payFreq==='月配'||p.payFreq==='季配'||p.payFreq==='半年配')){
+    lines.push('配息可能包含本金，實際組成請以公開說明書為準。');
+  }
+  return lines;
+}
 function showCatalogCards(items){
   const onDetail=p=>{
     meSay(`查看${p.name}詳情`);
@@ -321,13 +400,15 @@ function showCatalogCards(items){
         appendToChat(renderComponent('card/product',group[0],onDetail,onCalc));
       }
     });
-    down();settleTurn();
-    return;
-  }
-  if(items.length>1){
+  }else if(items.length>1){
     renderComponentRow('card/product',items,onDetail,onCalc);
   }else{
     appendToChat(renderComponent('card/product',items[0],onDetail,onCalc));
+  }
+  const disclaimers=catalogDisclaimerLines(items);
+  if(disclaimers.length){
+    aiSay([disclaimers.join('\n\n')],()=>{down();settleTurn();},{label:'管家整理中'});
+  }else{
     down();settleTurn();
   }
 }
@@ -389,7 +470,7 @@ function enterProductDetail(p,items,opts){
   },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
-  aiSay(['以下是符合您需求的其他商品：'],()=>showCatalogCards(items),{label:'管家整理中'});
+  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),{label:'管家整理中'});
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -473,7 +554,10 @@ const H2_OPTIONS=[
   {key:'fund',label:'基金',cat:'growth'},
   {key:'bond',label:'債券',cat:'bond'}
 ];
-/* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）*/
+/* H-2b 綜合分流邏輯：結合 B-1（S.assetRange）、B-2（S.cashRatio）、H-1（S.h1Amt / S.h1Ratio）、H-2（keys）
+   H2_OPTIONS 裡每個選項的 cat 只會是 'growth' 或 'bond'，所以只要 keys.length>0，hasGrowth 跟 hasBond
+   兩者至少一個為真——下面 hasGrowth&&!hasBond／hasBond 這兩個分支已經涵蓋 keys.length>0 的所有情況，
+   不會再落到最後的 deposit fallback，這裡就不寫那段永遠不會執行的 dead code，避免誤導以為還有第三條路徑 */
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='oversea_stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
@@ -483,10 +567,7 @@ function classifyH2(keys){
   if(hasGrowth&&!hasBond){
     return{result:'bond',reason:'*目前配置偏重成長型資產，穩定收益的部位相對較少。*建議補上一部分債券部位，透過穩定的配息現金流，平衡整體資產的波動程度。'};
   }
-  if(hasBond||keys.length>=3||(S.h1Ratio==='50% 以上'&&keys.length>0)){
-    return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
-  }
-  return{result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+  return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
 }
 /* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
 function adjustH2(base){
@@ -512,12 +593,14 @@ function reconcileWithOriginal(adjusted){
   const origRank=RECOTYPE_RANK[S.recoType]||RECOTYPE_RANK.bond;
   const hRank=RECOTYPE_RANK[result];
   const diff=hRank-origRank;
+  /* reason 只留實質理由，「原本方向→調整後方向」的對比已經由 stageH3() 另外用一句話講，
+     這裡不重複講一次，避免同一件事被講兩次 */
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='*行內原本的風險評估偏保守，但他行資產顯示您已具備豐富的多元投資經驗。*因此在原本的判斷基礎上調高一個層級，同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
+    reason='*他行資產顯示您已具備豐富的多元投資經驗，*同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
-    reason='*行內原本的風險評估偏積極，但他行資產顯示您目前的投資經驗或占比仍偏保守。*因此在原本的判斷基礎上調低一個層級，先以較穩健的方向打好基礎，之後可以再逐步調整。';
+    reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*先以較穩健的方向打好基礎，之後可以再逐步調整。';
   }
   return{result,reason};
 }
@@ -557,36 +640,57 @@ function stageH2(){
 }
 
 /* ================= H-3 試算與轉入建議 =================
-   資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現 */
+   資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現。
+   【方向若改變，補一張新方向的 RECO_CARD】原本這裡不論方向有沒有變，都只有純文字的
+   h2Reason，使用者看不到「原本是基金、現在改成債券」這種明確的前後對比，也少了 stageE()
+   當初那張視覺化的商品介紹卡。現在比對 S.recoTypeH（他行資產納入後的結果）跟 S.recoType
+   （行內三題問完的原始方向）：
+   - 方向有變：先用一句話講清楚「原本→現在」，再補上新方向的 RECO_CARD（呼應 stageE()），
+     h2Reason 只留實質理由、不再重複「原本…現在調整為…」這句已經在新增的一句話裡講過的話
+   - 方向沒變：不重講一次、不重出一次卡片（stageE() 已經出過），直接用 h2Reason 補充依據即可 */
 function stageH3(){
-  const prod=PRODUCT_DATA[S.recoTypeH];
-  const calcLabel=calcLabelFor(prod);
+  const origProd=PRODUCT_DATA[S.recoType];
+  const newProd=PRODUCT_DATA[S.recoTypeH];
+  const changed=S.recoTypeH!==S.recoType;
+  const calcLabel=calcLabelFor(newProd);
   const recap=`幫您把目前掌握到的資產樣貌整理一下：
 - 凱基銀行資產級距：${S.assetRange||'—'}，現金比例：${S.cashRatio||'—'}
 - 其他銀行資產級距：${S.h1Amt||'—'}，投資比例：${S.h1Ratio||'—'}
 - 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
-  const bridge=S.recoTypeH==='deposit'
-    ? `綜合看下來，我會建議您先以 <b>${prod.name}</b> 為主，讓資金穩定累積。`
-    : `所以我不會建議您把資金全部押在同一個地方，而是抓一部分留在穩定的活存、一部分配置在${prod.tag}，找到您能安心持有的比例。`;
-  aiSay([recap,S.h2Reason,bridge],()=>{
-    showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
-      {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
-        keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
-        onSelect:()=>{clearControls();stageH3List();}}
-    ]);
+  const messages=[recap];
+  if(changed){
+    messages.push(`原本方向是 <b>${origProd.tag}</b>，考量您在其他銀行的資產狀況，這裡調整為 <b>${newProd.tag}</b>：`);
+  }
+  messages.push(S.h2Reason);
+  aiSay(messages,()=>{
+    if(changed){
+      renderComponent('card/recommendation',RECO_CARD[S.recoTypeH]);
+    }
+    const bridge=S.recoTypeH==='deposit'
+      ? `綜合看下來，可先以 <b>${newProd.name}</b> 為主，讓資金穩定累積。`
+      : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${newProd.tag}，找到您能安心持有的比例。`;
+    aiSay([bridge],()=>{
+      showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
+        {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
+          keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
+          onSelect:()=>{clearControls();stageH3List();}}
+      ]);
+    },{label:'為您規劃資金配置中'});
   },{label:'為您彙整資產資料中',heavy:true});
 }
-/* 補充路徑沒有直接對應的風險承受度題，資產規模取本行／他行兩邊級距較大的一邊；
+/* 補充路徑的風險承受度沿用 D 階段 ch_d2() 已收集的 S.q2（見 riskToleranceFromQ2()），不能無視使用者
+   實際填的風險承受度而直接開放全部風險層級；資產規模則取本行／他行兩邊級距較大的一邊；
    資產樣貌已在 stageH3 呈現過，這裡只帶出符合需求的商品清單（定存＝美元定存 5 檔天期，跟債券／基金一樣走 CATALOG 清單） */
 function stageH3List(){
-  const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed('積極'),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
-  const riskNote='考量您在本行與其他銀行的整體資產配置與投資經驗，這裡涵蓋穩健到積極、較完整的風險層級，讓您能依需求挑選。';
+  const tolerance=riskToleranceFromQ2();
+  const items=matchCatalogAtLeast([S.recoTypeH],riskAllowed(tolerance),biggerAssetTierAllowed(S.assetRange,S.h1Amt),2);
+  const riskNote=riskRangeNote(tolerance);
   const intro={
-    bond:`納入您整體的資產狀況，我從信評、天期、配息頻率幫您篩出幾檔債券供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    fund:`納入您整體的資產狀況，我從資產類別、配息方式幫您篩出幾檔基金供您參考。${riskNote}您可以先看看商品詳情，或直接試算：`,
-    deposit:'納入您整體的資產狀況，我整理了本行美元定存的天期與利率供您參考，您可以先看看商品詳情，或直接試算：'
+    bond:`以下整理本行債券商品供您參考，包含信評、天期與配息頻率等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    fund:`以下整理本行基金商品供您參考，包含資產類別與配息方式等資訊。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
+    deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看商品詳情，或直接進一步試算：'
   }[S.recoTypeH];
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'為您篩選商品中'});
+  },{label:'商品清單整理中'});
 }
