@@ -14,6 +14,25 @@
 .pie-legend-text{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);display:flex;gap:4px;align-items:center;white-space:nowrap}
 .pie-legend-text .pie-amt{font-family:var(--kgi-font-auto-caption-regular-en-family),sans-serif;font-weight:var(--kgi-font-auto-caption-regular-en-weight)}
 
+/* chart-card-title：圓餅圖／折線圖卡片共用的標題列，讓使用者一眼看出這張圖在講什麼，
+   不用自己從卡片內容猜——放在卡片內距頂端，卡片本身的 padding 已經留好間距 */
+.chart-card-title{align-self:flex-start;font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary);margin-bottom:var(--spacing-16)}
+
+/* chart/line（定存到期後被動收益趨勢折線圖）：樣式與間距沿用 .pie-card 同一組 token，
+   維持跟圓餅圖一致的卡片視覺；全線統一藍色，到期時間點用虛線＋標籤標示，讓下降的瞬間
+   一眼可辨。格線／粗圓角線條／曲線下漸層填色／圖表邊框參考使用者提供的 fl_chart
+   LineChartSample2 範例視覺（FlGridData／barWidth 5／isStrokeCapRound／belowBarData／FlBorderData）。 */
+.linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
+  display:flex;flex-direction:column}
+.linechart-svg{width:100%;height:auto;display:block;overflow:visible}
+.linechart-border{fill:none;stroke:var(--color-container-general-divider);stroke-width:1}
+.linechart-grid-line{stroke:var(--color-container-general-divider);stroke-width:1;opacity:.5}
+.linechart-line{fill:none;stroke:var(--color-chart-blue-2nd);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.linechart-split-line{stroke:var(--color-container-general-divider);stroke-width:1;stroke-dasharray:4 4}
+.linechart-split-label{font-size:var(--type-caption-size);fill:var(--color-content-general-secondary)}
+.linechart-value{font-size:var(--type-caption-size);fill:var(--color-content-general-primary);font-weight:var(--type-body-b-weight-cn)}
+.linechart-xlabel{font-size:var(--type-caption-size);fill:var(--color-content-general-secondary)}
+
 /* ============================================================
    card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）
    取代 stageE() 原本的 RECO_REASON 大段文字說明，深色、平板直式優先、純展示卡（不可點擊）。

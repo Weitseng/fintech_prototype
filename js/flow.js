@@ -80,30 +80,51 @@ function idleEstimate(){
   const est=base*pct;
   return {lo:Math.round(est*0.8/50000)*50000,hi:Math.round(est*1.2/50000)*50000,pct:Math.round(pct*100)};
 }
-/* 【AI_Behavior_Instruction v1.1 §6.5／§8.5】原本標題＋段落＋兩條 bullet＋收尾句＋另外
-   再補一句「推估閒置金額」，同一個「現金閒置、效率偏低」的概念前後講了三四次；改成
-   標題＋一句話，把推估金額直接併進那句話裡，不再另外堆疊一段 */
-function cashInsight(est){
-  const range=`NT$${fmt(est.lo)} ~ NT$${fmt(est.hi)}`;
-  return {
-    '95% 以上':`## 現金比例極高，實質購買力可能被通膨侵蝕
-資產幾乎全數放在活存／定存，推估約有 **${range}** 的資金正以偏低利率閒置，長期下來購買力可能被通膨侵蝕，也幾乎沒有參與市場成長的機會。`,
-    '50–95%':`## 現金比例偏高，資金效率仍有提升空間
-資產配置仍以保守的活存／定存為主，推估約有 **${range}** 閒置在偏低利率的帳戶中，這部分若重新規劃，應有機會發揮更高的價值。`,
-    '5–50%':`## 現金與投資配置已相對均衡
-資金配置已有一定基礎，仍有約 **${range}** 留在低利率帳戶中，一併規劃這部分資金，整體效益有機會再提升。`,
-    '5% 以下':`## 現金比例極低，資金運用效率高
-現金比例已趨近於零，僅約 **${range}** 仍待安排，一併檢視這部分，整體配置就會更完整。`
-  }[S.cashRatio]||`推估約有 **${range}** 的資金目前閒置，運用效率仍有提升空間。`;
+/* 【定存到期情境｜示範數值】固定示範用：到期已 3 個月、到期前後利率為示範數字，之後
+   接上使用者實際的定存到期日／實際利率時，這幾個常數要換成動態帶入，計算方式不用改。
+   principal 沿用 idleEstimate() 算出的閒置金額中點，讓這筆「到期定存」跟圓餅圖的
+   「現金留存」是同一筆錢，兩個視覺化不會各講各的、對不起數字。 */
+const MATURED_MONTHS=3;
+const MATURED_DEPOSIT_RATE=0.03;  // 到期前：一般台幣定存利率（示範值）
+const IDLE_DEMAND_RATE=0.008;     // 到期後：資金轉入一般活存的利率（示範值），遠低於定存
+/* 橫軸改用實際月份（幾月）取代「到期前／1個月後」這種相對描述，使用者一眼就能對應
+   到自己記憶中的時間點，不用先在腦中換算「現在」是哪個月。從本月往回推算，monthsAgo=0
+   是本月；設回每月 1 號再減月份，避免遇到大月最後一天減月份時被 JS Date 自動進位到下個月。 */
+function monthLabel(monthsAgo){
+  const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-monthsAgo);
+  return `${d.getMonth()+1}月`;
+}
+function maturedDepositIncome(est){
+  const principal=Math.round((est.lo+est.hi)/2);
+  const before=principal*MATURED_DEPOSIT_RATE/12;
+  const after=principal*IDLE_DEMAND_RATE/12;
+  const labels=[monthLabel(MATURED_MONTHS+1),monthLabel(MATURED_MONTHS)],values=[before,after];
+  for(let m=MATURED_MONTHS-1;m>=0;m--){
+    labels.push(monthLabel(m));
+    values.push(after);
+  }
+  return {principal,before,after,labels,values,splitIndex:1};
+}
+/* 【AI_Behavior_Instruction v1.1 §9.4 Information Organization】先直接告訴使用者發生了什麼事
+   （您有一筆定存已經到期），再說明影響，而不是直接丟一個「## 標題」報告式開場——後者跳過了
+   「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。 */
+function maturedDepositInsight(income){
+  const beforeAmt=`NT$${fmt(Math.round(income.before))}`,afterAmt=`NT$${fmt(Math.round(income.after))}`;
+  return `依您的資產情境來看，您有一筆定存已經到期 **${MATURED_MONTHS} 個月**了，這段時間資金一直停留在一般活存，被動收益明顯下降：到期前這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，到期後只剩約 **${afterAmt}**。`;
 }
 function stageC(){
   const est=idleEstimate();
+  const income=maturedDepositIncome(est);
   const myGen=flowGen;
   aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
     setTimeout(()=>{
       if(myGen!==flowGen)return;
-      renderComponent('chart/pie',100-est.pct,assetMid());
-      aiSay([cashInsight(est)],()=>{
+      /* 圓餅圖（資產現況）＋折線圖（到期後被動收益趨勢）先後接續呈現，兩張圖都看完
+         再接結論文字，而不是圖中間插一段文字打斷——兩張圖本來就是同一件事的兩個角度
+         （現況／趨勢），連著看更容易一次建立完整印象 */
+      renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
+      renderComponent('chart/line',income.labels,income.values,income.splitIndex,{splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+      aiSay([maturedDepositInsight(income)],()=>{
         /* 這一題改用 popover/option-select（浮動選單，覆蓋在輸入框之上，見對應 Figma
            node 306:1102「問題回答優化」），不再走 #controls／setControls()：
            選完之後才用 aiAsk()＋meSay() 把「問題標題＋所選回答」補進聊天紀錄，
