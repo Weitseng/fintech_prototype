@@ -288,7 +288,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         <div class="calc-result-value calc-weighted"></div>
         <div class="calc-result-sentence calc-sentence"></div>
       </div>
-      <div class="calc-disclaimer">利率為市場概算，實際將隨市場變動；歷史回測僅供參考，不代表未來績效。生活換算以 1 杯手搖飲 ${CALC_CONFIG.drinkPrice} 元、1 次朋友聚會 ${CALC_CONFIG.dinnerPrice} 元 估算。美元計價另有匯率風險，實際結果可能與試算不同。本工具僅供概念說明，不構成投資建議。</div>
+      <div class="calc-disclaimer">以上為市場概算，實際報酬會隨市場波動，歷史績效不代表未來表現；美元計價商品另有匯率風險。生活換算（手搖飲 ${CALC_CONFIG.drinkPrice} 元／聚餐 ${CALC_CONFIG.dinnerPrice} 元）僅供參考。本工具僅供概念說明，不構成投資建議。</div>
     </div>`;
 
   const slider=card.querySelector('.calc-slider');
@@ -446,7 +446,7 @@ const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http:
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
   disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
-  disclaimerText:'本頁資訊與數據僅供參考與說明用途，不構成投資建議；投資均有風險，實際商品內容以正式文件為準。'
+  disclaimerText:'本頁內容僅供參考，不構成投資建議；投資有風險，請以正式文件為準。'
 };
 function renderInputChatBar(state,opts){
   opts=opts||{};

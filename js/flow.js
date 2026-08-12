@@ -283,7 +283,12 @@ function stageE(){
       : S.recoType==='combo'
       ? '另外，這筆資金不宜全部押在同一個地方，可以先留一部分在穩定的活存，其餘的部分再評估配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
       : `這筆資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
-    aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
+    const proceed=()=>aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
+    /* 【AI_Behavior_Instruction v1.1 §8.10】這張推薦卡只要出現基金（單一 fund 或 combo
+       搭配債券＋基金）就已經在對使用者展示基金相關內容，原本漏掉警語——之前只有
+       showCatalogCards() 的商品清單才會附上，這裡的推薦卡是使用者更早看到基金內容的地方，
+       同樣要補齊，不能只在後面的清單頁才出現 */
+    sayNote(S.recoType==='fund'||S.recoType==='combo'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
 
@@ -334,21 +339,9 @@ function stageGList(){
     combo:`以下分別整理債券與基金商品供您參考，方便您搭配著看。${riskNote}您可以先查看商品詳情，或直接進一步試算：`,
     deposit:'以下整理本行美元定存的天期與利率供您參考，您可以先查看各天期的商品詳情，或直接進一步試算：'
   }[S.recoType]||'以下整理符合條件的商品供您參考，您可以先查看商品詳情，或直接進一步試算：';
-  /* 這裡的 loading 改用 loading/globe-loader（見 js/globe-loader.js、js/engine.js
-     renderGlobeLoader()），取代原本的發光球 .typing 樣式——商品清單是從各種商品（債券／
-     基金／定存）資料裡篩選出來的，用一顆持續轉動、據點間有資料流動的地球，比單純的
-     「思考中」發光球更能傳達「系統正在幫您跨管道蒐集資料」的感覺。loadingMs 明確給
-     2400ms（比預設的 900ms 長，讓地球動畫有足夠時間被看到；比 stageC() 開場的 4000ms
-     短，因為這裡不是整段體驗的第一印象，不需要撐那麼久）。 */
-  const globeSubtitle={
-    bond:'正在為您彙整各地債券商品資訊，請稍候…',
-    fund:'正在為您彙整各地基金商品資訊，請稍候…',
-    combo:'正在為您彙整各地債券與基金商品資訊，請稍候…',
-    deposit:'正在為您彙整各天期定存利率資訊，請稍候…'
-  }[S.recoType]||'正在為您彙整各地商品資訊，請稍候…';
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{loader:'globe',loadingMs:2400,globeSubtitle});
+  },catalogGlobeLoaderOpts(items));
 }
 
 /* ================= 商品清單 → 詳情／試算 → 下單／諮詢理專（G、H 兩條路徑共用） ================= */
@@ -366,15 +359,45 @@ function appendCatalogGroupLabel(text){
   appendToChat(el);
 }
 const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
+/* 依 items 的商品類別組成決定 loading/globe-loader（見 js/globe-loader.js、js/engine.js
+   renderGlobeLoader()）的標題文字——任何「產出商品清單」的入口都要用同一顆地球 loading，
+   讓使用者不管走哪條路徑（首次媒合 stageGList()／補充路徑 stageH3List()／返回清單
+   backToCatalogList()）看到的都是一致的「系統正在跨地區蒐集資料」體感，不是只有第一次
+   媒合才有、其他路徑退回原本的發光球樣式。集中在這裡判斷，三個呼叫端都直接套用同一組
+   opts，不用各自重複維護一次 switch。
+   標題直接對應這次清單實際會查詢的商品類別（搜尋債券中／搜尋基金中／搜尋定存方案中／
+   組合情境搜尋基金與債券中），不用「全球商品資料整合中」這種泛用文案，讓使用者看得出
+   系統正在找的是自己剛才選的那個方向，不是無關的全部商品；只用標題一行就夠，不加小標
+   說明文字。
+   loadingMs／globeSize：6000ms、220px——原本試過預設的 2400ms／168px，實測地球才剛
+   開始自轉、還沒轉到第二個據點就結束了，尺寸也偏小看不清楚立體感，加大加長之後才看得出
+   「跨地區蒐集」的動態；6000ms 比 stageC() 開場的 cube-loader（4000ms）還長，這裡不是
+   整段體驗的第一印象，但使用者明確要求這個 loading 停留約 6 秒，不再刻意留短。 */
+function catalogGlobeLoaderOpts(items){
+  const cats=new Set(items.map(p=>p.cat));
+  const title=cats.size>1
+    ?'搜尋基金與債券中'
+    :({
+      bond:'搜尋債券中',
+      fund:'搜尋基金中',
+      deposit:'搜尋定存方案中'
+    }[[...cats][0]]||'搜尋商品中');
+  return {loader:'globe',loadingMs:6000,globeSize:220,globeTitle:title};
+}
 /* 【AI_Behavior_Instruction v1.1 §8.10】基金商品清單、配息型商品清單後方必須完整保留法定警語，
    不得省略或改寫；依 items 組成判斷要附加哪些警語，任何商品清單（G／H 兩條路徑、返回清單）
    都經過這裡，不用在每個呼叫端各自補一次 */
+/* 抽成常數讓 stageE()／stageH3() 的「推薦卡」階段也能直接引用——那兩處還沒有具體選定
+   哪一檔商品（只是 fund/bond/deposit 的方向性推薦卡），沒有 payFreq 可判斷是否要加配息
+   警語，只能先確保這兩句必留的基金風險警語有出現，不透過 catalogDisclaimerLines(items)
+   （那個版本需要真正的 catalog items 陣列）。 */
+const FUND_RISK_DISCLAIMER_LINES=[
+  '投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。',
+  '基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。'
+];
 function catalogDisclaimerLines(items){
   const lines=[];
-  if(items.some(p=>p.cat==='fund')){
-    lines.push('投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。');
-    lines.push('基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。');
-  }
+  if(items.some(p=>p.cat==='fund'))lines.push(...FUND_RISK_DISCLAIMER_LINES);
   if(items.some(p=>p.payFreq==='月配'||p.payFreq==='季配'||p.payFreq==='半年配')){
     lines.push('配息可能包含本金，實際組成請以公開說明書為準。');
   }
@@ -405,12 +428,9 @@ function showCatalogCards(items){
   }else{
     appendToChat(renderComponent('card/product',items[0],onDetail,onCalc));
   }
-  const disclaimers=catalogDisclaimerLines(items);
-  if(disclaimers.length){
-    aiSay([disclaimers.join('\n\n')],()=>{down();settleTurn();},{label:'管家整理中'});
-  }else{
-    down();settleTurn();
-  }
+  /* 警語改用 sayNote()（js/engine.js）而不是 aiSay()：不需要逐字打字動畫，字級也改成
+     caption（見 css/style.css .disclaimer-note），跟一般對話內文區分開 */
+  sayNote(catalogDisclaimerLines(items),()=>{down();settleTurn();});
 }
 function enterProductDetail(p,items,opts){
   /* 商品卡片的「商品詳情」「立即試算」永久留在對話紀錄裡可以重複點，見 engine.js 的
@@ -443,34 +463,46 @@ function enterProductDetail(p,items,opts){
       :`- 申購方式：**${p.entry}**`
   ].join('\n');
   const messages=[lines];
+  /* noteLines：警語／風險提示改用 sayNote()（見下方 aiSay 完成後的呼叫）獨立顯示，
+     不跟著 messages 一起打字——債券的 BOND_ISSUER_DISCLAIMER、基金的
+     catalogDisclaimerLines() 都不是「關於這檔商品」介紹文字的一部分，獨立成一段
+     才能套用 caption 字級跟一般介紹內文區分開。
+     【AI_Behavior_Instruction v1.1 §8.10】基金的部分要跟 showCatalogCards() 用同一份
+     catalogDisclaimerLines()，不要另外改寫或精簡；即使 managerInfo 缺漏（目前 catalog
+     資料都有填，但不假設永遠如此），警語仍會顯示，不依附在 managerInfo 段落底下。 */
+  let noteLines=[];
   if(p.cat==='bond'&&p.issuerInfo){
-    messages.push(`**關於發行機構**\n${p.issuerInfo}\n\n${BOND_ISSUER_DISCLAIMER}`);
-  }else if(p.cat==='fund'&&p.managerInfo){
-    messages.push(`**關於這檔基金**\n${p.managerInfo}`);
+    messages.push(`**關於發行機構**\n${p.issuerInfo}`);
+    noteLines=[BOND_ISSUER_DISCLAIMER];
+  }else if(p.cat==='fund'){
+    if(p.managerInfo)messages.push(`**關於這檔基金**\n${p.managerInfo}`);
+    noteLines=catalogDisclaimerLines([p]);
   }
   aiSay(messages,()=>{
-    showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
-      {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
-        /* title 維持通用標籤（清單上的顯示文字，保持簡短），echo 才是回覆泡泡實際要講的話——
-           帶出具體商品名稱「試算○○○○」，跟直接從卡片列點「立即試算」的回覆泡泡文字一致
-           （見 showCatalogCards()），讓兩條路徑的對話脈絡一樣清楚。
-           這裡執行的當下，showNextSteps 內部的 meSay() 剛把這一輪換成
-           [提問句「了解商品內容之後…」, 使用者回覆泡泡「試算○○○○」]，
-           currentTurnEl 目前最後一個元素就是那顆回覆泡泡，直接拿來當 enterProductCalc
-           的錨點，讓試算卡渲染完成、畫面貼齊底部之後，還能保留一點這顆泡泡的邊緣 */
-        echo:`試算${p.name}`,
-        keywords:['試算','算','好','可以','ok','OK'],
-        onSelect:()=>{clearControls();enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});}},
-      {id:'back',title:'再看看其他產品',description:'看看其他商品',
-        keywords:['返回','清單','其他','上一步','回去'],
-        onSelect:()=>{clearControls();backToCatalogList(items);}}
-    ]);
-    if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
-    if(cardCancelToken===myToken)cardCancelToken=null;
+    sayNote(noteLines,()=>{
+      showNextSteps('了解商品內容之後，您想怎麼進行下一步呢？',[
+        {id:'calc',title:'試算這檔商品',description:'看看這檔商品的年化報酬試算',
+          /* title 維持通用標籤（清單上的顯示文字，保持簡短），echo 才是回覆泡泡實際要講的話——
+             帶出具體商品名稱「試算○○○○」，跟直接從卡片列點「立即試算」的回覆泡泡文字一致
+             （見 showCatalogCards()），讓兩條路徑的對話脈絡一樣清楚。
+             這裡執行的當下，showNextSteps 內部的 meSay() 剛把這一輪換成
+             [提問句「了解商品內容之後…」, 使用者回覆泡泡「試算○○○○」]，
+             currentTurnEl 目前最後一個元素就是那顆回覆泡泡，直接拿來當 enterProductCalc
+             的錨點，讓試算卡渲染完成、畫面貼齊底部之後，還能保留一點這顆泡泡的邊緣 */
+          echo:`試算${p.name}`,
+          keywords:['試算','算','好','可以','ok','OK'],
+          onSelect:()=>{clearControls();enterProductCalc(p,items,{anchor:currentTurnEl&&currentTurnEl.lastElementChild});}},
+        {id:'back',title:'再看看其他產品',description:'看看其他商品',
+          keywords:['返回','清單','其他','上一步','回去'],
+          onSelect:()=>{clearControls();backToCatalogList(items);}}
+      ]);
+      if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
+      if(cardCancelToken===myToken)cardCancelToken=null;
+    });
   },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
-  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),{label:'管家整理中'});
+  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),catalogGlobeLoaderOpts(items));
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -496,30 +528,38 @@ function enterProductCalc(p,items,opts){
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
   aiSay([investRationale(tag)],()=>{
     renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});
-    const nextItems=[];
-    if(S.path!=='supplement'){
-      nextItems.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
-        keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
-        onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
-    }
-    nextItems.push(
-      {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',
-        keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
-        onSelect:()=>{clearControls();finishFlow('order');}},
-      {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',
-        keywords:['理專','諮詢','專員','問問題','找人','客服'],
-        onSelect:()=>{clearControls();finishFlow('advisor');}},
-      {id:'back',title:backLabel,description:'回到清單看看別的選擇',
-        keywords:['查看','其他','清單','商品','天期','回去','返回'],
-        onSelect:()=>{clearControls();backToCatalogList(items);}}
-    );
-    showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
-    /* 試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把 cardAnchor（剛才點的
-       商品卡片）整個推出畫面上緣；這裡再往回捲一點點，固定露出卡片下緣 PEEK_PX 高度，
-       讓使用者還能看到「這是延伸自哪張卡片」，等畫面穩定（下一輪重繪）後才修正，
-       避免蓋掉 showNextSteps 剛算好的位置 */
-    if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
-    if(cardCancelToken===myToken)cardCancelToken=null;
+    const proceed=()=>{
+      const nextItems=[];
+      if(S.path!=='supplement'){
+        nextItems.push({id:'supplement',title:'納入他行資產，取得完整分析',description:'讓建議更貼近您的整體配置',
+          keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
+          onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
+      }
+      nextItems.push(
+        {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',
+          keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
+          onSelect:()=>{clearControls();finishFlow('order');}},
+        {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',
+          keywords:['理專','諮詢','專員','問問題','找人','客服'],
+          onSelect:()=>{clearControls();finishFlow('advisor');}},
+        {id:'back',title:backLabel,description:'回到清單看看別的選擇',
+          keywords:['查看','其他','清單','商品','天期','回去','返回'],
+          onSelect:()=>{clearControls();backToCatalogList(items);}}
+      );
+      showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
+      /* 試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把 cardAnchor（剛才點的
+         商品卡片）整個推出畫面上緣；這裡再往回捲一點點，固定露出卡片下緣 PEEK_PX 高度，
+         讓使用者還能看到「這是延伸自哪張卡片」，等畫面穩定（下一輪重繪）後才修正，
+         避免蓋掉 showNextSteps 剛算好的位置 */
+      if(cardAnchor)requestAnimationFrame(()=>peekAnchorAbove(cardAnchor,32));
+      if(cardCancelToken===myToken)cardCancelToken=null;
+    };
+    /* 【AI_Behavior_Instruction v1.1 §8.10】基金試算卡下方也要完整保留法定警語——原本只有
+       showCatalogCards()（商品清單）跟 enterProductDetail() 的債券分支會附警語，這裡（單一
+       基金商品的試算畫面）漏掉了，補上跟 catalogDisclaimerLines() 同一份文字，不要另外
+       改寫或精簡，維持跟清單頁一致的完整用語；改用 sayNote() 而不是 aiSay()，理由同
+       showCatalogCards() 的說明（不需要打字動畫，字級改成 caption） */
+    sayNote(catalogDisclaimerLines([p]),proceed);
   },{label:'為您試算中',heavy:true,cancelToken:myToken});
 }
 
@@ -669,13 +709,17 @@ function stageH3(){
     const bridge=S.recoTypeH==='deposit'
       ? `綜合看下來，可先以 <b>${newProd.name}</b> 為主，讓資金穩定累積。`
       : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${newProd.tag}，找到您能安心持有的比例。`;
-    aiSay([bridge],()=>{
+    const proceed=()=>aiSay([bridge],()=>{
       showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
         {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
           keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
           onSelect:()=>{clearControls();stageH3List();}}
       ]);
     },{label:'為您規劃資金配置中'});
+    /* 【AI_Behavior_Instruction v1.1 §8.10】只有 changed 且新方向是基金時，這裡才是使用者
+       第一次看到「補充他行資產後改推薦基金」的推薦卡（!changed 時方向沒變，使用者在
+       stageE() 已經看過一次，那裡已經補了警語，這裡不用重複） */
+    sayNote(changed&&S.recoTypeH==='fund'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
   },{label:'為您彙整資產資料中',heavy:true});
 }
 /* 補充路徑的風險承受度沿用 D 階段 ch_d2() 已收集的 S.q2（見 riskToleranceFromQ2()），不能無視使用者
@@ -692,5 +736,5 @@ function stageH3List(){
   }[S.recoTypeH];
   aiSay([intro],()=>{
     showCatalogCards(items);
-  },{label:'商品清單整理中'});
+  },catalogGlobeLoaderOpts(items));
 }
