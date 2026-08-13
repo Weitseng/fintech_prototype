@@ -651,7 +651,7 @@ function keepPctFor(){return {high:70,mid:40,low:15}[S.depositWeight||'mid'];}
 function investRationale(tag){
   const reason={high:'考量這筆資金可能在一年內就會用到',mid:'考量這筆資金的使用時間還不確定',low:'考量這筆資金一年以上都不會用到'}[S.depositWeight||'mid'];
   const keepPct=keepPctFor(),investPct=100-keepPct;
-  return `${reason}，這裡先預設保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成合適的配置。`;
+  return `${reason}，這裡預設保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}，您也可以拖動下方拉桿調整比例。`;
 }
 /* 試算卡（債券／基金／外匯定存 vs 活存）已改用 card/calculator 元件（js/component-library.js）呈現，
    見 flow.js 的 enterProductCalc() */

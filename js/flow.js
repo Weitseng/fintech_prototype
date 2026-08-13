@@ -148,7 +148,7 @@ function stageC(){
           const question="對於這筆閒置資金，您平時比較想怎麼運用它呢？";
           const opts=[
             {label:'先放著，可能是備用金或短期要用',
-             ack:'*短期預留的資金，通常需要同時兼顧彈性與穩定，*例如子女學費、結婚基金這類支出。即使如此，這段閒置期間仍有機會透過部分配置提升資金效率，而不必完全放在低利率的帳戶中。',
+             ack:'*短期預留的資金通常要兼顧彈性與穩定，*例如學費、結婚基金等支出。這段期間仍可透過部分配置提升資金效率，不必全放在低利率帳戶。',
              kw:['先放著','放著','放着','不動','先不用','放著就好','備用金','緊急預備金','學費','結婚','短期會用到']},
             {label:'想加減賺一點零用錢，風險不要太高',
              ack:'*了解，這屬於穩健增值的方向。*我會以控制風險為優先，協助您比較穩健撥息或保本型的工具。',
@@ -183,7 +183,7 @@ function stageC(){
    keywords 皆逐字保留，只是把顯示時機從「按鈕之前」搬到「選完之後」。 */
 function ch_d1(){
   aiSay([
-    "接下來想請教您幾個問題，協助您掌握合適的**資金配置方式**——也就是多少比例放穩定型、多少比例追求成長，讓資金運用更有效率。"
+    "接下來想請教您幾個問題，幫您抓出合適的**資金配置方式**——穩定型與成長型各放多少比例，讓資金運用更有效率。"
   ],()=>{
     const question="首先想了解，這筆資金大概多久之後可能會用到呢？";
     const opts=[
@@ -252,6 +252,23 @@ function resolveAttribute(recoType,attr){
   S.attribute=attr;S.recoType=recoType;stageE();
 }
 
+/* 這筆閒置資金的金額：stageC() 一開始算過一次，但只是區域變數，沒有存進 S，使用者一路
+   答完 ch_d1/ch_d2/ch_d3、甚至後面 H 流程的好幾題之後，很容易忘記最初講的是哪一筆錢、
+   大概多少錢。assetMid()／idleEstimate().pct 只吃 S.assetRange／S.cashRatio，這兩個值
+   從 stepB 填完就不會再變，所以這裡重新算一次金額，用在後續的橋接句裡把金額再提醒一次。
+   不能直接借 maturedDepositIncome().principal（= (est.lo+est.hi)/2）：那組 lo/hi 是
+   為了折線圖刻度特地捨入到最近 5 萬，資產規模小、現金比例又低時（例如「50 萬以下」＋
+   「5% 以下」）兩邊會一起捨到 0，變成「這筆約 NT$0 的資金」，比原本沒講金額更奇怪。
+   這裡改成直接用 assetMid()×現金比例算，不經過那組 5 萬捨入，才不會遇到小額就整個歸零。 */
+function idleFundsPrincipal(){
+  return Math.round(assetMid()*(idleEstimate().pct/100));
+}
+/* 「資金不要全押同一個地方」的提醒：stageE() 的單一商品情境（非 deposit／combo）跟
+   stageH3() 的補充路徑會用到同一句話（只有商品標籤不同），抽成共用函式避免兩處分別維護、
+   改一處措辭卻漏改另一處。開頭帶出金額，避免使用者操作到這裡已經忘了是在講哪一筆錢 */
+function idleBridgeText(tag,amount){
+  return `這筆約 <b>NT$${fmt(amount)}</b> 的資金不建議全押同一個地方，可以留一些在穩定的活存，其餘配置在${tag}，抓出您安心持有的比例。`;
+}
 /* ================= 階段 E｜屬性分流與初步推薦 =================
    不顯示屬性標籤（A/B/C/AB）；流程是：一句話帶出方向 → 用 card/recommendation 卡片
    （見 js/component-library.js、RECO_CARD）取代原本 RECO_REASON 那一大段標題＋條列的
@@ -269,7 +286,7 @@ function stageE(){
      往下接卡片，避免同一個概念重複第三次 */
   const messages=['為您整理了比較適合的方向：'];
   if(S.horizonOverride){
-    messages.push('不過債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息，若中途提前賣出，可能無法拿回全部本金。考量這筆資金一年內就可能會用到，這裡改為規劃彈性較高、以收益與穩健為主的基金，同樣能兼顧資金運用的靈活度。');
+    messages.push(`不過${BOND_MATURITY_CAVEAT}考量這筆資金一年內可能會用到，這裡改為規劃彈性較高的基金，同樣兼顧收益與資金靈活度。`);
   }
   if(S.recoType==='combo'){
     messages.push('您還沒有特別偏好哪一種，債券與基金剛好分屬不同特性，可以先都看看再決定：');
@@ -278,11 +295,12 @@ function stageE(){
     renderComponent('card/recommendation',S.recoType==='combo'?[RECO_CARD.bond,RECO_CARD.fund]:RECO_CARD[S.recoType]);
     /* 【AI_Behavior_Instruction v1.1 §9.6】商品情境不用「我建議／我不會建議」，改用中性的
        「可先……」「不宜……」等描述，決策權仍保留給使用者（拉桿試算可自行調整） */
+    const principal=idleFundsPrincipal();
     const bridge=S.recoType==='deposit'
-      ? `這筆資金可先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
+      ? `這筆約 <b>NT$${fmt(principal)}</b> 的資金可先以 <b>${prod.name}</b> 為主，讓資金穩定累積，之後如果想法有變化，也能再彈性調整。`
       : S.recoType==='combo'
-      ? '另外，這筆資金不宜全部押在同一個地方，可以先留一部分在穩定的活存，其餘的部分再評估配置在債券或基金——等一下您可以先看看兩份清單，並透過試算，找到您能安心持有的比例。'
-      : `這筆資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${prod.tag}，找到您能安心持有的比例。`;
+      ? `另外，這筆約 <b>NT$${fmt(principal)}</b> 的資金不建議全押同一個地方，可以留一些在穩定的活存，其餘評估配置在債券或基金——您可以先看看兩份清單，再透過試算找出安心持有的比例。`
+      : idleBridgeText(prod.tag,principal);
     const proceed=()=>aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
     /* 【AI_Behavior_Instruction v1.1 §8.10】這張推薦卡只要出現基金（單一 fund 或 combo
        搭配債券＋基金）就已經在對使用者展示基金相關內容，原本漏掉警語——之前只有
@@ -322,10 +340,13 @@ function riskToleranceFromQ2(){
   return S.q2==='可接受淨值明顯波動換取成長'?'積極':'穩健';
 }
 /* 【AI_Behavior_Instruction v1.1 §6.7／§8.9】商品清單層一律用中性語氣「以下整理本行商品供您參考」，
-   不用「為您篩選」「幫您篩出」等個人化篩選語氣；風險層級說明也拿掉「篩」字，只客觀說明目前顯示的風險範圍 */
+   不用「為您篩選」「幫您篩出」等個人化篩選語氣；風險層級說明也拿掉「篩」字，只客觀說明目前顯示的風險範圍。
+   「穩健」分支原本會多解釋一句「可選商品較少時會依序放寬資產規模與風險層級」——這是內部的
+   後備機制，講給使用者聽只會讓人誤會自己的風險等級被調整過，拿掉，只保留使用者需要知道的
+   事實（目前顯示範圍、卡片會標示實際風險等級） */
 function riskRangeNote(tolerance){
   return tolerance==='穩健'
-    ?'目前顯示的商品風險等級以「穩健」為主；若可選商品較少，會依序放寬資產規模與風險層級以符合最少呈現檔數，商品卡片仍會標示實際風險等級，方便您辨別。'
+    ?'目前顯示的商品風險等級以「穩健」為主，商品卡片會標示實際風險等級，方便您辨別。'
     :'目前顯示的商品風險等級涵蓋穩健到積極，選擇較為多元。';
 }
 function stageGList(){
@@ -598,34 +619,45 @@ const H2_OPTIONS=[
    H2_OPTIONS 裡每個選項的 cat 只會是 'growth' 或 'bond'，所以只要 keys.length>0，hasGrowth 跟 hasBond
    兩者至少一個為真——下面 hasGrowth&&!hasBond／hasBond 這兩個分支已經涵蓋 keys.length>0 的所有情況，
    不會再落到最後的 deposit fallback，這裡就不寫那段永遠不會執行的 dead code，避免誤導以為還有第三條路徑 */
+/* 資金閒置的預設理由：classifyH2()（他行沒填任何投資項目）跟 stageH2()（S.h1Ratio==='0%'
+   直接跳過選項）會用到同一句話，抽成常數避免兩處各存一份、日後改到漏改一邊 */
+const IDLE_FUNDS_REASON='*目前資金大多閒置。*建議先從美元定存或低風險工具開始，逐步累積投資經驗。';
+/* 債券持有到期的風險提醒：adjustH2()（他行補充路徑）跟 stageE()（S.horizonOverride，行內
+   路徑）在講同一件事——資金一年內可能會用到、但債券要放到到期才能保本領息——抽成常數，
+   兩處只需各自接一句「所以怎麼調整」，不用各寫一份幾乎一樣的長句 */
+const BOND_MATURITY_CAVEAT='債券多半要持有到到期日（部分天期長達 20 年）才能保本、穩定領息，中途賣出可能拿不回全部本金。';
 function classifyH2(keys){
   const hasGrowth=keys.some(k=>k==='stock'||k==='oversea_stock'||k==='etf'||k==='fund');
   const hasBond=keys.includes('bond');
   if(keys.length===0){
-    return{result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+    return{result:'deposit',reason:IDLE_FUNDS_REASON};
   }
   if(hasGrowth&&!hasBond){
-    return{result:'bond',reason:'*目前配置偏重成長型資產，穩定收益的部位相對較少。*建議補上一部分債券部位，透過穩定的配息現金流，平衡整體資產的波動程度。'};
+    return{result:'bond',reason:'*目前配置偏重成長型資產，穩定收益部位較少。*建議搭配一些債券，用穩定配息平衡整體波動。'};
   }
-  return{result:'fund',reason:'*您目前的資產配置已相當多元，也累積了一定的投資經驗。*這個階段適合透過精選基金組合，做跨區域的分散配置，進一步爭取資本利得的機會。'};
+  return{result:'fund',reason:'*您的資產配置已相當多元，也有一定的投資經驗。*適合搭配精選基金，做跨區域分散配置，爭取資本利得機會。'};
 }
-/* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果 */
+/* 資產體質修正：以 B-2 現金比例與 H-1 投資比例／規模微調初步結果。
+   這裡只客觀描述目前的資產狀況與建議方向，不用「先…之後再逐步調整」「比…更穩健」這類
+   暗示商品有高低順序的說法——使用者容易誤會成某種等級被調升或調降，其實只是依現況給的建議，
+   跟 reconcileWithOriginal() 的理由文字是同一個原則 */
 function adjustH2(base){
   let{result,reason}=base;
   if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
-    result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高，或其他配置仍偏保守。*建議先透過債券打好穩定收益的基礎，會比直接投入基金更為穩健。';
+    result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高、配置仍偏保守。*建議先以債券為主，穩健地累積收益。';
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
-    result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以進一步搭配基金組合，讓資金有更大的空間發揮成長潛力。';
+    result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以搭配基金組合，讓資金有更大的成長空間。';
   }
   ({result,reason}=reconcileWithOriginal({result,reason}));
   if(result==='bond'&&S.q1==='一年內'){
-    result='fund';reason='*這筆資金一年內就可能會用到，而債券通常需要持有到到期日（部分天期長達 20 年）才能確保保本與穩定領息。*若中途提前賣出，可能無法拿回全部本金，因此這裡改為規劃彈性較高、以收益與穩健為主的基金，兼顧資金運用的靈活度。';
+    result='fund';reason=`*這筆資金一年內可能會用到，但${BOND_MATURITY_CAVEAT}*因此改為規劃彈性較高的基金，兼顧收益與資金靈活度。`;
   }
   return{result,reason};
 }
 /* 綜合行內／行外依據：H-2 目前只依他行資產資訊判斷方向，完全沒參考行內三題（Q2風險承受度／Q3債券基金偏好）已得出的 S.recoType，
    等於使用者剛剛的回答被整套換掉。這裡用 S.recoType 當基準，他行資訊最多只能把結果往上或往下調整一個層級（定存↔債券↔基金），
-   避免行內已明確表達的風險承受度被他行資產一次跳兩級蓋掉 */
+   避免行內已明確表達的風險承受度被他行資產一次跳兩級蓋掉——這是內部的計算限制，reason 文字不會提到「級」「層級」
+   這類字眼，只講事實跟建議，避免使用者誤會成自己被評了某種等級、還被調高調低 */
 const RECOTYPE_RANK={deposit:1,bond:2,fund:3};
 const RANK_RECOTYPE=['deposit','bond','fund'];
 function reconcileWithOriginal(adjusted){
@@ -637,16 +669,16 @@ function reconcileWithOriginal(adjusted){
      這裡不重複講一次，避免同一件事被講兩次 */
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='*他行資產顯示您已具備豐富的多元投資經驗，*同時兼顧您先前表達過的風險考量與整體資產的實際配置狀況。';
+    reason='*他行資產顯示您已有豐富的投資經驗，*這裡仍會依您先前表達的風險考量來安排配置。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
-    reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*先以較穩健的方向打好基礎，之後可以再逐步調整。';
+    reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*這裡建議以較穩健的方向為主，兼顧收益與風險控制。';
   }
   return{result,reason};
 }
 function stageH2(){
   if(S.h1Ratio==='0%'){
-    const base={result:'deposit',reason:'*目前資金大多處於閒置狀態。*建議可以先從美元定存或極低風險的工具開始，逐步建立投資經驗。'};
+    const base={result:'deposit',reason:IDLE_FUNDS_REASON};
     const adj=reconcileWithOriginal(base);
     S.h2Items=[];S.h2Reason=adj.reason;S.recoTypeH=adj.result;
     aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
@@ -681,45 +713,72 @@ function stageH2(){
 
 /* ================= H-3 試算與轉入建議 =================
    資產樣貌整理放在這裡（H-2 選完投資項目後馬上呈現），不要延到 stageH3List 才出現。
-   【方向若改變，補一張新方向的 RECO_CARD】原本這裡不論方向有沒有變，都只有純文字的
-   h2Reason，使用者看不到「原本是基金、現在改成債券」這種明確的前後對比，也少了 stageE()
-   當初那張視覺化的商品介紹卡。現在比對 S.recoTypeH（他行資產納入後的結果）跟 S.recoType
-   （行內三題問完的原始方向）：
-   - 方向有變：先用一句話講清楚「原本→現在」，再補上新方向的 RECO_CARD（呼應 stageE()），
-     h2Reason 只留實質理由、不再重複「原本…現在調整為…」這句已經在新增的一句話裡講過的話
-   - 方向沒變：不重講一次、不重出一次卡片（stageE() 已經出過），直接用 h2Reason 補充依據即可 */
+   【三段式順序】比照使用者實際想事情的順序安排，不是想到什麼講什麼：
+   1. 先看整合後的資產全貌（chart/asset-overview）——使用者要先掌握「我現在整體上是什麼樣子」，
+      才有辦法理解後面的方向調整是根據什麼改的
+   2. 再說明配置方向改變或不變（比對 S.recoTypeH 跟 S.recoType）：
+      - 方向有變：先用一句話講清楚「原本→現在」，再補上新方向的 RECO_CARD（呼應 stageE()），
+        h2Reason 只留實質理由、不再重複「原本…現在調整為…」這句已經講過的話
+      - 方向沒變：不重講一次、不重出一次卡片（stageE() 已經出過），直接用 h2Reason 補充依據即可
+   3. 最後才進入「怎麼配置閒置資金」的下一步（bridge 文字＋showNextSteps CTA）
+   三段之間各自用 aiSay() 分開，讓每一段都有自己的思考停頓，不要一次全部塞給使用者。 */
+/* 他行資產金額／投資比例的中點估算（見 stageH3() 的 chart/asset-overview 整合資產總覽圖）：
+   他行資產目前只收集級距字串（S.h1Amt／S.h1Ratio），做法比照 engine.js assetMid() 對本行
+   資產級距的處理——取每個級距的中點金額／比例來估算，屬於示範用途的粗略估算，不是精確金額 */
+function h1Mid(){return {'100 萬以下':500000,'100 萬–200 萬':1500000,'200 萬以上':2800000}[S.h1Amt]||1000000;}
+const H1_RATIO_MID={'0%':0,'1–50%':0.25,'50% 以上':0.75};
+/* 現金比例（B-2 問的是「現金／活存占多少比例」）換算成投資占比範圍，兩者互為鏡像
+   （現金 95% 以上 ↔ 投資 5% 以下、現金 50–95% ↔ 投資 5–50%……），見 chart/asset-overview
+   圖例——本行投資占比直接顯示這個換算後的範圍，不需要在圖例底下又重複列一次現金比例，
+   同一個資訊只講一次。他行那題（S.h1Ratio）問的就是「投資比例」本身，不用換算，直接沿用。 */
+const CASH_TO_INVEST_RANGE={'95% 以上':'5% 以下','50–95%':'5–50%','5–50%':'50–95%','5% 以下':'95% 以上'};
 function stageH3(){
   const origProd=PRODUCT_DATA[S.recoType];
   const newProd=PRODUCT_DATA[S.recoTypeH];
   const changed=S.recoTypeH!==S.recoType;
   const calcLabel=calcLabelFor(newProd);
-  const recap=`幫您把目前掌握到的資產樣貌整理一下：
-- 凱基銀行資產級距：${S.assetRange||'—'}，現金比例：${S.cashRatio||'—'}
-- 其他銀行資產級距：${S.h1Amt||'—'}，投資比例：${S.h1Ratio||'—'}
-- 其他銀行主要投資項目：${(S.h2Items&&S.h2Items.length)?S.h2Items.join('、'):'目前沒有投資'}`;
-  const messages=[recap];
-  if(changed){
-    messages.push(`原本方向是 <b>${origProd.tag}</b>，考量您在其他銀行的資產狀況，這裡調整為 <b>${newProd.tag}</b>：`);
-  }
-  messages.push(S.h2Reason);
-  aiSay(messages,()=>{
+  /* 第一段：整合後的資產全貌。不另外加卡片標題——前面這句 aiSay 已經帶出「看一下整體樣貌」，
+     卡片再加一次標題等於同一件事講兩次。投資占比用大約的範圍表達（opts.bankRange／
+     opts.otherRange），不用算出來的中點百分比，避免看起來比原始級距資料更精確；
+     opts.bankDetail／opts.otherDetail 只留資產級距，比例已經在上面那行講過，不重複。 */
+  aiSay(['幫您把本行與他行的資產整合起來，先看一下目前的整體樣貌：'],()=>{
+    const bankTotal=assetMid(),otherTotal=h1Mid();
+    const bankInvestPct=(1-idleEstimate().pct/100)*100,otherInvestPct=(H1_RATIO_MID[S.h1Ratio]??0)*100;
+    renderComponent('chart/asset-overview',bankTotal+otherTotal,bankInvestPct,otherInvestPct,S.h2Items,{
+      bankRange:CASH_TO_INVEST_RANGE[S.cashRatio]||'—',
+      otherRange:S.h1Ratio||'—',
+      bankDetail:`資產級距 ${S.assetRange||'—'}`,
+      otherDetail:`資產級距 ${S.h1Amt||'—'}`
+    });
+    /* 第二段：配置方向改變或不變 */
+    const messages=[];
     if(changed){
-      renderComponent('card/recommendation',RECO_CARD[S.recoTypeH]);
+      messages.push(`考量您在其他銀行的資產狀況，建議方向由 <b>${origProd.tag}</b> 調整為 <b>${newProd.tag}</b>：`);
     }
-    const bridge=S.recoTypeH==='deposit'
-      ? `綜合看下來，可先以 <b>${newProd.name}</b> 為主，讓資金穩定累積。`
-      : `資金也不宜全部押在同一個地方，可以抓一部分留在穩定的活存、一部分評估配置在${newProd.tag}，找到您能安心持有的比例。`;
-    const proceed=()=>aiSay([bridge],()=>{
-      showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
-        {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
-          keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
-          onSelect:()=>{clearControls();stageH3List();}}
-      ]);
-    },{label:'為您規劃資金配置中'});
-    /* 【AI_Behavior_Instruction v1.1 §8.10】只有 changed 且新方向是基金時，這裡才是使用者
-       第一次看到「補充他行資產後改推薦基金」的推薦卡（!changed 時方向沒變，使用者在
-       stageE() 已經看過一次，那裡已經補了警語，這裡不用重複） */
-    sayNote(changed&&S.recoTypeH==='fund'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
+    messages.push(S.h2Reason);
+    aiSay(messages,()=>{
+      if(changed){
+        renderComponent('card/recommendation',RECO_CARD[S.recoTypeH]);
+      }
+      /* 第三段：配置閒置資金的下一步。走到這裡使用者已經答完 ch_d1/ch_d2/ch_d3 跟一整輪
+         他行資產的問題，離 stageC() 第一次提到這筆錢已經好幾個問題了，這裡重新帶出金額，
+         避免使用者忘記在講哪一筆錢 */
+      const principal=idleFundsPrincipal();
+      const bridge=S.recoTypeH==='deposit'
+        ? `綜合看下來，這筆約 <b>NT$${fmt(principal)}</b> 的資金可先以 <b>${newProd.name}</b> 為主，讓資金穩定累積。`
+        : idleBridgeText(newProd.tag,principal);
+      const proceed=()=>aiSay([bridge],()=>{
+        showNextSteps('了解這個方向之後，您想怎麼進行下一步呢？',[
+          {id:'accept',title:calcLabel,description:'看看符合需求的商品，再從中試算',
+            keywords:['試算','配置','查看','清單','商品','好','可以','ok','OK'],
+            onSelect:()=>{clearControls();stageH3List();}}
+        ]);
+      },{label:'為您規劃資金配置中'});
+      /* 【AI_Behavior_Instruction v1.1 §8.10】只有 changed 且新方向是基金時，這裡才是使用者
+         第一次看到「補充他行資產後改推薦基金」的推薦卡（!changed 時方向沒變，使用者在
+         stageE() 已經看過一次，那裡已經補了警語，這裡不用重複） */
+      sayNote(changed&&S.recoTypeH==='fund'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
+    },{label:'為您分析配置方向中'});
   },{label:'為您彙整資產資料中',heavy:true});
 }
 /* 補充路徑的風險承受度沿用 D 階段 ch_d2() 已收集的 S.q2（見 riskToleranceFromQ2()），不能無視使用者

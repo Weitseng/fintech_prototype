@@ -1,38 +1,54 @@
 /* Interactive Globe — vanilla-JS port of the user-supplied React/canvas component.
-   忠實移植使用者提供的原始程式碼（DEFAULT_MARKERS／DEFAULT_CONNECTIONS／顏色／
-   latLngToXYZ／rotateX／rotateY／project／draw() 內每一段繪製邏輯與參數），只做兩件事：
+   忠實移植使用者提供的原始程式碼（DEFAULT_MARKERS／DEFAULT_CONNECTIONS／
+   latLngToXYZ／rotateX／rotateY／project／draw() 內每一段繪製邏輯），只做兩件事：
    1) 拿掉原本的 onPointerDown/Move/Up 拖曳互動（使用者確認不需要，直接刪除，不保留
       cursor:grab 之類的殘留樣式）。
    2) 沒有 React 執行環境，改成 mountInteractiveGlobe(container, opts) 這個 imperative
       掛載函式取代 useRef／useCallback／useEffect 那一套，架構比照同目錄 shaping-orb.js
       的 mountShapingOrb()：回傳 {destroy()} 給呼叫端（js/engine.js aiSay()）在 loading
       結束或被 cancelToken 取消時停掉 rAF 迴圈、移除 canvas。
-   除了這兩件事，其餘（城市據點、連線、顏色、密度、公式）都跟使用者貼的原始程式碼一致，
-   不做任何調整。用在 loading/globe-loader 這個 loading 狀態（js/flow.js stageGList()
-   產出商品清單前）。 */
+   【密度／對比度調整】原本的點數（1200）／線條與地名透明度是直接照使用者原始程式碼的
+   參數，在實際使用的尺寸（js/flow.js catalogGlobeLoaderOpts()：220px）下太密、對比太低——
+   1200 個點擠在半徑不到 90px 的球面上，視覺上糊成一片顆粒狀噪點，連線跟地名的顏色又跟
+   背景點群同一色系、透明度也低，整個看起來很模糊，分不出「哪些是點、哪些是連線、哪些是
+   地名」。這裡依使用者回饋調整三組參數，讓畫面在小尺寸下仍然清楚：
+   - 點數大幅減少（1200→450），且整體透明度調低（乘上 DOT_ALPHA_SCALE），讓背景點群
+     退成一層淡淡的網格紋理，不會跟前景的連線／據點搶注意力
+   - 連線（arc）透明度、線寬都提高，讓連線清楚浮在點群之上
+   - 據點地名字級加大、透明度大幅提高（0.6→0.9），不然幾乎看不見
+   其餘（城市據點座標、連線兩端、旋轉／投影公式）維持使用者原始程式碼不動。 */
 (function(global){
+  /* 據點刪減：原本 11 個城市在畫面上還是常常擠在一起（尤其 Delhi／Erbil／Moscow／
+     Taipei／Singapore 這一區，見使用者截圖），拿掉 Moscow／Mexico City（本來就沒有
+     連線、純孤立據點，拿掉不影響網絡故事）跟 Erbil（跟 Taipei 同一區最密集的據點，
+     不是特別具代表性的城市），把 Taipei 這一區的密度降下來，讓 Taipei 的地名比較不會
+     被其他據點的地名蓋過去、看不出來。
+     後來使用者又回饋畫面「上方」看起來太空——用固定的 rotX=0.3 傾角換算，剩下的 8 個
+     據點在預設視角下幾乎都落在畫面中下段，上半部只剩底圖的裝飾點、沒有任何據點。加了
+     Johannesburg：換算過座標，它在預設視角＋整個 loading 期間的自轉範圍內，落點都在
+     畫面上半部，且離鏡頭夠近、地名幾乎全程都會顯示，比較能填補這塊視覺空白。
+     後來使用者希望 Taipei 置中顯示，拿掉了 Tokyo——這兩個據點的螢幕位置太接近，Taipei
+     轉到畫面正中央、離鏡頭最近的角度時，Tokyo 剛好也在那附近，地名會疊字，兩者只能
+     留一個，拿掉 Tokyo（Sydney 原本經 Tokyo 中繼連到 London 那條路徑，改成不需要，
+     Sydney 仍靠 Singapore 那條連線留在網絡裡）。 */
   const DEFAULT_MARKERS=[
     {lat:37.78,lng:-122.42,label:'San Francisco'},
     {lat:51.51,lng:-0.13,label:'London'},
-    {lat:35.68,lng:139.69,label:'Tokyo'},
     {lat:-33.87,lng:151.21,label:'Sydney'},
     {lat:1.35,lng:103.82,label:'Singapore'},
-    {lat:55.76,lng:37.62,label:'Moscow'},
     {lat:-23.55,lng:-46.63,label:'São Paulo'},
-    {lat:19.43,lng:-99.13,label:'Mexico City'},
     {lat:28.61,lng:77.21,label:'Delhi'},
-    {lat:36.19,lng:44.01,label:'Erbil'}
+    {lat:25.03,lng:121.56,label:'Taipei'},
+    {lat:-26.20,lng:28.05,label:'Johannesburg'}
   ];
   const DEFAULT_CONNECTIONS=[
     {from:[37.78,-122.42],to:[51.51,-0.13]},
-    {from:[51.51,-0.13],to:[35.68,139.69]},
-    {from:[35.68,139.69],to:[-33.87,151.21]},
     {from:[37.78,-122.42],to:[1.35,103.82]},
     {from:[51.51,-0.13],to:[28.61,77.21]},
     {from:[37.78,-122.42],to:[-23.55,-46.63]},
     {from:[1.35,103.82],to:[-33.87,151.21]},
-    {from:[28.61,77.21],to:[36.19,44.01]},
-    {from:[51.51,-0.13],to:[36.19,44.01]}
+    {from:[25.03,121.56],to:[1.35,103.82]},
+    {from:[-26.20,28.05],to:[-23.55,-46.63]}
   ];
 
   function latLngToXYZ(lat,lng,radius){
@@ -77,11 +93,22 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)return {destroy:function(){canvas.remove();}};
 
-    let rotY=0.4,rotX=0.3,time=0;
+    /* 起始 rotY 從 0.4 換成 0.16：這是凱基銀行（台灣）的產品搜尋 loading，Taipei 理應是
+       畫面上比較顯眼的據點之一。原本試過 rotY=5.91，數學上能讓 Taipei 轉到離鏡頭最近、
+       畫面正中央的位置，但那個角度會讓 Tokyo 的據點也剛好轉到很接近 Taipei 的螢幕位置，
+       兩個地名的垂直落點只差 5px，實際會疊字看不清楚（見使用者回報）。rotY=0.16 是換算
+       過的折衷值：Taipei 仍轉到相當靠前（z 接近全程能達到的最小值，dot 明顯比預設角度
+       大、亮），且跟其他同時顯示地名的據點（最近的是 Singapore）之間有夠的垂直間距，
+       不會疊字；同時 Tokyo 在這個角度反而不夠正面、不會顯示地名，也就不存在跟 Taipei
+       擠在一起的風險；Johannesburg 在這個角度整個 6 秒 loading 期間地名全程顯示。 */
+    let rotY=0.16,rotX=0.3,time=0;
 
     // Fibonacci sphere
     const dots=[];
-    const numDots=1200;
+    const numDots=450;
+    const DOT_ALPHA_SCALE=0.55;
+    const LABEL_Z_RATIO=-0.25; // 只在據點 z < radius*LABEL_Z_RATIO（較正面）時才畫地名
+    const LABEL_OFFSET=10; // 地名沿「球心→據點」方向外推的距離（px）
     const goldenRatio=(1+Math.sqrt(5))/2;
     for(let i=0;i<numDots;i++){
       const theta=(2*Math.PI*i)/goldenRatio;
@@ -146,7 +173,7 @@
 
         ctx.beginPath();
         ctx.arc(sx,sy,dotSize,0,Math.PI*2);
-        ctx.fillStyle=dotColor.replace('ALPHA',depthAlpha.toFixed(2));
+        ctx.fillStyle=dotColor.replace('ALPHA',(depthAlpha*DOT_ALPHA_SCALE).toFixed(2));
         ctx.fill();
       }
 
@@ -184,7 +211,7 @@
         ctx.moveTo(sx1,sy1);
         ctx.quadraticCurveTo(scx,scy,sx2,sy2);
         ctx.strokeStyle=arcColor;
-        ctx.lineWidth=1.2;
+        ctx.lineWidth=1.6;
         ctx.stroke();
 
         // Traveling dot along arc
@@ -222,11 +249,30 @@
         ctx.fillStyle=markerColor;
         ctx.fill();
 
-        // Label
-        if(marker.label){
-          ctx.font='10px system-ui, sans-serif';
-          ctx.fillStyle=markerColor.replace('1)','0.6)');
-          ctx.fillText(marker.label,sx+8,sy+3);
+        /* Label：兩個問題各自處理。
+           1) 球體持續自轉，任何據點遲早都會轉到畫布邊緣附近——地名固定畫在據點右邊時，
+              轉到右半邊的據點文字會被畫布邊界切掉（例如 São Paulo）。改成沿著「球心→
+              據點」的方向往外偏移（dirX/dirY），而不是固定往右：偏移方向本來就跟著據點
+              在畫布上的實際位置走，天然不會往畫布外面長。
+           2) 好幾個據點剛好轉到螢幕上彼此靠近時，地名會疊成一團看不清楚（例如 Delhi／
+              London／Erbil／Moscow 同時擠在畫面中央下方）。這裡只在據點轉到球體「較正面」
+              （z 夠負，離中心夠近）時才畫地名，其餘時候只留光點——同一時間會顯示地名的
+              城市變少，擠在一起的機率也跟著降低；再加上①的方向偏移讓地名往各自不同方向
+              散開，兩者一起處理，比只做其中一個更有效。
+              代價：地名會隨球體轉動更明顯地淡入淡出，不是固定一直顯示。 */
+        if(marker.label&&z<radius*LABEL_Z_RATIO){
+          const dx=sx-cx,dy=sy-cy;
+          const dist=Math.sqrt(dx*dx+dy*dy)||1;
+          const dirX=dx/dist,dirY=dy/dist;
+          const lx=sx+dirX*LABEL_OFFSET;
+          const ly=sy+dirY*LABEL_OFFSET;
+          ctx.font='600 11px system-ui, sans-serif';
+          ctx.fillStyle=markerColor.replace('1)','0.9)');
+          ctx.textAlign=dirX>=0?'right':'left';
+          ctx.textBaseline='middle';
+          ctx.fillText(marker.label,lx,ly);
+          ctx.textAlign='left';
+          ctx.textBaseline='alphabetic';
         }
       }
     }

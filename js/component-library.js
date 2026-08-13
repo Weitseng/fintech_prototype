@@ -109,6 +109,71 @@ function renderLineChart(labels,values,splitIndex,opts){
 }
 COMPONENTS['chart/line']={render:renderLineChart};
 
+/* ---- chart/asset-overview（本行＋他行資產整合總覽，見 js/flow.js stageH3()）----
+   本行／他行的投資占比分開用兩圈同心圓弧呈現（外圈＝本行、內圈＝他行，都是「投資占比」，
+   不是同一個總數的兩個切片，所以不能沿用 chart/pie 那種單一甜甜圈依比例切色塊的做法，
+   改成兩條各自獨立的進度弧線，弧長各自對應自己的投資占比，方便使用者直接比較本行／他行
+   投資积极程度的落差；顏色沿用 One KGI Design Guideline 的圖表色票（藍／橙），跟站內其他
+   圖表同一組色票，不另外調色。中心顯示本行＋他行合計後的總資產金額（單位：萬），字級套用
+   既有的 .type-body-b（Body Bold）就好，不需要再借 chart/pie 那組給百分比用的大型
+   display 字級——這裡是三個數字裡最不需要搶焦點的一個，圖表本身（弧線＋圖例）才是重點；
+   標籤精簡成「資產總額」（不加「整合」「（約）」），避免文字寬度超出中央圓孔範圍。
+   弧線加一點 drop-shadow，讓弧線有浮起來的層次感，不是貼死在底圖上的平面色塊。
+   opts.bankDetail／opts.otherDetail（資產級距）直接併進對應顏色圖例底下，取代原本另外
+   一段獨立條列文字。opts.bankRange／opts.otherRange 是投資占比的大約範圍（例如
+   「5–50%」），圖例主行顯示這個範圍，不是 bankInvestPct／otherInvestPct 算出來的
+   中點百分比——級距資料本來就是一個範圍，秀出算出來的單一數字（如 28%）會顯得比
+   實際資料更精確，兩個數字資訊也重複；bankInvestPct／otherInvestPct 只用來畫弧線長度，
+   不再拿來顯示文字。opts.bankDetail／otherDetail 底下也只留資產級距，比例已經在
+   主行講過，不再重複列一次現金比例／投資比例。
+   products 是他行申報過的主要投資項目（S.h2Items），沒有投資項目時顯示提示文字，不留空白
+   區塊；標籤樣式沿用既有的 .pcard-tag（商品卡標籤），不另外造一組新的 pill 樣式。 */
+function renderAssetOverviewChart(totalAmt,bankInvestPct,otherInvestPct,products,opts){
+  opts=opts||{};
+  const totalWan=Math.round(totalAmt/10000);
+  const R_OUTER=80,R_INNER=58,STROKE=14;
+  const circ=r=>2*Math.PI*r;
+  const arcDash=(pct,r)=>{const c=circ(r),d=Math.max(0,Math.min(100,pct))/100*c;return `${d} ${c-d}`;};
+  const productsHtml=(products&&products.length)
+    ?`<div class="assetoverview-tags">${products.map(p=>`<span class="pcard-tag">${p}</span>`).join('')}</div>`
+    :`<div class="assetoverview-empty">目前尚無申報的投資項目</div>`;
+  const card=document.createElement('div');card.className='pie-card';
+  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<div class="pie-overview">
+      <div class="ringchart">
+        <svg viewBox="0 0 200 200" class="ringchart-svg" role="img" aria-label="${opts.ariaLabel||'本行與他行投資占比'}">
+          <circle class="ringchart-track" cx="100" cy="100" r="${R_OUTER}" stroke-width="${STROKE}"/>
+          <circle class="ringchart-arc" cx="100" cy="100" r="${R_OUTER}" stroke-width="${STROKE}" stroke="var(--color-chart-blue-2nd)" stroke-dasharray="${arcDash(bankInvestPct,R_OUTER)}" transform="rotate(-90 100 100)"/>
+          <circle class="ringchart-track" cx="100" cy="100" r="${R_INNER}" stroke-width="${STROKE}"/>
+          <circle class="ringchart-arc" cx="100" cy="100" r="${R_INNER}" stroke-width="${STROKE}" stroke="var(--color-chart-orange-2nd)" stroke-dasharray="${arcDash(otherInvestPct,R_INNER)}" transform="rotate(-90 100 100)"/>
+        </svg>
+        <div class="ringchart-center"><div><div class="type-body-b">${totalWan}萬</div><div class="pie-label">資產總額</div></div></div>
+      </div>
+      <div class="pie-legend">
+        <div class="pie-legend-item">
+          <span class="pie-dot" style="background:var(--color-chart-blue-2nd)"></span>
+          <span class="assetoverview-legend-text">
+            <span class="assetoverview-legend-main">本行投資占比 <b>${opts.bankRange||Math.round(bankInvestPct)+'%'}</b></span>
+            ${opts.bankDetail?`<span class="assetoverview-legend-detail">${opts.bankDetail}</span>`:''}
+          </span>
+        </div>
+        <div class="pie-legend-item">
+          <span class="pie-dot" style="background:var(--color-chart-orange-2nd)"></span>
+          <span class="assetoverview-legend-text">
+            <span class="assetoverview-legend-main">他行投資占比 <b>${opts.otherRange||Math.round(otherInvestPct)+'%'}</b></span>
+            ${opts.otherDetail?`<span class="assetoverview-legend-detail">${opts.otherDetail}</span>`:''}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="assetoverview-products">
+      <div class="assetoverview-products-label">已投資商品</div>
+      ${productsHtml}
+    </div>`;
+  appendToChat(card);down();
+  return card;
+}
+COMPONENTS['chart/asset-overview']={render:renderAssetOverviewChart};
+
 /* ---- card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）----
    AI 完成資產評估、推薦適合方向時使用，取代原本 RECO_REASON 那一大段標題＋條列文字的 markdown
    說明（見 js/flow.js stageE()）：使用者回饋文字太多太饒口，改成一張「左圖右字」卡片，
