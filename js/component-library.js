@@ -667,3 +667,86 @@ function renderOptionPopover(question,options,onPick){
   return wrap;
 }
 COMPONENTS['popover/option-select']={render:renderOptionPopover};
+
+/* ---- selection/option（Figma node 370:3005，Selection/Option）可重複使用的單選/多選選項卡 ----
+   icon／label 皆由呼叫端傳入，不寫死目前 Figma 稿裡的錢袋圖示與「選項文案」佔位字；
+   icon 可傳 SVG markup 字串或既有 DOM node，元件只負責 80x80 容器置中（見
+   css/component-library.css .selopt-icon），不處理 icon 本身的繪製，換圖示不影響排版。
+   語意預設 role="radio"＋aria-checked（單選情境，例如同一組互斥選項）；若要改成多選（checkbox），
+   呼叫端把 opts.role 傳 'checkbox' 即可——role="checkbox" 一樣讀 aria-checked，不需要改其他邏輯，
+   只是不會有「選一個、其餘取消」的互斥語意（那是 renderSelectionOptionGroup 的 radiogroup 行為）。
+   selected 是受控狀態：本元件點擊時不會自己切換 selected（避免跟外部資料狀態失去同步），
+   只會呼叫 opts.onSelect(cardEl)，實際要不要切換選取視覺由呼叫端呼叫回傳元素的
+   setSelected(bool) 決定；renderSelectionOptionGroup() 是這個模式的現成用法。
+   Pressed 狀態用 mousedown/touchstart～mouseup/touchend/mouseleave/keydown/keyup 手動切 class，
+   不用純 CSS :active——鍵盤 Enter/Space 觸發 <button> 時，:active 偽類在部分瀏覽器對「鍵盤觸發」
+   的支援不一致，手動切 class 才能讓滑鼠／觸控／鍵盤三種輸入都有一致的按下視覺回饋。
+   <button> 原生就支援 Tab 聚焦與 Enter/Space 觸發 click，不需要額外的 keydown→click 轉發。
+   Figma 稿的 Hover／Pressed 兩個 variant 視覺完全相同，Selected 疊加 Hover/Pressed 也沒有對應的稿
+   （見 css/component-library.css 這段的 TODO 註解），因此按下視覺共用同一組 CSS 規則，
+   這裡不需要在 JS 另外區分 Hover 跟 Pressed。
+   opts：{selected, onSelect, disabled, role, className}。 */
+function renderSelectionOptionCard(icon,label,opts){
+  opts=opts||{};
+  const card=document.createElement('button');
+  card.type='button';
+  card.className='selopt'+(opts.className?' '+opts.className:'');
+  card.setAttribute('role',opts.role||'radio');
+  card.disabled=!!opts.disabled;
+  card.innerHTML='<span class="selopt-icon" aria-hidden="true"></span><span class="selopt-label"></span>';
+  const iconEl=card.querySelector('.selopt-icon');
+  if(icon instanceof Node)iconEl.appendChild(icon);
+  else if(icon!=null)iconEl.innerHTML=icon;
+  card.querySelector('.selopt-label').textContent=label||'';
+
+  function setSelected(v){
+    card.classList.toggle('is-selected',!!v);
+    card.setAttribute('aria-checked',v?'true':'false');
+  }
+  setSelected(!!opts.selected);
+
+  function setPressed(v){card.classList.toggle('is-pressed',!!v);}
+  ['mousedown','touchstart'].forEach(evt=>card.addEventListener(evt,()=>setPressed(true)));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(evt=>card.addEventListener(evt,()=>setPressed(false)));
+  card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat)setPressed(true);});
+  card.addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')setPressed(false);});
+
+  card.addEventListener('click',()=>{if(opts.onSelect)opts.onSelect(card);});
+
+  card.setSelected=setSelected;
+  return card;
+}
+COMPONENTS['selection/option']={render:renderSelectionOptionCard};
+
+/* renderSelectionOptionGroup：包一層容器重複渲染多張 selection/option 卡片（如 Figma 稿的堆疊示意），
+   預設當作單選（radio）群組使用：點擊某張卡片會自動取消其餘卡片的選取，呼叫端不用自己管理互斥邏輯；
+   opts.role 傳 'checkbox' 則關閉互斥、改成各卡片獨立切換（多選）。
+   items：[{icon,label,selected,disabled,className,onSelect}]；opts：{role,className,ariaLabel,direction}
+   direction 傳 'row' 會加上 .row modifier class（橫向排列，見 css/component-library.css .selopt-group.row），
+   預設沿用 Figma 稿的縱向堆疊＋Spacing/20 間距。 */
+function renderSelectionOptionGroup(items,opts){
+  opts=opts||{};
+  const isRadio=(opts.role||'radio')==='radio';
+  const wrap=document.createElement('div');
+  wrap.className='selopt-group'+(opts.direction==='row'?' row':'')+(opts.className?' '+opts.className:'');
+  if(isRadio)wrap.setAttribute('role','radiogroup');
+  if(opts.ariaLabel)wrap.setAttribute('aria-label',opts.ariaLabel);
+  const cards=[];
+  (items||[]).forEach((item,i)=>{
+    const card=renderSelectionOptionCard(item.icon,item.label,{
+      selected:!!item.selected,
+      disabled:item.disabled,
+      role:opts.role,
+      className:item.className,
+      onSelect:()=>{
+        if(isRadio)cards.forEach(c=>c.setSelected(c===card));
+        else card.setSelected(!card.classList.contains('is-selected'));
+        if(item.onSelect)item.onSelect(item,i);
+      }
+    });
+    cards.push(card);
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+COMPONENTS['selection/option-group']={render:renderSelectionOptionGroup};

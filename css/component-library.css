@@ -447,3 +447,56 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .opt-popover-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
   color:var(--color-content-general-primary)}
+
+/* ============================================================
+   selection/option（Figma node 370:3005，Selection/Option）可重複使用的單選/多選選項卡
+   4 種狀態（Enable／Hover／Pressed／Selected）皆對應 One KGI Design Guideline 既有 token，
+   沒有新增或硬編任何自訂色碼／字級／間距／圓角/陰影數值：
+     - 背景：Enable/Hover/Pressed 用 Container/Card/White → --color-container-card-white；
+       Selected 用 Container/General/Light-Active → --color-container-general-light-active
+     - 邊框：Enable 用 Container/General/Divider → --color-container-general-divider；
+       Hover/Pressed/Selected 皆用 Container/General/Active-Primary → --color-container-general-active-primary
+       （跟 css/style.css 的 --brand 是同一顆 token，focus-visible outline 直接沿用）
+     - 圓角：Figma variable "3" → --radius-small（本檔 radius-tokens.css 註解本來就寫「用於 Selection Chip」，
+       這個元件正是其中一種 Selection Chip 用途）
+     - 間距：Figma Spacing/28（卡片內距）→ --spacing-28；Spacing/8（icon 與文字間距）→ --spacing-8；
+       卡片彼此堆疊間距（Figma 稿 4 張示意卡片垂直間距 20px）→ --spacing-20
+     - 字級：Figma "Body - R/🌊 Web-TC"（Noto Sans TC, Regular, 17px, line-height 1.6）→
+       --kgi-font-auto-body-regular-tc-*（跟 .nsl-item-title 同一組 token）
+     - 文字色：Content/General/Primary → --color-content-general-primary
+     - 陰影：Figma 稿此節點沒有 box-shadow 效果，故不套用任何 shadow token
+   TODO：Figma 稿只有 4 個獨立 variant，沒有「Selected + Hover」或「Selected + Pressed」疊加變體。
+   目前疊加時直接沿用 Selected 的背景（light-active），邊框則不管是否疊加 hover/press 都已經是
+   active-primary（Selected／Hover／Pressed 三者邊框色本來就相同），是目前最接近的近似效果；
+   之後設計如果補上疊加稿，請替換這裡的規則。Hover 與 Pressed 在 Figma 稿內視覺完全相同
+   （背景、邊框皆同），故共用同一組樣式規則，不特別區分。 */
+.selopt-group{display:flex;flex-direction:column;align-items:flex-start;gap:var(--spacing-20)}
+.selopt-group.row{flex-direction:row;flex-wrap:wrap}
+
+.selopt{
+  --selopt-label-width:120px; /* Figma 稿量到的文字容器寬度，非 token，可由呼叫端覆寫此變數換寬度 */
+  display:inline-flex;flex-direction:column;align-items:center;gap:var(--spacing-8);
+  padding:var(--spacing-28);border-radius:var(--radius-small);
+  border:1px solid var(--color-container-general-divider);
+  background:var(--color-container-card-white);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;
+  font-family:inherit;transition:background .15s,border-color .15s;
+}
+.selopt:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.selopt:disabled{opacity:.5;cursor:not-allowed}
+@media (hover:hover) and (pointer:fine){
+  .selopt:not(:disabled):hover{border-color:var(--color-container-general-active-primary)}
+}
+.selopt:not(:disabled).is-pressed{border-color:var(--color-container-general-active-primary)}
+.selopt.is-selected{background:var(--color-container-general-light-active);border-color:var(--color-container-general-active-primary)}
+
+.selopt-icon{width:80px;height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.selopt-icon svg,.selopt-icon img{display:block;width:100%;height:100%}
+.selopt-label{width:var(--selopt-label-width);text-align:center;word-break:break-word;white-space:normal;
+  font-family:var(--kgi-font-auto-body-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;
+  font-size:var(--kgi-font-auto-body-regular-tc-size-rem);
+  font-weight:var(--kgi-font-auto-body-regular-tc-weight);
+  line-height:var(--kgi-font-auto-body-regular-tc-line-height);
+  letter-spacing:var(--kgi-font-auto-body-regular-tc-letter-spacing);
+  color:var(--color-content-general-primary);
+}
