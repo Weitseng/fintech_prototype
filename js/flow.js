@@ -37,17 +37,35 @@ function stepA(){
   p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
 
-/* 單選題選項清單，樣式沿用 css/style.css 的 .choice（對應 Figma node 223:752「message/option」，
-   跟 engine.js choiceBtn() 在對話中產生的問題選項是同一個元件，只是這裡不經過 #controls／chat，
-   直接把按鈕掛到 .selpage 裡的容器上）。編號靠 .choice 既有的 CSS counter 自動產生，
-   容器需各自 counter-reset（見 .choice-group），兩題的編號才會各自從 1 開始。 */
-function buildSingleSelectList(container,options,onPick){
-  container.className='choice-group';
-  options.forEach(x=>{
-    const b=choiceBtn(x,null,()=>{container.querySelectorAll('.choice').forEach(o=>o.classList.remove('sel'));
-      b.classList.add('sel');onPick(x);});
-    container.appendChild(b);
+/* stepB() 資產情境兩題佔位 icon（錢袋＋金幣，比照 Figma「Selection/Option」稿的錢袋圖示風格）：
+   這階段 8 個選項先全部共用同一個佔位圖，之後每個選項會換上各自對應的正式圖示，屆時只需要把
+   下面 stepB() 兩次呼叫 buildSingleSelectOptionGroup() 時各自選項字串換成 {label,icon} 物件、
+   帶入各自的正式 icon 即可，不用改 buildSingleSelectOptionGroup() 或 selection/option 元件
+   本身——icon 本來就是逐一透過 items[].icon 傳入，不是寫死在元件或這個迴圈裡。配色沿用既有
+   chart token（--color-chart-teal-2nd 袋身／--color-yellow-400 金幣），不是新增色碼。 */
+const ASSET_ICON_PLACEHOLDER=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M24 10c-2 3-6 4-6 9 0 6.6 5.4 12 12 12s12-5.4 12-12c0-5-4-6-6-9" fill="var(--color-chart-teal-2nd)"/>
+  <path d="M20 8h8l-2 4h-4z" fill="var(--color-navy-400)"/>
+  <circle cx="15" cy="30" r="6" fill="var(--color-yellow-400)"/>
+  <circle cx="15" cy="30" r="6" fill="none" stroke="var(--color-navy-500)" stroke-opacity=".25"/>
+  <text x="30" y="26" text-anchor="middle" font-size="11" font-weight="700" fill="var(--color-content-general-light-active)">$</text>
+</svg>`;
+
+/* 單選題選項群組：改用通用的 selection/option-group 元件（js/component-library.js），
+   拿掉舊版 .choice 純文字＋數字序號清單。container 沿用 stepB() 既有的掛載點（#rangeOpts／
+   #cashOpts），onPick(x) 只回傳選中選項的 label 字串——維持跟舊版 buildSingleSelectList()
+   完全相同的呼叫慣例，S.assetRange／S.cashRatio／checkReady() 這套既有的表單狀態管理完全不用改。
+   options 陣列的每一項可以是純字串（沿用 ASSET_ICON_PLACEHOLDER 佔位圖，目前 stepB() 兩題都是
+   這樣呼叫），也可以是 {label,icon} 物件自帶各自的正式 icon——之後要把 8 個選項換成各自對應的
+   正式圖示時，只需要把 stepB() 呼叫這裡的字串陣列改成帶 icon 的物件陣列即可，不用改這個函式。
+   direction:'row' 讓 4 張卡片依可視寬度自動換行（見 css/component-library.css .selopt-group.row），
+   不用另外手動排版。 */
+function buildSingleSelectOptionGroup(container,options,onPick,ariaLabel){
+  const items=options.map(o=>{
+    const opt=typeof o==='string'?{label:o}:o;
+    return {icon:opt.icon||ASSET_ICON_PLACEHOLDER,label:opt.label,onSelect:x=>onPick(x.label)};
   });
+  container.appendChild(renderComponent('selection/option-group',items,{direction:'row',ariaLabel}));
 }
 
 /* ================= 階段 B｜設定資產情境 ================= */
@@ -69,8 +87,8 @@ function stepB(){
   const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
-  buildSingleSelectList(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();});
-  buildSingleSelectList(co,['95% 以上','50–95%','5–50%','5% 以下'],x=>{S.cashRatio=x;checkReady();});
+  buildSingleSelectOptionGroup(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();},'總資產級距');
+  buildSingleSelectOptionGroup(co,['95% 以上','50–95%','5–50%','5% 以下'],x=>{S.cashRatio=x;checkReady();},'現金占比');
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */

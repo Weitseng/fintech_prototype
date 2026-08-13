@@ -723,7 +723,16 @@ COMPONENTS['selection/option']={render:renderSelectionOptionCard};
    opts.role 傳 'checkbox' 則關閉互斥、改成各卡片獨立切換（多選）。
    items：[{icon,label,selected,disabled,className,onSelect}]；opts：{role,className,ariaLabel,direction}
    direction 傳 'row' 會加上 .row modifier class（橫向排列，見 css/component-library.css .selopt-group.row），
-   預設沿用 Figma 稿的縱向堆疊＋Spacing/20 間距。 */
+   預設沿用 Figma 稿的縱向堆疊＋Spacing/20 間距。
+   沒有另外加 name/groupName prop：ARIA 的 radiogroup 是靠「同一個 role="radiogroup" 容器底下的
+   role="radio" 子項」這層 DOM 包含關係辨識同一組，不像原生 <input type="radio"> 需要共用 name
+   屬性才能互斥；兩個獨立呼叫 renderSelectionOptionGroup() 本來就是兩個獨立容器，天生不會互相干擾，
+   加這個 prop 不會多解決什麼問題。
+   單選模式下鍵盤支援 WAI-ARIA Radio Group pattern 的「roving tabindex」：同一時間只有一張卡片
+   在 Tab 順序上（tabIndex=0，其餘卡片 tabIndex=-1），方向鍵（↑↓←→，不分橫直排列一律線性往前/往後）
+   在卡片間移動並「立即選取」該卡片（比照原生 <input type="radio"> 方向鍵的行為，不需要再按一次
+   Enter/Space 確認）；多選（checkbox）模式維持每張卡片各自獨立的原生 Tab 順序，不套用 roving
+   tabindex（ARIA Checkbox 沒有這個慣例，各自都要能被 Tab 到）。 */
 function renderSelectionOptionGroup(items,opts){
   opts=opts||{};
   const isRadio=(opts.role||'radio')==='radio';
@@ -732,21 +741,46 @@ function renderSelectionOptionGroup(items,opts){
   if(isRadio)wrap.setAttribute('role','radiogroup');
   if(opts.ariaLabel)wrap.setAttribute('aria-label',opts.ariaLabel);
   const cards=[];
+
+  function updateRovingTabIndex(){
+    if(!isRadio)return;
+    let active=cards.findIndex(c=>c.classList.contains('is-selected')&&!c.disabled);
+    if(active<0)active=cards.findIndex(c=>!c.disabled);
+    cards.forEach((c,i)=>{c.tabIndex=(i===active)?0:-1;});
+  }
+  function selectByIndex(i){
+    const card=cards[i];
+    if(!card||card.disabled)return;
+    if(isRadio)cards.forEach((c,ci)=>c.setSelected(ci===i));
+    else card.setSelected(!card.classList.contains('is-selected'));
+    updateRovingTabIndex();
+    if(items[i].onSelect)items[i].onSelect(items[i],i);
+  }
+
   (items||[]).forEach((item,i)=>{
     const card=renderSelectionOptionCard(item.icon,item.label,{
       selected:!!item.selected,
       disabled:item.disabled,
       role:opts.role,
       className:item.className,
-      onSelect:()=>{
-        if(isRadio)cards.forEach(c=>c.setSelected(c===card));
-        else card.setSelected(!card.classList.contains('is-selected'));
-        if(item.onSelect)item.onSelect(item,i);
+      onSelect:()=>selectByIndex(i)
+    });
+    if(isRadio)card.addEventListener('keydown',e=>{
+      const dir=(e.key==='ArrowRight'||e.key==='ArrowDown')?1:(e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:0;
+      if(!dir)return;
+      e.preventDefault();
+      let next=i;
+      for(let step=0;step<cards.length;step++){
+        next=(next+dir+cards.length)%cards.length;
+        if(!cards[next].disabled)break;
       }
+      selectByIndex(next);
+      cards[next].focus();
     });
     cards.push(card);
     wrap.appendChild(card);
   });
+  updateRovingTabIndex();
   return wrap;
 }
 COMPONENTS['selection/option-group']={render:renderSelectionOptionGroup};

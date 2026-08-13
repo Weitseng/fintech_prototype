@@ -436,7 +436,7 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    標題套用 Subtitle-B 字級 token＋Content/General/Primary 色票——跟 aiAsk() 的 .md-quote
    用的是同一組 token，選完之後這句話用 aiAsk() 顯示在聊天紀錄時字級／顏色自然一致。
    選項清單直接重用既有 .choice-group／.choice（choiceBtn()，對應 Figma Message/option 元件，
-   見 js/flow.js buildSingleSelectList() 的說明），不重建、不修改其內部樣式與 hover/focus 狀態。 */
+   說明見 js/engine.js choiceBtn()），不重建、不修改其內部樣式與 hover/focus 狀態。 */
 .opt-popover-wrap{position:absolute;left:4%;right:4%;bottom:16px;z-index:20}
 .opt-popover{background:var(--color-surface-white);border:1px solid var(--color-sky-blue-100);
   border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
