@@ -231,7 +231,7 @@ body{font-family:var(--font-cn);
 .selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
-  margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+  margin:var(--spacing-32) 0 var(--spacing-20);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
 /* 進入對話後、第一則分析內容（stageC()）之前固定顯示的 AI 生成內容警語；
    文字排版直接用共用的 .type-caption-r 工具類（見上方字級系統），這裡只補
    版面（margin／對齊）跟本文顏色，連結色另外指定成 container active */
