@@ -138,12 +138,11 @@ function maturedDepositIncome(est){
   const principal=Math.round((est.lo+est.hi)/2);
   const before=principal*MATURED_DEPOSIT_RATE/12;
   const after=principal*IDLE_DEMAND_RATE/12;
-  const labels=[monthLabel(MATURED_MONTHS+1),monthLabel(MATURED_MONTHS)],values=[before,before];
+  const points=[{label:monthLabel(MATURED_MONTHS+1),value:before},{label:monthLabel(MATURED_MONTHS),value:before}];
   for(let m=MATURED_MONTHS-1;m>=0;m--){
-    labels.push(monthLabel(m));
-    values.push(after);
+    points.push({label:monthLabel(m),value:after});
   }
-  return {principal,before,after,labels,values,splitIndex:1};
+  return {principal,before,after,points,splitIndex:1};
 }
 /* 【AI_Behavior_Instruction v1.1 §9.4 Information Organization】先直接告訴使用者發生了什麼事
    （您有一筆定存已經到期），再說明影響，而不是直接丟一個「## 標題」報告式開場——後者跳過了
@@ -169,7 +168,7 @@ function stageC(){
       renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
       setTimeout(()=>{
         if(myGen!==flowGen)return;
-        renderComponent('chart/line',income.labels,income.values,income.splitIndex,{splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+        renderComponent('chart/line',income.points,{splitIndex:income.splitIndex,splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
         /* 結論文字的 aiSay() 也要挪進這個 setTimeout 裡、接在折線圖後面才呼叫——
            這一輪稍早的 cube-loader 已經把 turnLoadingShown 設成 true，aiSay() 內部
            看到這個旗標就會直接開始逐字打字、不會再多等 BASE_DELAY，如果沒搬進來，

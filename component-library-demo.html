@@ -115,6 +115,27 @@
     <div class="demo-log" id="selopt-log" style="max-width:none;padding:0 24px 24px;color:#9aa8c7"></div>
   </div>
 
+  <!-- chart/line（Figma node 374:4249）：跟 selection/option 一樣強制掛 data-theme="dark"；
+       這個元件的視覺參數（格線間距、資料點半徑）是照 Figma 稿 600 寬的資料區換算，卡片
+       本身故意放寬到 760px（而不是沿用其他元件示範用的 480px .demo-section），太窄會讓
+       數值徽章擠在一起、看不出間距是否正確 -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 一般下降趨勢（5 個月，含到期標註）</div>
+    <div id="linechart-demo-decline" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 持平（5 個月數值相同，驗證線不會貼死圖表頂端）</div>
+    <div id="linechart-demo-flat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 僅 2 個資料點＋到期標註在第一點（驗證標籤靠左對齊、不超出邊界）</div>
+    <div id="linechart-demo-two" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 3 個資料點、陡升趨勢＋到期標註在最後一點＋自訂數值格式（驗證標籤靠右對齊、highlightIndex 與 splitIndex 疊加不重疊）</div>
+    <div id="linechart-demo-steep" style="padding:16px"></div>
+  </div>
+
   <!-- down() 內部固定找 #screen 當捲動容器，這裡不需要真的捲動，放一個隱藏節點避免報錯 -->
   <div id="screen" style="display:none"></div>
 
@@ -231,6 +252,38 @@
         {icon:SELOPT_ICON_WALLET,label:'這是一段用來測試文案較長時是否能正常換行、不撐破卡片版面的選項文案',disabled:true,onSelect:i=>{soptLog.textContent='選取：'+i.label;}}
       ],{direction:'row',ariaLabel:'投資商品類型選擇'})
     );
+
+    /* chart/line 的 render 函式內部會呼叫 appendToChat()，appendToChat() 讀的是
+       currentTurnEl||chatBox——currentTurnEl 在 engine.js 裡永遠是先賦值才讀取（例如
+       enterChat()／startTurn()），從來沒有用 let/const 宣告過，這個獨立 demo 頁沒有跑過
+       那套初始化流程，第一次讀取會是「從未賦值過的裸識別字」，直接丟 ReferenceError（跟
+       上面 message/chat-bubble 那段的既有 bug 是同一個成因）。用 window.currentTurnEl
+       存取（而不是裸寫 currentTurnEl）不會觸發這個錯誤——物件屬性讀取不存在的屬性只會拿到
+       undefined，不會丟 ReferenceError——藉此把它安全初始化成 null，之後 appendToChat()
+       就會正常 fallback 用 chatBox。 */
+    window.currentTurnEl = window.currentTurnEl || null;
+
+    chatBox = document.getElementById('linechart-demo-decline');
+    renderComponent('chart/line', [
+      {label:'4月',value:2688},{label:'5月',value:2688},
+      {label:'6月',value:717},{label:'7月',value:717},{label:'8月',value:717}
+    ], {title:'每月被動收益趨勢', splitIndex:1, splitLabel:'定存到期'});
+
+    chatBox = document.getElementById('linechart-demo-flat');
+    renderComponent('chart/line', [
+      {label:'4月',value:500},{label:'5月',value:500},{label:'6月',value:500},
+      {label:'7月',value:500},{label:'8月',value:500}
+    ], {title:'持平情境'});
+
+    chatBox = document.getElementById('linechart-demo-two');
+    renderComponent('chart/line', [
+      {label:'6月',value:1200},{label:'7月',value:9800}
+    ], {title:'僅 2 個資料點', splitIndex:0, splitLabel:'起始月'});
+
+    chatBox = document.getElementById('linechart-demo-steep');
+    renderComponent('chart/line', [
+      {label:'A',value:100},{label:'B',value:50},{label:'C',value:9000}
+    ], {title:'3 個資料點、陡升趨勢', splitIndex:'C', splitLabel:'到期在最後一點', formatValue:v=>Math.round(v).toLocaleString()+' 元'});
   </script>
 </body>
 </html>

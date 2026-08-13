@@ -47,63 +47,133 @@ function renderPieChart(investedPct,amount,opts){
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
 
-/* ---- chart/line（定存到期後被動收益趨勢折線圖，見 js/flow.js stageC()）----
-   視覺參考使用者提供的 fl_chart LineChartSample2 範例（格線、粗圓角線條＋漸層、
-   曲線下方漸層填色、圖表邊框），移植成這裡的 inline SVG 寫法。
-   全線統一藍色（不用紅色標示到期前後差異，避免顏色語意混淆）；到期時間點仍用一條
-   虛線＋標籤標示，讓下降的瞬間一眼可辨，不需要額外圖例說明。
-   這裡的資料本身是「到期前一點＋到期後連續四個持平點」，不是連續起伏的數列，套用
-   fl_chart 的貝茲曲線平滑（isCurved）對這種資料不會有視覺差異（頂多是同一條斜直線／
-   水平線的另一種畫法），所以沒有實作曲線平滑；格線、漸層填色、粗圓角線條、邊框這幾項
-   確實會讓視覺更接近參考圖，都有做。
-   純展示用途（不可互動），卡片沿用 .pie-card 同一組間距／陰影 token，維持跟圓餅圖一致的卡片感。 */
+/* ---- chart/line（Figma node 374:4249「chart/pei chart」，通用折線圖元件）----
+   原本是「定存到期後被動收益趨勢」頁面（js/flow.js stageC()）寫死在頁面裡的一次性 SVG，
+   這次抽成通用元件：資料點陣列長度可變（不寫死月數）、標註哪個點用 index／label 兩種方式
+   都可以指定、貨幣格式化交給呼叫端決定，元件本身不含任何頁面文案（「依您的資產情境來看…」
+   那段說明文字留在 flow.js，這裡只畫圖）。
+   2026-08-14 依 Figma node 374:4249 用 get_design_context／get_variable_defs 讀出來的規格
+   核對修正（不是憑截圖肉眼抓色）：折線／資料點改用 --color-chart-blue-1st（稿子 Dark Mode
+   實際色碼 #1877FF，對應 Container/General/Active-Primary，先前版本誤用了「投資配置」donut
+   在用的 --color-chart-blue-2nd）；grid 改成虛線＋稿子量出來的透明度（橫向 .7／縱向 .8），
+   baseline 是稿子裡唯一的實線、拿掉另外疊加的外框矩形；數值標籤改成藥丸狀 HTML 徽章疊加在
+   SVG 上（樣式／間距見 css/component-library.css .linechart-value-badge 註解）；最後一個
+   資料點（目前最新月份）疊加一層半透明光暈、比其他點大，呼應稿子強調「目前」這個點的做法。
+   有一處規格存疑，沒有照抄，先維持原本做法：稿子裡曲線下方漸層填色的 gradient stop 方向是
+   「越靠近 baseline 越不透明、越靠近折線越透明」（跟一般「貼線最濃、往下漸淡」的方向相反），
+   且色碼 #539AFF 在專案現有 token 裡找不到精確對應（最近的 --color-sky-blue-400 是 #4E97FF，
+   不完全一樣）。這裡維持「貼線最濃、往下漸淡到底部透明」的方向與 --color-chart-blue-2nd 漸層色
+   （跟原本行為一致），沒有自行改成跟稿子相反的方向或引入沒有 token 對應的色碼，麻煩設計確認
+   稿子這裡的漸層方向是否為刻意設計，確認後再回來調整。
+   PAD_T／badge／split-label 的定位全部用「相對於資料點固定間距」計算（不是寫死絕對座標），
+   資料點數量／數值範圍改變時，標籤自然跟著資料點移動，且 PAD_T 保留的高度是「無論資料落在
+   0～maxV 哪個位置，徽章／到期標註都不會被 SVG 上緣裁掉」算出來的安全值，不是憑感覺抓的數字
+   ——這是驗收清單裡「極端情境（趨勢很平／很陡／資料點很少）版面不跑掉」的關鍵。
+   @typedef {{label:string, value:number}} LineChartPoint
+   @param {LineChartPoint[]} points 每月資料點，陣列長度可變（不限定 5 個月，2～N 個點都適用）
+   @param {object} [opts]
+   @param {string} [opts.title] 卡片標題（如「每月被動收益趨勢」），不傳則不顯示標題列
+   @param {number|string} [opts.splitIndex] 哪個資料點要加「到期／分界」標註：可傳 points 的
+     index（number），也可以直接傳該點的 label 字串（依 label 自動找對應 index），不傳則不顯示標註
+   @param {string} [opts.splitLabel] 標註文字（如「定存到期」），splitIndex 有指定才會顯示
+   @param {number} [opts.highlightIndex] 哪個資料點要用「目前/最新」的放大＋光暈樣式標示，
+     預設是陣列最後一個點（points.length-1），通常不需要另外傳
+   @param {(value:number)=>string} [opts.formatValue] 數值格式化，預設 '$'+千分位；
+     呼叫端可自訂（例如不要 $ 前綴、換別的幣別符號、四捨五入位數）
+   @param {string} [opts.ariaLabel] SVG 的 aria-label，預設「趨勢圖」 */
 let lineChartIdSeq=0;
-function renderLineChart(labels,values,splitIndex,opts){
+function renderLineChart(points,opts){
   opts=opts||{};
+  points=points||[];
+  const n=points.length;
+  const labels=points.map(p=>p.label);
+  const values=points.map(p=>p.value);
+  const formatValue=opts.formatValue||(v=>'$'+Math.round(v).toLocaleString());
+  const highlightIndex=opts.highlightIndex!=null?opts.highlightIndex:n-1;
+  let splitIndex=opts.splitIndex;
+  if(typeof splitIndex==='string')splitIndex=labels.indexOf(splitIndex);
+  const hasSplit=splitIndex!=null&&splitIndex>=0&&splitIndex<n&&!!opts.splitLabel;
   const chartId=++lineChartIdSeq;
-  /* H 原本是 220（跟圓餅圖比例相近），但這張圖只有 5 個點、不需要那麼高，疊在圓餅圖＋
-     文字說明後面，畫面還沒開始換行的初次分析階段又容易跟浮動選單擠在同一個視窗高度裡
-     （見 renderOptionPopover() 的說明），改矮一點（150）讓整段內容更容易一次容納 */
-  const W=600,H=150,PAD_L=16,PAD_R=16,PAD_T=30,PAD_B=22;
-  const innerW=W-PAD_L-PAD_R,innerH=H-PAD_T-PAD_B;
-  const baseline=H-PAD_B;
-  const maxV=Math.max(...values)*1.2||1;
-  const n=values.length;
-  const xAt=i=>PAD_L+(n===1?innerW/2:innerW*i/(n-1));
-  const yAt=v=>PAD_T+innerH-(innerH*v/maxV);
+
+  /* W／DATA_H 直接沿用 Figma 稿「data」區塊本身的座標尺寸（600x150），格線間距、
+     資料點半徑（6／9）才能跟稿子的數字一一對應，不用另外換算比例。
+     BADGE_H／LABEL_GAP／DOT_CLEARANCE／SPLIT_LABEL_H 是徽章／到期標註跟資料點之間
+     固定的視覺間距（皆量自稿子，例如徽章跟資料點永遠差 4px），PAD_T 用這幾個固定值
+     加總算出來，保證資料點無論落在 0～maxV 哪個高度，上方的徽章／到期標註都還有空間、
+     不會被 SVG 頂端裁掉；PAD_B 留給下方月份標籤。 */
+  const W=600,DATA_H=150;
+  const BADGE_H=30,LABEL_GAP=4,DOT_CLEARANCE=9,SPLIT_LABEL_H=24,SAFETY=4;
+  const PAD_T=BADGE_H+LABEL_GAP+DOT_CLEARANCE+(hasSplit?SPLIT_LABEL_H+LABEL_GAP:0)+SAFETY;
+  const PAD_B=32;
+  const H=PAD_T+DATA_H+PAD_B;
+  const baseline=PAD_T+DATA_H;
+
+  /* maxV 額外留 15% headroom：避免「所有數值相同（持平線）」或「最高點剛好是唯一資料」
+     這類情境下，資料點直接頂到資料區最上緣、視覺上太貼齊格線頂端；分母加 ||1 避免
+     所有數值都是 0 時除以 0。 */
+  const maxV=Math.max(...values,0)*1.15||1;
+  const xAt=i=>n===1?W/2:W*i/(n-1);
+  const yAt=v=>PAD_T+DATA_H-(DATA_H*v/maxV);
   const pts=values.map((v,i)=>({x:xAt(i),y:yAt(v)}));
-  const linePath=pts.map((p,idx)=>`${idx===0?'M':'L'}${p.x},${p.y}`).join(' ');
-  const areaPath=`${linePath} L${pts[pts.length-1].x},${baseline} L${pts[0].x},${baseline} Z`;
-  const fmtAmt=v=>'$'+Math.round(v).toLocaleString();
-  const dots=pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--color-chart-blue-2nd)"/>
-      <text x="${p.x}" y="${p.y-14}" text-anchor="middle" class="linechart-value">${fmtAmt(values[i])}</text>`).join('');
-  /* 格線：橫向抓幾個等分刻度（不特別對齊整數金額，示意用），縱向對齊每個資料點，
-     呼應參考圖的 FlGridData（水平＋垂直格線） */
+
+  const linePath=pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+  const areaPath=n?`${linePath} L${pts[n-1].x},${baseline} L${pts[0].x},${baseline} Z`:'';
+
+  /* 格線：橫向 3 條等分（對應稿子 4 條線裡最頂端那 3 條虛線），縱向對齊每個資料點
+     （對應稿子每個資料點都有一條縱向虛線）；baseline 是稿子裡唯一的實線，另立一個
+     class，不跟其餘虛線混在一起畫。 */
   const H_GRID_LINES=3;
-  const hGrid=Array.from({length:H_GRID_LINES+1},(_,i)=>{
-    const y=PAD_T+innerH*i/H_GRID_LINES;
-    return `<line x1="${PAD_L}" y1="${y}" x2="${W-PAD_R}" y2="${y}" class="linechart-grid-line"/>`;
+  const hGrid=Array.from({length:H_GRID_LINES},(_,i)=>{
+    const y=PAD_T+DATA_H*i/H_GRID_LINES;
+    return `<line x1="0" y1="${y}" x2="${W}" y2="${y}" class="linechart-grid-h"/>`;
   }).join('');
-  const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-line"/>`).join('');
-  const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
-  const splitX=splitIndex!=null?xAt(splitIndex):null;
+  const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-v"/>`).join('');
+  const baselineLine=`<line x1="0" y1="${baseline}" x2="${W}" y2="${baseline}" class="linechart-baseline"/>`;
+
+  const dots=pts.map((p,i)=>i===highlightIndex
+    ?`<circle cx="${p.x}" cy="${p.y}" r="11.5" class="linechart-dot-glow"/><circle cx="${p.x}" cy="${p.y}" r="9" class="linechart-dot-current"/>`
+    :`<circle cx="${p.x}" cy="${p.y}" r="6" class="linechart-dot"/>`
+  ).join('');
+  const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-10}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
+
+  /* 數值徽章／到期標註改用 HTML 疊加在 SVG 上面（不是純 SVG <text>），藥丸背景才能跟著
+     文字內容自動撐開寬度。用百分比座標（不是 px）疊加，配合 .linechart-wrap 用
+     aspect-ratio 鎖住跟這裡 W:H 完全一致的比例，不管卡片實際渲染寬度多少，疊加層都會
+     精準對齊 SVG 內部畫的資料點座標。
+     第一/最後一個資料點的徽章改成「靠左/靠右對齊」而不是「以資料點為中心置中」——徽章
+     寬度會隨文字內容變化，用置中對齊在圖表最左/右兩端的資料點上，超出卡片邊界的那一半
+     沒有地方可以裁切收邊，靠左/靠右對齊能保證徽章永遠往圖表「內側」撐開，不會超出範圍。 */
+  const anchorFor=i=>i===0?'start':i===n-1?'end':'center';
+  const transformFor=anchor=>anchor==='start'?'translate(0,-100%)':anchor==='end'?'translate(-100%,-100%)':'translate(-50%,-100%)';
+  const badges=pts.map((p,i)=>{
+    const anchor=anchorFor(i);
+    const top=(p.y-DOT_CLEARANCE-LABEL_GAP)/H*100;
+    return `<span class="linechart-value-badge" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${formatValue(values[i])}</span>`;
+  }).join('');
+  const splitHtml=hasSplit?(()=>{
+    const p=pts[splitIndex],anchor=anchorFor(splitIndex);
+    const top=(p.y-DOT_CLEARANCE-LABEL_GAP-BADGE_H-LABEL_GAP)/H*100;
+    return `<span class="linechart-split-label" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${opts.splitLabel}</span>`;
+  })():'';
+
   const card=document.createElement('div');card.className='linechart-card';
-  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<svg viewBox="0 0 ${W} ${H}" class="linechart-svg" role="img" aria-label="${opts.ariaLabel||'趨勢圖'}">
-      <defs>
-        <linearGradient id="lc-fill-${chartId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <rect x="${PAD_L}" y="${PAD_T}" width="${innerW}" height="${innerH}" class="linechart-border"/>
-      ${hGrid}${vGrid}
-      ${splitX!=null?`<line x1="${splitX}" y1="${PAD_T-14}" x2="${splitX}" y2="${baseline}" class="linechart-split-line"/>
-      <text x="${splitX}" y="${PAD_T-20}" text-anchor="middle" class="linechart-split-label">${opts.splitLabel||''}</text>`:''}
-      <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
-      <path d="${linePath}" class="linechart-line"/>
-      ${dots}
-      ${xLabels}
-    </svg>`;
+  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}
+    <div class="linechart-wrap" style="aspect-ratio:${W}/${H}">
+      <svg viewBox="0 0 ${W} ${H}" class="linechart-svg" role="img" aria-label="${opts.ariaLabel||'趨勢圖'}">
+        <defs>
+          <linearGradient id="lc-fill-${chartId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${hGrid}${baselineLine}${vGrid}
+        <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
+        <path d="${linePath}" class="linechart-line"/>
+        ${dots}
+        ${xLabels}
+      </svg>
+      ${badges}${splitHtml}
+    </div>`;
   appendToChat(card);down();
   return card;
 }

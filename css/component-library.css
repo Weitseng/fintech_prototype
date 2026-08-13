@@ -35,23 +35,52 @@
 .pie-legend-text .pie-amt{font-family:var(--kgi-font-auto-caption-regular-en-family),sans-serif;font-weight:var(--kgi-font-auto-caption-regular-en-weight)}
 
 /* chart-card-title：圓餅圖／折線圖卡片共用的標題列，讓使用者一眼看出這張圖在講什麼，
-   不用自己從卡片內容猜——放在卡片內距頂端，卡片本身的 padding 已經留好間距 */
-.chart-card-title{align-self:flex-start;font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary);margin-bottom:var(--spacing-16)}
+   不用自己從卡片內容猜——放在卡片內距頂端，卡片本身的 padding 已經留好間距。
+   2026-08-14 依 Figma node 374:4210（donut）／374:4249（折線圖）核對，兩份稿子量出來的
+   標題跟下方圖表內容間距都是 22px，不是原本的 16px，兩張圖共用同一個 class 一併修正。 */
+.chart-card-title{align-self:flex-start;font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);color:var(--color-content-general-primary);margin-bottom:22px}
 
-/* chart/line（定存到期後被動收益趨勢折線圖）：樣式與間距沿用 .pie-card 同一組 token，
-   維持跟圓餅圖一致的卡片視覺；全線統一藍色，到期時間點用虛線＋標籤標示，讓下降的瞬間
-   一眼可辨。格線／粗圓角線條／曲線下漸層填色／圖表邊框參考使用者提供的 fl_chart
-   LineChartSample2 範例視覺（FlGridData／barWidth 5／isStrokeCapRound／belowBarData／FlBorderData）。 */
+/* chart/line（Figma node 374:4249「chart/pei chart」，每月被動收益趨勢折線圖）
+   通用折線圖元件，見 js/component-library.js renderLineChart() 開頭註解說明 props／
+   資料點/標註定位邏輯。這裡只放樣式，2026-08-14 依 get_design_context／get_variable_defs
+   讀出來的規格核對修正（不是憑截圖肉眼抓色）：
+     - 折線／資料點改用 --color-chart-blue-1st（Figma 稿 Dark Mode 實際色碼 #1877FF，
+       對應 Container/General/Active-Primary，不是先前誤用的 --color-chart-blue-2nd）
+     - grid 格線／baseline 顏色不變（--color-container-general-divider），但改成虛線
+       （稿子橫向格線 stroke-dasharray「2 2」opacity .7、縱向格線同 dasharray opacity .8），
+       最底部那條橫向線是 baseline，稿子裡是實線、不透明度 1，跟其餘格線不同，另立一個
+       class。拿掉舊版疊加的 .linechart-border 外框矩形，稿子沒有這個元素——外框感其實是
+       最左/右兩條縱向格線＋baseline 三者疊出來的視覺效果，不需要額外畫矩形
+     - 數值標籤改用 HTML 徽章疊加在 SVG 上面（.linechart-value-badge，藥丸狀背景＋邊框，
+       對照稿子量出來的樣式），不再用純 SVG <text>——藥丸背景的寬度要跟著文字內容自動撐開，
+       純 SVG 沒有簡單的「文字多長、底下的矩形就跟著多寬」做法，改用 HTML 疊加層
+       （.linechart-wrap 用 aspect-ratio 鎖住跟 SVG viewBox 相同比例，疊加層才能用百分比
+       座標對齊 SVG 內部畫的線／點，不會因為卡片寬度改變就跑位）
+   有一處規格存疑，沒有照抄，維持原本做法，已在 js/component-library.js renderLineChart()
+   開頭記錄、等設計確認：曲線下方漸層填色的方向與色碼（稿子的漸層方向跟色碼待確認）。 */
 .linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;animation:fade .4s ease}
-.linechart-svg{width:100%;height:auto;display:block;overflow:visible}
-.linechart-border{fill:none;stroke:var(--color-container-general-divider);stroke-width:1}
-.linechart-grid-line{stroke:var(--color-container-general-divider);stroke-width:1;opacity:.5}
-.linechart-line{fill:none;stroke:var(--color-chart-blue-2nd);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
-.linechart-split-line{stroke:var(--color-container-general-divider);stroke-width:1;stroke-dasharray:4 4}
-.linechart-split-label{font-size:var(--type-caption-size);fill:var(--color-content-general-secondary)}
-.linechart-value{font-size:var(--type-caption-size);fill:var(--color-content-general-primary);font-weight:var(--type-body-b-weight-cn)}
-.linechart-xlabel{font-size:var(--type-caption-size);fill:var(--color-content-general-secondary)}
+.linechart-wrap{position:relative;width:100%}
+.linechart-svg{display:block;width:100%;height:100%;overflow:visible}
+.linechart-grid-h{stroke:var(--color-container-general-divider);stroke-width:1;stroke-dasharray:2 2;opacity:.7}
+.linechart-grid-v{stroke:var(--color-container-general-divider);stroke-width:1;stroke-dasharray:2 2;opacity:.8}
+.linechart-baseline{stroke:var(--color-container-general-divider);stroke-width:1}
+.linechart-line{fill:none;stroke:var(--color-chart-blue-1st);stroke-width:4;stroke-linejoin:round}
+.linechart-dot{fill:var(--color-chart-blue-1st)}
+.linechart-dot-current{fill:var(--color-chart-blue-1st)}
+.linechart-dot-glow{fill:none;stroke:var(--color-chart-blue-1st);stroke-opacity:.2;stroke-width:5}
+.linechart-value-badge{position:absolute;white-space:nowrap;box-sizing:border-box;
+  font-family:var(--kgi-font-auto-body-regular-en-family),sans-serif;font-size:var(--kgi-font-auto-body-regular-en-size-rem);
+  font-weight:var(--kgi-font-auto-body-regular-en-weight);line-height:var(--kgi-font-auto-body-regular-en-line-height);
+  color:var(--color-content-general-primary);
+  background:color-mix(in srgb,var(--color-navy-100) 10%,transparent);
+  border:1px solid var(--color-container-general-divider);border-radius:var(--radius-full);
+  padding:var(--spacing-2) var(--spacing-8)}
+.linechart-split-label{position:absolute;white-space:nowrap;font-family:var(--kgi-font-auto-body-regular-tc-family),sans-serif;
+  font-size:var(--kgi-font-auto-body-regular-tc-size-rem);font-weight:var(--kgi-font-auto-body-regular-tc-weight);
+  color:var(--color-content-general-secondary)}
+.linechart-xlabel{font-family:var(--kgi-font-auto-body-regular-tc-family),sans-serif;font-size:var(--kgi-font-auto-body-regular-tc-size-rem);
+  font-weight:var(--kgi-font-auto-body-regular-tc-weight);fill:var(--color-content-general-secondary)}
 
 /* ============================================================
    card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）
