@@ -37,34 +37,51 @@ function stepA(){
   p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
 
-/* stepB() 資產情境兩題佔位 icon（錢袋＋金幣，比照 Figma「Selection/Option」稿的錢袋圖示風格）：
-   這階段 8 個選項先全部共用同一個佔位圖，之後每個選項會換上各自對應的正式圖示，屆時只需要把
-   下面 stepB() 兩次呼叫 buildSingleSelectOptionGroup() 時各自選項字串換成 {label,icon} 物件、
-   帶入各自的正式 icon 即可，不用改 buildSingleSelectOptionGroup() 或 selection/option 元件
-   本身——icon 本來就是逐一透過 items[].icon 傳入，不是寫死在元件或這個迴圈裡。配色沿用既有
-   chart token（--color-chart-teal-2nd 袋身／--color-yellow-400 金幣），不是新增色碼。 */
-const ASSET_ICON_PLACEHOLDER=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M24 10c-2 3-6 4-6 9 0 6.6 5.4 12 12 12s12-5.4 12-12c0-5-4-6-6-9" fill="var(--color-chart-teal-2nd)"/>
-  <path d="M20 8h8l-2 4h-4z" fill="var(--color-navy-400)"/>
-  <circle cx="15" cy="30" r="6" fill="var(--color-yellow-400)"/>
-  <circle cx="15" cy="30" r="6" fill="none" stroke="var(--color-navy-500)" stroke-opacity=".25"/>
-  <text x="30" y="26" text-anchor="middle" font-size="11" font-weight="700" fill="var(--color-content-general-light-active)">$</text>
-</svg>`;
+/* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
+   來源是 Figma 檔案 pzGDt95JRVQKMWzlcKvYBF 裡跟每個選項對應的 Selection/Option icon node，
+   已用 Figma MCP（download_assets，defaultFormat:svg）逐一匯出成 SVG 檔，存在 assets/ 底下
+   （沿用專案既有的 assets/*.svg 靜態圖檔慣例，例如 assets/feedback-celebrate.svg／
+   assets/logo-icon.svg 也是同一種 <img src="assets/xxx.svg"> 引入方式）。
+   每個 icon 都是彩色插圖（綠色錢袋／黃色金幣／藍色錶包等），不是走 currentColor 的單色線框
+   icon，色碼比對過 One KGI Design Guideline 的 Base Palette 後全部對應到既有色票（例如
+   #55A784＝--color-teal-600、#FFE669＝--color-yellow-300、#0044AD＝--color-sky-blue-600……），
+   沒有引入 Figma 匯出時的隨意色碼；亮色插圖在暗色卡片背景（--color-container-card-white／
+   --color-container-general-light-active）上對比已經足夠，不需要再疊加 filter 或改寫 fill。
+   4 種狀態下 icon 本身刻意保持不變色——這跟原始 Selection/Option 稿（node 370:3005）裡
+   Enabled/Hover/Pressed/Selected 四態的 icon 圖層本來就完全相同、只有卡片背景/邊框在變是
+   一致的，不是這裡漏做，Design Guideline 對「插畫型」icon 沒有要求要跟著卡片主色換色
+   （那是線框型單色 icon 才會用 currentColor 做的事）。
+   匯出時已把 Figma frame 自己的背景填色（一律是 #1E1E1E，Figma 匯出整個 frame 時會把
+   frame 本身的填色一起烤進 SVG，不是設計稿真正的一部分）跟被設計師標記為 id="hide" 的
+   圖層（4 個現金比例 icon 都有，一個橙色菱形徽章＋一條藍色曲線，屬於稿子裡本來就標記
+   不顯示的裝飾/註記圖層）都拿掉，只留下真正會顯示的圖示內容，avoid 卡片變成一整塊
+   實心背景蓋住卡片本身的顏色。
+   8 個 icon 的 viewBox 統一都是「0 0 80 80」（跟 .selopt-icon 容器同尺寸），不需要另外
+   校正尺寸或對齊。 */
+const ASSET_RANGE_ICONS={
+  '50 萬以下':'<img src="assets/icon-asset-under-50w.svg" alt="">',        // Figma node 370:2936 Fund50
+  '50–100 萬':'<img src="assets/icon-asset-50-100w.svg" alt="">',          // Figma node 370:2934 Fund50-100
+  '100 萬 – 200 萬':'<img src="assets/icon-asset-100-200w.svg" alt="">',   // Figma node 370:2935 Fund100-200
+  '200 萬以上':'<img src="assets/icon-asset-over-200w.svg" alt="">'        // Figma node 370:2933 Fund200
+};
+const CASH_RATIO_ICONS={
+  '95% 以上':'<img src="assets/icon-cash-ratio-over-95.svg" alt="">',  // Figma node 373:3873 95%
+  '50–95%':'<img src="assets/icon-cash-ratio-50-95.svg" alt="">',      // Figma node 373:3872 50-95%
+  '5–50%':'<img src="assets/icon-cash-ratio-5-50.svg" alt="">',        // Figma node 373:3871 5-50%
+  '5% 以下':'<img src="assets/icon-cash-ratio-under-5.svg" alt="">'    // Figma node 373:3870 5%
+};
 
 /* 單選題選項群組：改用通用的 selection/option-group 元件（js/component-library.js），
    拿掉舊版 .choice 純文字＋數字序號清單。container 沿用 stepB() 既有的掛載點（#rangeOpts／
    #cashOpts），onPick(x) 只回傳選中選項的 label 字串——維持跟舊版 buildSingleSelectList()
    完全相同的呼叫慣例，S.assetRange／S.cashRatio／checkReady() 這套既有的表單狀態管理完全不用改。
-   options 陣列的每一項可以是純字串（沿用 ASSET_ICON_PLACEHOLDER 佔位圖，目前 stepB() 兩題都是
-   這樣呼叫），也可以是 {label,icon} 物件自帶各自的正式 icon——之後要把 8 個選項換成各自對應的
-   正式圖示時，只需要把 stepB() 呼叫這裡的字串陣列改成帶 icon 的物件陣列即可，不用改這個函式。
+   icons 是 {label:icon} 的對照表（見上面 ASSET_RANGE_ICONS／CASH_RATIO_ICONS），選項字串本身
+   仍是 stepB() 原本就有的那組陣列，不用把選項改寫成物件陣列——之後某個選項要換圖示，
+   只需要改對照表裡那一筆，不用動 stepB() 呼叫這裡的程式碼。
    direction:'row' 讓 4 張卡片依可視寬度自動換行（見 css/component-library.css .selopt-group.row），
    不用另外手動排版。 */
-function buildSingleSelectOptionGroup(container,options,onPick,ariaLabel){
-  const items=options.map(o=>{
-    const opt=typeof o==='string'?{label:o}:o;
-    return {icon:opt.icon||ASSET_ICON_PLACEHOLDER,label:opt.label,onSelect:x=>onPick(x.label)};
-  });
+function buildSingleSelectOptionGroup(container,options,icons,onPick,ariaLabel){
+  const items=options.map(label=>({icon:icons[label],label,onSelect:x=>onPick(x.label)}));
   container.appendChild(renderComponent('selection/option-group',items,{direction:'row',ariaLabel}));
 }
 
@@ -87,8 +104,8 @@ function stepB(){
   const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
-  buildSingleSelectOptionGroup(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],x=>{S.assetRange=x;checkReady();},'總資產級距');
-  buildSingleSelectOptionGroup(co,['95% 以上','50–95%','5–50%','5% 以下'],x=>{S.cashRatio=x;checkReady();},'現金占比');
+  buildSingleSelectOptionGroup(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],ASSET_RANGE_ICONS,x=>{S.assetRange=x;checkReady();},'總資產級距');
+  buildSingleSelectOptionGroup(co,['95% 以上','50–95%','5–50%','5% 以下'],CASH_RATIO_ICONS,x=>{S.cashRatio=x;checkReady();},'現金占比');
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */

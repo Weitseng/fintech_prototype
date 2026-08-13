@@ -1,11 +1,31 @@
-/* chart/pie（Figma node 189:853）資產配置圓餅圖：中心顯示現金留存百分比，圖例列出投資配置／現金留存金額。
+/* chart/pie（Figma node 189:853，2026-08-14 依最新稿 374:4210「chart/pei chart」核對修正）
+   資產配置圓餅圖：中心顯示現金留存百分比，圖例列出投資配置／現金留存金額。
    2026-07-27 依 Figma 更新：圖表與圖例間距 16px→24px，新增 Popover 陰影 token（跟 .pcard／.calc-result-sentence 同一組陰影值）。
-   顏色／圓角／陰影／間距已改用 One KGI Design Guideline token（css/tokens/）。 */
+   顏色／圓角／陰影／間距已改用 One KGI Design Guideline token（css/tokens/）。
+   2026-08-14 用 Figma MCP 讀 node 374:4210 核對後修正兩點（用 get_design_context／get_variable_defs
+   讀出來的色碼／線寬，不是憑截圖肉眼抓的）：
+   1) 圓環粗細：改稿子量出來的兩段環形 SVG 路徑（imgEllipse1094／1093）換算後，實際粗細是
+      180px 外徑下 9px（.pie-hole inset 應為 9px，不是原本的 13px——13px 讓環看起來比稿子粗、
+      比例跑掉，這正是回報的「stroke width 跟設計稿不一致」）。9px 沒有對應到任何現有
+      --spacing-* token（8/12 都不是整數對得上，最接近的 8 跟 12 都會跟稿子量出來的 9px
+      有 1px 落差），故直接採用實測值，不勉強套用最接近的 spacing token。
+   2) 甜甜圈中間的「洞」：Figma 稿本身沒有另外畫一個洞的填色圖層，是靠「只畫環形 stroke、
+      中間留空讓卡片底色露出來」做出洞的效果；這裡沿用既有的 conic-gradient＋覆蓋圓形做法
+      （沒有改成真正的 SVG stroke，維持現有實作方式），但覆蓋圓形的顏色原本誤用
+      --color-surface-white——這個 token 在 Light Mode 跟 --color-container-card-white
+      剛好都是白色，兩者在淺色主題看不出差異，但在本專案預設的 Dark Mode 下
+      --color-surface-white 對應 --color-navy-600d（#15202B），跟 .pie-card 卡片本身背景
+      --color-container-card-white 對應的 --color-blue-600（#1F304D）是兩個不同的深色，
+      造成洞的顏色跟卡片背景不一致、多出一圈看得出來的色差——這才是回報裡「顏色套用錯誤」
+      真正的原因（環形本身兩段顏色核對 374:4210 讀出來的 #3773DC／#55A784，對應
+      --color-chart-blue-2nd／--color-chart-teal-2nd，色碼跟對應關係本身沒有錯，不用改）。
+      改成直接套用 --color-container-card-white，跟卡片背景永遠同一個 token，不會再因為
+      切換主題而不一致。 */
 .pie-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;align-items:center;animation:fade .4s ease}
 .pie-overview{display:flex;gap:var(--spacing-24);align-items:center;justify-content:center}
 .pie-chart{width:180px;height:180px;border-radius:50%;flex-shrink:0;position:relative;transition:background .5s ease}
-.pie-chart .pie-hole{position:absolute;inset:13px;background:var(--color-surface-white);border-radius:50%;display:grid;place-items:center;text-align:center}
+.pie-chart .pie-hole{position:absolute;inset:9px;background:var(--color-container-card-white);border-radius:50%;display:grid;place-items:center;text-align:center}
 .pie-value{font-family:var(--kgi-font-auto-display-s-en-family),sans-serif;font-size:var(--kgi-font-auto-display-s-en-size-rem);font-weight:var(--kgi-font-auto-display-s-en-weight);line-height:var(--kgi-font-auto-display-s-en-line-height);letter-spacing:var(--kgi-font-auto-display-s-en-letter-spacing);color:var(--color-content-general-primary)}
 .pie-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);margin-top:4px}
 .pie-legend{display:flex;flex-direction:column;gap:var(--spacing-8)}
