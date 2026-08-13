@@ -1,35 +1,55 @@
-/* Interactive Globe — vanilla-JS port of a React/canvas 互動地球元件（使用者提供的參考程式碼：
-   <canvas> + Fibonacci sphere 灑點、經緯度轉 3D 座標、弧線連接據點、自轉＋滑鼠拖曳），
-   用在 loading/globe-loader 這個 loading 狀態（js/engine.js aiSay() 的 opts.loader==='globe'
-   分支，目前只有 js/flow.js stageGList() 產出商品清單前會用到），讓使用者覺得系統正在從
-   各個地方幫他蒐集商品（債券／基金／定存）資訊，不是憑空生出清單。
-   拿掉參考程式碼原本的 onPointerDown/Move/Up 拖曳互動與 React state／ref——這裡只是清單
-   出現前幾秒鐘的短暫 loading 畫面，不需要可操作性，也沒有 React 執行環境，改成單一
-   mountInteractiveGlobe() imperative 掛載函式，只保留自轉。架構比照同目錄 shaping-orb.js
-   的 mountShapingOrb()：回傳 {destroy()} 給呼叫端在 loading 結束或被 cancelToken 取消時，
-   停掉 rAF 迴圈、移除 canvas，避免背景留著一顆看不到卻還在耗效能的地球。
-   顏色不沿用參考程式碼寫死的霓虹藍色碼，改讀 One KGI Design Guideline 既有的 Chart/Blue
-   token（--color-chart-blue-2nd／-3rd／-4th）——這個 loading 沒有像 .cube-loader 那組
-   青紫靛霓虹色一樣「使用者指定沿用識別配色」的前提，照 Design Guideline 慣例接 token，
-   跟站內其他元件同一套色票（含 Dark Mode 對應值，token 换了這裡不用跟著改）。
-   據點改用凱基銀行業務相關的全球金融中心（台北為據點，輻射連到紐約／倫敦／盧森堡／
-   新加坡／東京／香港／法蘭克福——盧森堡、法蘭克福是常見的境外基金註冊地，呼應
-   「蒐集債券、基金」的情境），不是原始範例的舊金山／雪梨等一般示意城市。 */
+/* Interactive Globe — vanilla-JS port of the user-supplied React/canvas component.
+   忠實移植使用者提供的原始程式碼（DEFAULT_MARKERS／DEFAULT_CONNECTIONS／
+   latLngToXYZ／rotateX／rotateY／project／draw() 內每一段繪製邏輯），只做兩件事：
+   1) 拿掉原本的 onPointerDown/Move/Up 拖曳互動（使用者確認不需要，直接刪除，不保留
+      cursor:grab 之類的殘留樣式）。
+   2) 沒有 React 執行環境，改成 mountInteractiveGlobe(container, opts) 這個 imperative
+      掛載函式取代 useRef／useCallback／useEffect 那一套，架構比照同目錄 shaping-orb.js
+      的 mountShapingOrb()：回傳 {destroy()} 給呼叫端（js/engine.js aiSay()）在 loading
+      結束或被 cancelToken 取消時停掉 rAF 迴圈、移除 canvas。
+   【密度／對比度調整】原本的點數（1200）／線條與地名透明度是直接照使用者原始程式碼的
+   參數，在實際使用的尺寸（js/flow.js catalogGlobeLoaderOpts()：220px）下太密、對比太低——
+   1200 個點擠在半徑不到 90px 的球面上，視覺上糊成一片顆粒狀噪點，連線跟地名的顏色又跟
+   背景點群同一色系、透明度也低，整個看起來很模糊，分不出「哪些是點、哪些是連線、哪些是
+   地名」。這裡依使用者回饋調整三組參數，讓畫面在小尺寸下仍然清楚：
+   - 點數大幅減少（1200→450），且整體透明度調低（乘上 DOT_ALPHA_SCALE），讓背景點群
+     退成一層淡淡的網格紋理，不會跟前景的連線／據點搶注意力
+   - 連線（arc）透明度、線寬都提高，讓連線清楚浮在點群之上
+   - 據點地名字級加大、透明度大幅提高（0.6→0.9），不然幾乎看不見
+   其餘（城市據點座標、連線兩端、旋轉／投影公式）維持使用者原始程式碼不動。 */
 (function(global){
-  const MARKERS=[
-    {lat:25.03,lng:121.56,label:'台北'},
-    {lat:40.71,lng:-74.01,label:'紐約'},
-    {lat:51.51,lng:-0.13,label:'倫敦'},
-    {lat:49.61,lng:6.13,label:'盧森堡'},
-    {lat:1.35,lng:103.82,label:'新加坡'},
-    {lat:35.68,lng:139.69,label:'東京'},
-    {lat:22.32,lng:114.17,label:'香港'},
-    {lat:50.11,lng:8.68,label:'法蘭克福'}
+  /* 據點刪減：原本 11 個城市在畫面上還是常常擠在一起（尤其 Delhi／Erbil／Moscow／
+     Taipei／Singapore 這一區，見使用者截圖），拿掉 Moscow／Mexico City（本來就沒有
+     連線、純孤立據點，拿掉不影響網絡故事）跟 Erbil（跟 Taipei 同一區最密集的據點，
+     不是特別具代表性的城市），把 Taipei 這一區的密度降下來，讓 Taipei 的地名比較不會
+     被其他據點的地名蓋過去、看不出來。
+     後來使用者又回饋畫面「上方」看起來太空——用固定的 rotX=0.3 傾角換算，剩下的 8 個
+     據點在預設視角下幾乎都落在畫面中下段，上半部只剩底圖的裝飾點、沒有任何據點。加了
+     Johannesburg：換算過座標，它在預設視角＋整個 loading 期間的自轉範圍內，落點都在
+     畫面上半部，且離鏡頭夠近、地名幾乎全程都會顯示，比較能填補這塊視覺空白。
+     後來使用者希望 Taipei 置中顯示，拿掉了 Tokyo——這兩個據點的螢幕位置太接近，Taipei
+     轉到畫面正中央、離鏡頭最近的角度時，Tokyo 剛好也在那附近，地名會疊字，兩者只能
+     留一個，拿掉 Tokyo（Sydney 原本經 Tokyo 中繼連到 London 那條路徑，改成不需要，
+     Sydney 仍靠 Singapore 那條連線留在網絡裡）。 */
+  const DEFAULT_MARKERS=[
+    {lat:37.78,lng:-122.42,label:'San Francisco'},
+    {lat:51.51,lng:-0.13,label:'London'},
+    {lat:-33.87,lng:151.21,label:'Sydney'},
+    {lat:1.35,lng:103.82,label:'Singapore'},
+    {lat:-23.55,lng:-46.63,label:'São Paulo'},
+    {lat:28.61,lng:77.21,label:'Delhi'},
+    {lat:25.03,lng:121.56,label:'Taipei'},
+    {lat:-26.20,lng:28.05,label:'Johannesburg'}
   ];
-  /* 全部從台北（凱基銀行所在地）輻射連到其他據點，畫面上呈現「從各地把資料連回台北」
-     的意象，不是任兩點隨機互連 */
-  const HUB=MARKERS[0];
-  const CONNECTIONS=MARKERS.slice(1).map(m=>({from:[HUB.lat,HUB.lng],to:[m.lat,m.lng]}));
+  const DEFAULT_CONNECTIONS=[
+    {from:[37.78,-122.42],to:[51.51,-0.13]},
+    {from:[37.78,-122.42],to:[1.35,103.82]},
+    {from:[51.51,-0.13],to:[28.61,77.21]},
+    {from:[37.78,-122.42],to:[-23.55,-46.63]},
+    {from:[1.35,103.82],to:[-33.87,151.21]},
+    {from:[25.03,121.56],to:[1.35,103.82]},
+    {from:[-26.20,28.05],to:[-23.55,-46.63]}
+  ];
 
   function latLngToXYZ(lat,lng,radius){
     const phi=(90-lat)*Math.PI/180;
@@ -50,134 +70,219 @@
   }
   function project(x,y,z,cx,cy,fov){
     const scale=fov/(fov+z);
-    return [x*scale+cx,y*scale+cy];
-  }
-  /* 讀站內既有的 Design Guideline token（含 Dark Mode 對應值），拿不到才退回參數給的
-     備用色——備用色只在 token 檔案沒載入之類的極端狀況才會用到，正常情況下不會用到。 */
-  function readToken(name,fallback){
-    const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v||fallback;
+    return [x*scale+cx,y*scale+cy,z];
   }
 
-  /* opts: {size=168, autoRotateSpeed=0.0035} → 回傳 {destroy()}，架構比照 mountShapingOrb()：
-     停止 rAF 迴圈、移除 canvas，呼叫端（engine.js aiSay()）在 loading 結束或被
-     cancelToken 取消時呼叫。 */
+  /* opts: {size=600, dotColor, arcColor, markerColor, autoRotateSpeed=0.002,
+     connections=DEFAULT_CONNECTIONS, markers=DEFAULT_MARKERS} → 回傳 {destroy()}。 */
   function mountInteractiveGlobe(container,opts){
     opts=opts||{};
-    const size=opts.size||168;
-    const autoRotateSpeed=opts.autoRotateSpeed!=null?opts.autoRotateSpeed:0.0035;
-    const dotColor=readToken('--color-chart-blue-4th','#96C8FA');
-    const arcColor=readToken('--color-chart-blue-3rd','#4E97FF');
-    const markerColor=readToken('--color-chart-blue-2nd','#3773DC');
+    const size=opts.size||600;
+    const dotColor=opts.dotColor||'rgba(100, 180, 255, ALPHA)';
+    const arcColor=opts.arcColor||'rgba(100, 180, 255, 0.5)';
+    const markerColor=opts.markerColor||'rgba(100, 220, 255, 1)';
+    const autoRotateSpeed=opts.autoRotateSpeed!=null?opts.autoRotateSpeed:0.002;
+    const connections=opts.connections||DEFAULT_CONNECTIONS;
+    const markers=opts.markers||DEFAULT_MARKERS;
+
     const canvas=document.createElement('canvas');
     canvas.className='globe-loader-canvas';
-    canvas.setAttribute('role','img');canvas.setAttribute('aria-label','正在彙整全球商品資料');
-    canvas.style.width=size+'px';canvas.style.height=size+'px';
+    canvas.style.width=size+'px';
+    canvas.style.height=size+'px';
     container.appendChild(canvas);
-    const dpr=Math.min(2,(typeof devicePixelRatio!=='undefined'&&devicePixelRatio)||1);
-    canvas.width=Math.round(size*dpr);canvas.height=Math.round(size*dpr);
     const ctx=canvas.getContext('2d');
     if(!ctx)return {destroy:function(){canvas.remove();}};
 
-    /* Fibonacci sphere 灑點：數量比參考程式碼的 1200 少（700），因為這裡的畫布只有
-       168px 見方（參考程式碼預設 600px），點數不減少的話疊在一起反而看不出球體輪廓 */
+    /* 起始 rotY 從 0.4 換成 0.16：這是凱基銀行（台灣）的產品搜尋 loading，Taipei 理應是
+       畫面上比較顯眼的據點之一。原本試過 rotY=5.91，數學上能讓 Taipei 轉到離鏡頭最近、
+       畫面正中央的位置，但那個角度會讓 Tokyo 的據點也剛好轉到很接近 Taipei 的螢幕位置，
+       兩個地名的垂直落點只差 5px，實際會疊字看不清楚（見使用者回報）。rotY=0.16 是換算
+       過的折衷值：Taipei 仍轉到相當靠前（z 接近全程能達到的最小值，dot 明顯比預設角度
+       大、亮），且跟其他同時顯示地名的據點（最近的是 Singapore）之間有夠的垂直間距，
+       不會疊字；同時 Tokyo 在這個角度反而不夠正面、不會顯示地名，也就不存在跟 Taipei
+       擠在一起的風險；Johannesburg 在這個角度整個 6 秒 loading 期間地名全程顯示。 */
+    let rotY=0.16,rotX=0.3,time=0;
+
+    // Fibonacci sphere
     const dots=[];
-    const numDots=700;
+    const numDots=450;
+    const DOT_ALPHA_SCALE=0.55;
+    const LABEL_Z_RATIO=-0.25; // 只在據點 z < radius*LABEL_Z_RATIO（較正面）時才畫地名
+    const LABEL_OFFSET=10; // 地名沿「球心→據點」方向外推的距離（px）
     const goldenRatio=(1+Math.sqrt(5))/2;
     for(let i=0;i<numDots;i++){
-      const theta=2*Math.PI*i/goldenRatio;
-      const phi=Math.acos(1-2*(i+0.5)/numDots);
-      dots.push([Math.cos(theta)*Math.sin(phi),Math.cos(phi),Math.sin(theta)*Math.sin(phi)]);
+      const theta=(2*Math.PI*i)/goldenRatio;
+      const phi=Math.acos(1-(2*(i+0.5))/numDots);
+      const x=Math.cos(theta)*Math.sin(phi);
+      const y=Math.cos(phi);
+      const z=Math.sin(theta)*Math.sin(phi);
+      dots.push([x,y,z]);
     }
 
-    let rotY=0.4,rotX=0.32,time=0;
-    const cx=size/2,cy=size/2,radius=size*0.36,fov=600;
+    function draw(){
+      const dpr=window.devicePixelRatio||1;
+      const w=canvas.clientWidth;
+      const h=canvas.clientHeight;
+      canvas.width=w*dpr;
+      canvas.height=h*dpr;
+      ctx.scale(dpr,dpr);
 
-    function frame(){
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.clearRect(0,0,size,size);
+      const cx=w/2;
+      const cy=h/2;
+      const radius=Math.min(w,h)*0.38;
+      const fov=600;
+
       rotY+=autoRotateSpeed;
+
       time+=0.015;
 
-      const glow=ctx.createRadialGradient(cx,cy,radius*0.8,cx,cy,radius*1.5);
-      glow.addColorStop(0,'rgba(60,140,255,0.06)');
-      glow.addColorStop(1,'rgba(60,140,255,0)');
-      ctx.fillStyle=glow;ctx.fillRect(0,0,size,size);
+      ctx.clearRect(0,0,w,h);
 
-      ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);
-      ctx.strokeStyle='rgba(100,180,255,0.14)';ctx.lineWidth=1;ctx.stroke();
+      // Outer glow
+      const glowGrad=ctx.createRadialGradient(cx,cy,radius*0.8,cx,cy,radius*1.5);
+      glowGrad.addColorStop(0,'rgba(60, 140, 255, 0.03)');
+      glowGrad.addColorStop(1,'rgba(60, 140, 255, 0)');
+      ctx.fillStyle=glowGrad;
+      ctx.fillRect(0,0,w,h);
 
-      ctx.fillStyle=dotColor;
+      // Globe outline
+      ctx.beginPath();
+      ctx.arc(cx,cy,radius,0,Math.PI*2);
+      ctx.strokeStyle='rgba(100, 180, 255, 0.06)';
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      const ry=rotY;
+      const rx=rotX;
+
+      // Draw dots
       for(let i=0;i<dots.length;i++){
         let [x,y,z]=dots[i];
-        x*=radius;y*=radius;z*=radius;
-        [x,y,z]=rotateX(x,y,z,rotX);
-        [x,y,z]=rotateY(x,y,z,rotY);
-        if(z>0)continue; // 背面剔除
-        const [sx,sy]=project(x,y,z,cx,cy,fov);
-        const depthAlpha=Math.max(0.12,1-(z+radius)/(2*radius));
-        const dotSize=0.8+depthAlpha*0.7;
-        ctx.globalAlpha=depthAlpha;
-        ctx.beginPath();ctx.arc(sx,sy,dotSize,0,Math.PI*2);ctx.fill();
-      }
-      ctx.globalAlpha=1;
+        x*=radius;
+        y*=radius;
+        z*=radius;
 
-      CONNECTIONS.forEach(conn=>{
-        const [lat1,lng1]=conn.from,[lat2,lng2]=conn.to;
+        [x,y,z]=rotateX(x,y,z,rx);
+        [x,y,z]=rotateY(x,y,z,ry);
+
+        if(z>0)continue; // back-face cull
+
+        const [sx,sy]=project(x,y,z,cx,cy,fov);
+        const depthAlpha=Math.max(0.1,1-(z+radius)/(2*radius));
+        const dotSize=1+depthAlpha*0.8;
+
+        ctx.beginPath();
+        ctx.arc(sx,sy,dotSize,0,Math.PI*2);
+        ctx.fillStyle=dotColor.replace('ALPHA',(depthAlpha*DOT_ALPHA_SCALE).toFixed(2));
+        ctx.fill();
+      }
+
+      // Draw connections as arcs
+      for(const conn of connections){
+        const [lat1,lng1]=conn.from;
+        const [lat2,lng2]=conn.to;
+
         let [x1,y1,z1]=latLngToXYZ(lat1,lng1,radius);
         let [x2,y2,z2]=latLngToXYZ(lat2,lng2,radius);
-        [x1,y1,z1]=rotateX(x1,y1,z1,rotX);[x1,y1,z1]=rotateY(x1,y1,z1,rotY);
-        [x2,y2,z2]=rotateX(x2,y2,z2,rotX);[x2,y2,z2]=rotateY(x2,y2,z2,rotY);
-        if(z1>radius*0.3&&z2>radius*0.3)return; // 兩端都在背面才跳過，避免弧線劃過球體正面卻不畫
+
+        [x1,y1,z1]=rotateX(x1,y1,z1,rx);
+        [x1,y1,z1]=rotateY(x1,y1,z1,ry);
+        [x2,y2,z2]=rotateX(x2,y2,z2,rx);
+        [x2,y2,z2]=rotateY(x2,y2,z2,ry);
+
+        // Only draw if both points face camera
+        if(z1>radius*0.3&&z2>radius*0.3)continue;
+
         const [sx1,sy1]=project(x1,y1,z1,cx,cy,fov);
         const [sx2,sy2]=project(x2,y2,z2,cx,cy,fov);
-        const midX=(x1+x2)/2,midY=(y1+y2)/2,midZ=(z1+z2)/2;
-        const midLen=Math.sqrt(midX*midX+midY*midY+midZ*midZ)||1;
+
+        // Elevated midpoint for arc
+        const midX=(x1+x2)/2;
+        const midY=(y1+y2)/2;
+        const midZ=(z1+z2)/2;
+        const midLen=Math.sqrt(midX*midX+midY*midY+midZ*midZ);
         const arcHeight=radius*1.25;
-        const elevX=(midX/midLen)*arcHeight,elevY=(midY/midLen)*arcHeight,elevZ=(midZ/midLen)*arcHeight;
+        const elevX=(midX/midLen)*arcHeight;
+        const elevY=(midY/midLen)*arcHeight;
+        const elevZ=(midZ/midLen)*arcHeight;
         const [scx,scy]=project(elevX,elevY,elevZ,cx,cy,fov);
-        ctx.beginPath();ctx.moveTo(sx1,sy1);ctx.quadraticCurveTo(scx,scy,sx2,sy2);
-        ctx.strokeStyle=arcColor;ctx.globalAlpha=0.5;ctx.lineWidth=1.2;ctx.stroke();
-        ctx.globalAlpha=1;
-        /* 沿弧線跑動的小光點：每條連線各自依緯度錯開節奏，避免所有據點同時「送出資料」，
-           看起來更像持續、分散地在各地蒐集，而不是同步閃爍 */
+
+        ctx.beginPath();
+        ctx.moveTo(sx1,sy1);
+        ctx.quadraticCurveTo(scx,scy,sx2,sy2);
+        ctx.strokeStyle=arcColor;
+        ctx.lineWidth=1.6;
+        ctx.stroke();
+
+        // Traveling dot along arc
         const t=(Math.sin(time*1.2+lat1*0.1)+1)/2;
         const tx=(1-t)*(1-t)*sx1+2*(1-t)*t*scx+t*t*sx2;
         const ty=(1-t)*(1-t)*sy1+2*(1-t)*t*scy+t*t*sy2;
-        ctx.beginPath();ctx.arc(tx,ty,2,0,Math.PI*2);ctx.fillStyle=markerColor;ctx.fill();
-      });
 
-      MARKERS.forEach(marker=>{
+        ctx.beginPath();
+        ctx.arc(tx,ty,2,0,Math.PI*2);
+        ctx.fillStyle=markerColor;
+        ctx.fill();
+      }
+
+      // Draw markers
+      for(const marker of markers){
         let [x,y,z]=latLngToXYZ(marker.lat,marker.lng,radius);
-        [x,y,z]=rotateX(x,y,z,rotX);[x,y,z]=rotateY(x,y,z,rotY);
-        if(z>radius*0.1)return;
+        [x,y,z]=rotateX(x,y,z,rx);
+        [x,y,z]=rotateY(x,y,z,ry);
+
+        if(z>radius*0.1)continue;
+
         const [sx,sy]=project(x,y,z,cx,cy,fov);
+
+        // Pulse ring
         const pulse=Math.sin(time*2+marker.lat)*0.5+0.5;
-        ctx.beginPath();ctx.arc(sx,sy,3+pulse*3,0,Math.PI*2);
-        ctx.strokeStyle=markerColor;ctx.globalAlpha=0.2+pulse*0.15;ctx.lineWidth=1;ctx.stroke();
-        ctx.globalAlpha=1;
-        ctx.beginPath();ctx.arc(sx,sy,2,0,Math.PI*2);ctx.fillStyle=markerColor;ctx.fill();
-      });
+        ctx.beginPath();
+        ctx.arc(sx,sy,4+pulse*4,0,Math.PI*2);
+        ctx.strokeStyle=markerColor.replace('1)',`${0.2+pulse*0.15})`);
+        ctx.lineWidth=1;
+        ctx.stroke();
+
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(sx,sy,2.5,0,Math.PI*2);
+        ctx.fillStyle=markerColor;
+        ctx.fill();
+
+        /* Label：兩個問題各自處理。
+           1) 球體持續自轉，任何據點遲早都會轉到畫布邊緣附近——地名固定畫在據點右邊時，
+              轉到右半邊的據點文字會被畫布邊界切掉（例如 São Paulo）。改成沿著「球心→
+              據點」的方向往外偏移（dirX/dirY），而不是固定往右：偏移方向本來就跟著據點
+              在畫布上的實際位置走，天然不會往畫布外面長。
+           2) 好幾個據點剛好轉到螢幕上彼此靠近時，地名會疊成一團看不清楚（例如 Delhi／
+              London／Erbil／Moscow 同時擠在畫面中央下方）。這裡只在據點轉到球體「較正面」
+              （z 夠負，離中心夠近）時才畫地名，其餘時候只留光點——同一時間會顯示地名的
+              城市變少，擠在一起的機率也跟著降低；再加上①的方向偏移讓地名往各自不同方向
+              散開，兩者一起處理，比只做其中一個更有效。
+              代價：地名會隨球體轉動更明顯地淡入淡出，不是固定一直顯示。 */
+        if(marker.label&&z<radius*LABEL_Z_RATIO){
+          const dx=sx-cx,dy=sy-cy;
+          const dist=Math.sqrt(dx*dx+dy*dy)||1;
+          const dirX=dx/dist,dirY=dy/dist;
+          const lx=sx+dirX*LABEL_OFFSET;
+          const ly=sy+dirY*LABEL_OFFSET;
+          ctx.font='600 11px system-ui, sans-serif';
+          ctx.fillStyle=markerColor.replace('1)','0.9)');
+          ctx.textAlign=dirX>=0?'right':'left';
+          ctx.textBaseline='middle';
+          ctx.fillText(marker.label,lx,ly);
+          ctx.textAlign='left';
+          ctx.textBaseline='alphabetic';
+        }
+      }
     }
 
-    const reduced=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(reduced){frame();return {destroy:function(){canvas.remove();}};}
-    /* 這裡不像 shaping-orb.js 的 mountShapingOrb() 額外接 IntersectionObserver 來暫停
-       捲出畫面外的動畫——globe-loader 只會在自己剛掛載、畫面正捲到可視範圍內的當下出現，
-       壽命最多幾秒鐘（見 js/flow.js stageGList() 的 loadingMs），沒有「使用者捲走了但
-       畫面上還留著一個沒人看到、卻持續佔用效能的動畫」這種需要額外處理的情境，加這層
-       判斷只是多一份不會真的用到的複雜度。分頁切到背景時仍然暫停（document.visibilitychange），
-       避免使用者切走分頁時白白耗電。 */
-    let raf=0,running=false;
-    const loop=function(){frame();if(running)raf=requestAnimationFrame(loop);};
-    const start=function(){if(running)return;running=true;raf=requestAnimationFrame(loop);};
-    const stop=function(){running=false;cancelAnimationFrame(raf);};
-    const onVis=function(){if(document.visibilityState==='hidden')stop();else start();};
-    document.addEventListener('visibilitychange',onVis);
-    start();
+    let raf=0;
+    function loop(){draw();raf=requestAnimationFrame(loop);}
+    raf=requestAnimationFrame(loop);
+
     return {destroy:function(){
-      stop();
-      document.removeEventListener('visibilitychange',onVis);
+      cancelAnimationFrame(raf);
       canvas.remove();
     }};
   }

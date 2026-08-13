@@ -516,12 +516,14 @@ function renderCubeLoader(title,subtitle){
    而不是像 renderCubeLoader 那樣回傳純 DOM）——globe 是持續跑 rAF 的 canvas 動畫，
    loading 結束或被取消時必須主動停掉，跟下面 aiSay() 對「發光球」typing 分支呼叫
    orb.destroy() 是同一個道理，只是 cube-loader 純靠 CSS animation 不需要 JS 清理。 */
-function renderGlobeLoader(title,subtitle){
+function renderGlobeLoader(title,size){
   const t=document.createElement('div');t.className='globe-loader';
-  const globe=mountInteractiveGlobe(t,{size:168}); // 把 canvas 掛成 t 的第一個子節點
-  t.insertAdjacentHTML('beforeend','<div class="globe-loader-text"><h3 class="globe-loader-title"></h3><p class="globe-loader-subtitle"></p></div>');
-  t.querySelector('.globe-loader-title').textContent=title||'全球商品資料整合中';
-  t.querySelector('.globe-loader-subtitle').textContent=subtitle||'正在為您彙整各地債券、基金、定存資訊，請稍候…';
+  const globe=mountInteractiveGlobe(t,{size:size||168}); // 把 canvas 掛成 t 的第一個子節點
+  /* 只有標題、沒有小標說明文字——呼叫端（js/flow.js catalogGlobeLoaderOpts()）已經把
+     標題換成對應這次清單商品類別的文字（搜尋債券中／搜尋基金中……），一行就講完
+     「正在做什麼」，不需要再疊一行小標重複說明 */
+  t.insertAdjacentHTML('beforeend','<div class="globe-loader-text"><h3 class="globe-loader-title"></h3></div>');
+  t.querySelector('.globe-loader-title').textContent=title||'搜尋商品中';
   t.destroy=globe.destroy;
   return t;
 }
@@ -542,7 +544,7 @@ function aiSay(msgs,done,opts){
       t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
       destroyLoader=()=>{};
     }else if(opts.loader==='globe'){
-      t=renderGlobeLoader(opts.globeTitle,opts.globeSubtitle);
+      t=renderGlobeLoader(opts.globeTitle,opts.globeSize);
       destroyLoader=()=>t.destroy();
     }else{
       t=document.createElement('div');t.className='typing';
@@ -581,6 +583,22 @@ function aiSay(msgs,done,opts){
       startTyping();
     },loadingMs);
   })();
+}
+/* sayNote(lines,done)：警語／風險提示的統一呈現方式，供 js/flow.js 各處原本直接把警語
+   文字塞進 aiSay() 訊息陣列的呼叫端改用——警語是制式內容，不是管家當下想出來要回覆的話，
+   不需要（也不應該）套用逐字打字效果，比照開場那句 .analysis-disclaimer 的處理方式：
+   直接完整顯示。字級固定用 caption（見 css/style.css .disclaimer-note），跟一般對話內文
+   的 body 字級做出區分，讓使用者一眼認出「這是提示，不是管家在說的重點內容」。
+   介面故意設計成跟 aiSay() 一樣是 (lines, done)：lines 是字串陣列（沒有警語就傳空陣列
+   或 falsy），done 是接下來要做的事——呼叫端把原本要接在警語後面的邏輯原封不動傳進來
+   即可，不用另外判斷「有沒有警語」再分兩條路徑寫一次。 */
+function sayNote(lines,done){
+  if(lines&&lines.length){
+    const el=document.createElement('div');el.className='ai-msg disclaimer-note';
+    el.innerHTML=lines.map(l=>`<p class="md-p">${l}</p>`).join('');
+    appendToChat(el);
+  }
+  if(done)done();
 }
 /* 需要使用者實際回答的提問句：用醒目的引言卡呈現（跟 aiSay 內文用 "> " 語法的效果一致），
    跟一般敘述性訊息區分開，讓使用者一眼看出「這句是要請你選」，不會被前面的說明文字稀釋掉。
@@ -633,7 +651,7 @@ function keepPctFor(){return {high:70,mid:40,low:15}[S.depositWeight||'mid'];}
 function investRationale(tag){
   const reason={high:'考量這筆資金可能在一年內就會用到',mid:'考量這筆資金的使用時間還不確定',low:'考量這筆資金一年以上都不會用到'}[S.depositWeight||'mid'];
   const keepPct=keepPctFor(),investPct=100-keepPct;
-  return `${reason}，這裡先預設保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}——這是下方試算的預設比例，您也可以自行拖動拉桿調整成合適的配置。`;
+  return `${reason}，這裡預設保留約 <b>${keepPct}%</b> 於活存以備不時之需，其餘約 <b>${investPct}%</b> 配置於${tag}，您也可以拖動下方拉桿調整比例。`;
 }
 /* 試算卡（債券／基金／外匯定存 vs 活存）已改用 card/calculator 元件（js/component-library.js）呈現，
    見 flow.js 的 enterProductCalc() */

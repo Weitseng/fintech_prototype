@@ -257,6 +257,14 @@ body{font-family:var(--font-cn);
   margin:2px 0 6px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
 .ai-msg .md-p{margin:0 0 8px}
 .ai-msg .md-p:last-child{margin-bottom:0}
+/* .disclaimer-note（js/engine.js sayNote()）：警語／風險提示改用 caption 字級＋次要文字色，
+   跟一般敘述性回覆的 body 字級／primary 文字色區分開，讓使用者一眼認出「這是提示，
+   不是管家在說的重點內容」；沿用跟 .analysis-disclaimer（開場那句 AI 生成內容警語）
+   同一組字級／顏色 token，全站的「警語類」文字統一同一個視覺層級。
+   疊在 .ai-msg 上（多一個 class，靠特異性覆蓋掉上面的 body 字級規則），還是走同一套
+   appendToChat()／捲動邏輯，不用另外重造一個訊息容器類型。 */
+.ai-msg.disclaimer-note{font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary)}
 .ai-msg .md-ul{margin:2px 0 8px;padding-left:20px}
 .ai-msg .md-ul:last-child{margin-bottom:0}
 .ai-msg .md-ul li{margin:3px 0}
@@ -327,16 +335,18 @@ body{font-family:var(--font-cn);
 }
 
 /* loading/globe-loader：畫布繪製邏輯在 js/globe-loader.js（mountInteractiveGlobe()），
-   這裡只負責外層排版跟標題／說明文字樣式，比照 .cube-loader-text／-title／-subtitle
-   同一組寫法，唯一差異是顏色改接 Design Guideline 既有的 Content token（不是 cube-loader
-   那組獨立於站內色票之外的青紫靛霓虹色——見 js/globe-loader.js 開頭註解），這樣文字在
-   Dark Mode 下會自動跟著站內其他文字一起變色，不需要另外維護一組色碼。 */
+   這裡只負責外層排版跟標題文字樣式，比照 .cube-loader-text／-title 同一組寫法，唯一
+   差異是顏色改接 Design Guideline 既有的 Content token（不是 cube-loader 那組獨立於
+   站內色票之外的青紫靛霓虹色——見 js/globe-loader.js 開頭註解），這樣文字在 Dark Mode
+   下會自動跟著站內其他文字一起變色，不需要另外維護一組色碼。
+   只有標題、沒有小標說明文字（js/engine.js renderGlobeLoader() 只塞一個 .globe-loader-title
+   節點）——標題文字本身已經是對應這次清單商品類別的完整說明（搜尋債券中／搜尋基金中……），
+   不需要再疊一行小標重複講同一件事。 */
 .globe-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:20px;padding:16px 12px 8px;animation:fade .4s ease}
 .globe-loader-canvas{display:block;cursor:default}
 .globe-loader-text{display:flex;flex-direction:column;align-items:center;gap:4px}
 .globe-loader-title{font-family:var(--font-cn);font-size:14px;font-weight:600;letter-spacing:.15em;color:var(--color-content-general-primary)}
-.globe-loader-subtitle{font-family:var(--font-cn);font-size:12px;color:var(--color-content-general-secondary);text-align:center}
 
 /* Blue shimmer text — reversed sweep（來源：thinking-orbs demo/shimmer-blue.css）。
    套用在「管家思考/分析中」的 .typing-label 上：底色是實色 --shimmer-base，

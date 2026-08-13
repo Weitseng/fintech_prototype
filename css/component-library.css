@@ -23,7 +23,7 @@
       切換主題而不一致。 */
 .pie-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;align-items:center;animation:fade .4s ease}
-.pie-overview{display:flex;gap:var(--spacing-24);align-items:center;justify-content:center}
+.pie-overview{display:flex;flex-wrap:wrap;gap:var(--spacing-24);align-items:center;justify-content:center}
 .pie-chart{width:180px;height:180px;border-radius:50%;flex-shrink:0;position:relative;transition:background .5s ease}
 .pie-chart .pie-hole{position:absolute;inset:9px;background:var(--color-container-card-white);border-radius:50%;display:grid;place-items:center;text-align:center}
 .pie-value{font-family:var(--kgi-font-auto-display-s-en-family),sans-serif;font-size:var(--kgi-font-auto-display-s-en-size-rem);font-weight:var(--kgi-font-auto-display-s-en-weight);line-height:var(--kgi-font-auto-display-s-en-line-height);letter-spacing:var(--kgi-font-auto-display-s-en-letter-spacing);color:var(--color-content-general-primary)}
@@ -81,6 +81,32 @@
   color:var(--color-content-general-secondary)}
 .linechart-xlabel{font-family:var(--kgi-font-auto-body-regular-tc-family),sans-serif;font-size:var(--kgi-font-auto-body-regular-tc-size-rem);
   font-weight:var(--kgi-font-auto-body-regular-tc-weight);fill:var(--color-content-general-secondary)}
+
+/* chart/asset-overview（本行＋他行資產整合總覽，見 js/flow.js stageH3()）：外層卡片／圖例
+   沿用 .pie-card／.pie-overview／.pie-legend 本身的樣式；本行／他行投資占比各自獨立、
+   不是同一個總數的切片，改用兩條同心圓弧（ringchart）取代 chart/pie 的甜甜圈，弧線用
+   stroke-dasharray 依各自占比裁切，rotate(-90deg) 讓起點對齊 12 點鐘方向，跟一般
+   進度環（如 Apple Watch 三環）閱讀習慣一致；.ringchart-track 是圈底色，讓沒被進度弧
+   蓋到的部分仍看得出完整圓圈範圍，不會像缺了一角。 */
+/* 208px（比 chart/pie 的 180px 甜甜圈略大）：中心要放兩行字（金額＋「資產總額」），
+   180px 時「資產總額」這行常會頂到內圈弧線甚至溢出，加大中央可用直徑給文字留空間，
+   比繼續縮小字級更保險（字級已經是最小可讀的 caption 尺寸，再縮會影響可讀性）。 */
+.ringchart{position:relative;width:208px;height:208px;flex-shrink:0}
+.ringchart-svg{width:100%;height:100%;display:block}
+.ringchart-track{fill:none;stroke:var(--color-container-general-divider);opacity:.5}
+.ringchart-arc{fill:none;stroke-linecap:round;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+.ringchart-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+/* opts.bankDetail／opts.otherDetail：併進圖例文字裡的資產級距說明，跟圖例的顏色圓點／
+   百分比放在同一個區塊，讓每個色塊「是誰、占比多少、根據什麼算出來」一次看完，不用
+   再對照卡片上另一段獨立的條列文字 */
+.assetoverview-legend-text{display:flex;flex-direction:column;gap:2px}
+.assetoverview-legend-main{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary)}
+.assetoverview-legend-main b{font-family:var(--kgi-font-auto-caption-regular-en-family),sans-serif;font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-primary)}
+.assetoverview-legend-detail{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-tertiary)}
+.assetoverview-products{margin-top:var(--spacing-24);padding-top:var(--spacing-16);border-top:1px solid var(--color-container-general-divider);width:100%}
+.assetoverview-products-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);margin-bottom:var(--spacing-8);text-align:center}
+.assetoverview-tags{display:flex;flex-wrap:wrap;gap:var(--spacing-8);justify-content:center}
+.assetoverview-empty{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-tertiary);text-align:center}
 
 /* ============================================================
    card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）
