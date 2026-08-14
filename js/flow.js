@@ -703,7 +703,11 @@ function reconcileWithOriginal(adjusted){
      這裡不重複講一次，避免同一件事被講兩次 */
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='*他行資產顯示您已有豐富的投資經驗，*這裡仍會依您先前表達的風險考量來安排配置。';
+    /* 這裡雖然封頂只上調一級（不是他行訊號建議的兩級），實際上仍是一次方向調整，
+       stageH3() 會在這句之前先講「由 X 調整為 Y」——理由文字不能寫成「仍依您先前的
+       風險考量」，那聽起來像沒有變動，跟緊接在前面的調整宣告互相矛盾。改成直接說明
+       「調整但保守進行」，跟上面往下調（diff<=-2）分支的措辭一致，都是講清楚實際發生的事 */
+    reason='*他行資產顯示您已有豐富的投資經驗，*這裡先以小幅度調整為主，不會直接跳到最積極的方向。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
     reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*這裡建議以較穩健的方向為主，兼顧收益與風險控制。';
@@ -713,9 +717,19 @@ function reconcileWithOriginal(adjusted){
 function stageH2(){
   if(S.h1Ratio==='0%'){
     const base={result:'deposit',reason:IDLE_FUNDS_REASON};
-    const adj=reconcileWithOriginal(base);
+    /* 這裡要呼叫 adjustH2()，不能只呼叫它內部的 reconcileWithOriginal()——adjustH2() 尾端
+       還有一段「resultTypeH 是債券、但 S.q1 是一年內要用」時強制改回基金的保護（債券要放到
+       到期才能保本領息，跟「一年內要用」互相矛盾），只呼叫 reconcileWithOriginal() 會跳過
+       這段保護，可能讓一年內要用的資金被導向債券 */
+    const adj=adjustH2(base);
     S.h2Items=[];S.h2Reason=adj.reason;S.recoTypeH=adj.result;
-    aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
+    /* 「也是偏保守」的「也」暗示本行原本的配置就已經偏保守——只有 S.recoType 本來就是
+       deposit 時這個暗示才成立；如果使用者在本行三題選的是積極或均衡方向，這句話會跟
+       使用者剛講過的偏好對不上，改成依 S.recoType 分開講 */
+    const idleAck=S.recoType==='deposit'
+      ?'了解，看來您在其他銀行的資金也是偏保守的配置。'
+      :'了解，看來您在其他銀行的資金目前大多閒置、還沒投入太多。';
+    aiSay([idleAck],()=>stageH3(),{label:'管家正在理解分析'});
     return;
   }
   aiSay(['> 您目前主要有投資哪些項目呢？','可以複選，選好之後點一下「確認送出」。'],()=>{
@@ -771,7 +785,13 @@ const OTHER_INVEST_RANGE={'0%':{lo:0,hi:0},'1–50%':{lo:1,hi:50},'50% 以上':{
 function stageH3(){
   const origProd=PRODUCT_DATA[S.recoType];
   const newProd=PRODUCT_DATA[S.recoTypeH];
-  const changed=S.recoTypeH!==S.recoType;
+  /* classifyH2()／adjustH2() 只會回傳 deposit/bond/fund 三選一，永遠不會是 combo，
+     所以原本方向是 combo（債券＋基金都推薦、使用者還沒決定要哪一種）時，S.recoTypeH
+     必定跟 S.recoType 的字串不同，會被誤判成「方向調整」——即使算出來的 fund/bond
+     本來就是 combo 卡片組裡已經出現過的其中一張。這裡只有「combo→deposit」（推薦到
+     一開始兩張卡都沒出現過的定存）才算真的調整；combo→bond／combo→fund 只是從
+     「兩個都看看」收斂成其中一個，不算方向變了，不要重講一次、不要重出一次卡片 */
+  const changed=S.recoType==='combo'?S.recoTypeH==='deposit':S.recoTypeH!==S.recoType;
   const calcLabel=calcLabelFor(newProd);
   /* 第一段：整合後的資產全貌。chart/asset-overview 卡片自己有標題「整體投資佔比」，
      不用再靠 opts.title 額外加一次。bankRange／otherRange 是投資占比的級距上下界
