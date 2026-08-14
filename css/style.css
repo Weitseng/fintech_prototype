@@ -231,7 +231,7 @@ body{font-family:var(--font-cn);
 .selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);
-  margin:22px 0 10px;line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
+  margin:var(--spacing-32) 0 var(--spacing-20);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn)}
 /* 進入對話後、第一則分析內容（stageC()）之前固定顯示的 AI 生成內容警語；
    文字排版直接用共用的 .type-caption-r 工具類（見上方字級系統），這裡只補
    版面（margin／對齊）跟本文顏色，連結色另外指定成 container active */
@@ -371,50 +371,12 @@ body{font-family:var(--font-cn);
    高度由 engine.js 的 clearControls()/setControls() 用 min-height 凍結／解除控制，
    如果讓 :empty 直接 display:none，會蓋掉那個凍結高度，害 #screen 瞬間長高、捲動位置跟著跑掉。
    開場的 stepA／stepB 頁面不使用 #controls，改由 JS 直接設 display:none 隱藏（見 flow.js stepA()） */
-.choice{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1.5px solid var(--color-container-general-divider);
-  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
-  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
-  padding:13px 15px;border-radius:var(--radius-medium);margin:8px 0;cursor:pointer;transition:.15s}
-@media (hover:hover) and (pointer:fine){
-  .choice:hover{border-color:var(--color-content-general-active)}
-}
-.choice small{display:block;font-family:var(--font-cn);font-weight:var(--type-caption-weight-cn);font-size:var(--type-caption-size);
-  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);margin-top:2px}
-.choice.sel{border-color:var(--color-content-general-active);background:var(--color-container-general-light-active-blue);color:var(--color-content-general-active)}
-.choice.sel small{color:var(--color-content-general-active)}
-/* 非 checkopt（純選項按鈕，如首頁的問卷選項）依 DOM 順序由上往下自動編號；
-   checkopt（多選核取方塊樣式）維持原本的勾選框，不疊加編號 */
-.choice:not(.checkopt){position:relative;padding-left:42px;counter-increment:choice-num}
-.choice:not(.checkopt)::before{content:counter(choice-num)'.';position:absolute;left:15px;top:50%;
-  transform:translateY(-50%);font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-secondary)}
-.choice:not(.checkopt).sel::before{color:var(--color-content-general-active)}
-.choice.checkopt{position:relative;padding-left:42px}
-.choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  width:18px;height:18px;border-radius:var(--radius-small);border:1.5px solid var(--color-container-general-divider);background:var(--color-surface-white);transition:.15s}
-.choice.checkopt.sel::before{background:var(--color-container-general-active-primary);border-color:var(--color-container-general-active-primary)}
-/* 打勾符號改用 SVG 遮罩（mask-image）畫出來，不再用「✓」文字字元——文字字元的視覺
-   置中受字型影響：這裡的字型堆疊第一順位是中文字型（Microsoft JhengHei 等），中文字型
-   繪製 ✓ 這類符號字元時，字符本身在自己的字身框（advance box）裡經常不是左右對稱的，
-   即使用 transform:translate(-50%,-50%) 把「字身框」置中，肉眼看到的墨跡（實際打勾的線條）
-   還是會偏左，這正是先前只調整 transform 卻沒解決偏左問題的原因。改成 SVG 遮罩後，
-   置中依據的是 SVG 本身精確的座標（Material 對勾圖示，視覺上左右對稱），
-   搭配固定的 width/height + mask-size:contain + mask-position:center，
-   不管字型、瀏覽器怎麼變，勾勾的「幾何」中心都會準確對齊核取方塊正中央。
-   left 從方框幾何中心 23px 再加 1.5px：對勾圖案右上那筆斜線比左下那筆短撇長、
-   視覺重量偏右上，即使幾何置中，肉眼仍會覺得整體偏左，這裡額外做一點點
-   「視覺置中」的手動微調（optical alignment），不是算錯，是刻意補償。 */
-.choice.checkopt.sel::after{content:'';position:absolute;left:24.5px;top:50%;
-  width:12px;height:12px;transform:translate(-50%,-50%);
-  background:var(--color-content-general-light-active);
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
-.choice:disabled{opacity:.4;cursor:not-allowed}
+/* .choice／.choice-group（message/option 元件）已搬到 css/component-library.css，
+   跟 choiceBtn()／COMPONENTS['message/option']（js/component-library.js）收在同一個地方，
+   2026-08-14 依 Figma node 374:4371／374:4424 核對修正過，這裡不再重複定義。
+   #controls 上面的 counter-reset:choice-num（見上方 .controls 規則）維持不動，
+   跟 .choice-group 共用同一個 CSS counter，chat 流程裡的 .choice 才會自動接續編號。 */
 /* 建議行動（前往下單／諮詢理專等）已改用 list/next-step 元件（css/component-library.css .nsl-*） */
-
-/* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
-   每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
-  （#controls 本身已經在上面 197 行 counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
-.choice-group{counter-reset:choice-num}
 /* 試算卡、商品卡：已改用 card/calculator／card/product 元件（css/component-library.css） */
 /* 流程結尾畫面：已改用 card/feedback-qr 元件（css/component-library.css .fbqr-*） */
 /* 底部輸入列已改用 bar/chat-input 元件（css/component-library.css .icb-*） */

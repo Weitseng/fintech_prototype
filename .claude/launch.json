@@ -7,6 +7,13 @@
       "runtimeArgs": [".claude/static-server.py"],
       "port": 8734,
       "autoPort": true
+    },
+    {
+      "name": "static-server-node",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/static-server.js"],
+      "port": 8734,
+      "autoPort": true
     }
   ]
 }

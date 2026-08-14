@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>元件庫預覽 — Component Library</title>
+<!-- 這個獨立預覽頁原本沒有引入 css/tokens/ 下的 design token 檔案（跟 index.html 的
+     <link> 清單不一致），導致頁面上所有元件的顏色／間距／圓角／字級 token 全部無法解析、
+     視覺上都是預設值（背景透明、padding 0、圓角 0）。這裡補上跟 index.html 一致的引入順序，
+     不是這次新增 selection/option 才需要的東西，而是讓這個既有預覽頁本身能正確顯示所有既有
+     元件的必要修正。 -->
+<link rel="stylesheet" href="css/tokens/colors.css">
+<link rel="stylesheet" href="css/tokens/radius-tokens.css">
+<link rel="stylesheet" href="css/tokens/shadow.css">
+<link rel="stylesheet" href="css/tokens/spacing.css">
+<link rel="stylesheet" href="css/tokens/kgi-typography-tokens.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/component-library.css">
 <style>
@@ -13,6 +23,23 @@
     box-shadow:0 2px 10px rgba(0,0,0,.06)}
   .demo-label{padding:12px 16px;font-size:13px;font-weight:700;color:#4f607b;border-bottom:1px solid #e2e2e2}
   .demo-log{max-width:480px;margin:0 auto 32px;font-size:13px;color:#4f607b;white-space:pre-wrap}
+
+  /* selection/option 四態並排展示：Hover 沒有真正的滑鼠移入事件可以強制觸發，這裡借用跟元件本身
+     .selopt:hover 完全相同的規則（border-color 換成 Container/General/Active-Primary），只差在
+     用一個 demo 專用 class 掛死，讓畫面不需要真的 hover 就能看到四態並排；Pressed／Selected
+     兩態則直接重用元件自己真正的狀態 class（.is-pressed／.is-selected，見 component-library.js
+     setSelected()／setPressed()），不是另外造的假態，跟實際互動時的視覺完全一致。 */
+  .selopt.demo-force-hover{border-color:var(--color-container-general-active-primary)}
+  .selopt-demo-row{display:flex;flex-wrap:wrap;gap:20px;padding:24px;background:#0b1220}
+  .selopt-demo-cell{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .selopt-demo-caption{font-size:12px;color:#9aa8c7;font-family:sans-serif}
+
+  /* message/option 四態展示：Hover／Pressed 都是純 CSS 偽類（:hover／:active），沒有真的
+     滑鼠移入/按著滑鼠不放就看不到，借用跟真正規則相同的樣式掛兩個 demo 專用 class
+     （見上方 selection/option 的 demo-force-hover 說明，同一招） */
+  .choice.demo-force-hover{border-color:var(--color-container-general-active-primary)}
+  .choice.demo-force-pressed{background:var(--color-container-card-white);border-color:var(--color-container-general-active-primary)}
+  .msgopt-demo-caption{font-size:12px;color:#9aa8c7;font-family:sans-serif;margin:-4px 0 4px}
 </style>
 </head>
 <body>
@@ -81,6 +108,52 @@
   <div class="demo-section">
     <div class="demo-label">card/feedback-qr — 正常態（「立即申購」／「諮詢理專」共用結尾）</div>
     <div id="screen-fbqr" class="chat" style="padding:16px"></div>
+  </div>
+
+  <!-- selection/option（Figma node 370:3005）：暗色主題為預設，這裡強制掛 data-theme="dark"
+       讓 css/tokens 走跟 index.html 一致的 Dark Mode 色票，不是走本頁其餘元件示範用的淺色背景 -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">selection/option — 4 種狀態並排（Enable／Hover／Pressed／Selected）</div>
+    <div id="selopt-demo-states" class="selopt-demo-row"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">selection/option — icon／label 可替換（單選群組，點擊切換選取；含長文案換行驗證）</div>
+    <div id="selopt-demo-group" class="selopt-demo-row" style="flex-direction:column;align-items:flex-start"></div>
+    <div class="demo-log" id="selopt-log" style="max-width:none;padding:0 24px 24px;color:#9aa8c7"></div>
+  </div>
+
+  <!-- chart/line（Figma node 374:4249）：跟 selection/option 一樣強制掛 data-theme="dark"；
+       這個元件的視覺參數（格線間距、資料點半徑）是照 Figma 稿 600 寬的資料區換算，卡片
+       本身故意放寬到 760px（而不是沿用其他元件示範用的 480px .demo-section），太窄會讓
+       數值徽章擠在一起、看不出間距是否正確 -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 一般下降趨勢（5 個月，含到期標註）</div>
+    <div id="linechart-demo-decline" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 持平（5 個月數值相同，驗證線不會貼死圖表頂端）</div>
+    <div id="linechart-demo-flat" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 僅 2 個資料點＋到期標註在第一點（驗證標籤靠左對齊、不超出邊界）</div>
+    <div id="linechart-demo-two" style="padding:16px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 3 個資料點、陡升趨勢＋到期標註在最後一點＋自訂數值格式（驗證標籤靠右對齊、highlightIndex 與 splitIndex 疊加不重疊）</div>
+    <div id="linechart-demo-steep" style="padding:16px"></div>
+  </div>
+
+  <!-- message/option（Figma node 374:4371／374:4424）：純文字單選列表選項，暗色主題。
+       Pressed 是原生 :active 偽類（不像 selection/option 是 JS 切的 class），demo-force-pressed
+       是借用跟 .choice:active 完全相同的規則掛一個 demo 專用 class，才能不用真的按著滑鼠
+       就看到 Pressed 長相；Selected 直接用元件自己真正的 .sel class。 */ -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:600px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">message/option — 4 種狀態（Enable／Hover／Selected／Pressed，由上至下）</div>
+    <div id="msgopt-demo-states" class="choice-group" style="padding:24px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:600px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">message/option — 單選群組（沿用 popover/option-select 整組樣式，含容器 padding／間距／自動編號；點擊切換選取）</div>
+    <div id="msgopt-demo-group" style="padding:24px"></div>
   </div>
 
   <!-- down() 內部固定找 #screen 當捲動容器，這裡不需要真的捲動，放一個隱藏節點避免報錯 -->
@@ -157,6 +230,109 @@
        這裡改傳一個安全的示範用 callback */
     chatBox=document.getElementById('screen-fbqr');
     renderComponent('card/feedback-qr',{onRestart:()=>{log.textContent='card/feedback-qr：再體驗一次 clicked';}});
+  </script>
+  <script>
+    /* selection/option 的示範刻意放在獨立的 <script> 標籤，不接在上面那段後面：
+       上面 message/chat-bubble 那段呼叫會丟出「currentTurnEl is not defined」
+       （engine.js appendToChat() 依賴的 currentTurnEl 只有跑過完整 newTurn()／resetAll()
+       流程才會設定，這個獨立 demo 頁沒有跑那套初始化），例外會中斷同一個 <script> 標籤
+       後面所有敘述，導致 list/next-step、button/primary、card/feedback-qr 這幾段示範
+       其實也從來沒有真的執行過（此為既有 bug，跟這裡新增的 selection/option 無關，
+       不在這次任務範圍內修正）。獨立開一個 <script> 標籤可以不受那個例外影響。
+       示範用幾何圖形 icon（非 Figma 原始錢袋圖示），純粹用來證明 icon 可以透過 props
+       自由替換、換了之後排版（80x80 容器置中）不會跑版 */
+    const SELOPT_ICON_FUND=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="20" width="8" height="20" rx="2" fill="var(--color-chart-blue-2nd)"/><rect x="20" y="12" width="8" height="28" rx="2" fill="var(--color-chart-teal-2nd)"/><rect x="34" y="6" width="8" height="34" rx="2" fill="var(--color-chart-orange-400)"/></svg>`;
+    const SELOPT_ICON_SHIELD=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 4l16 6v12c0 10-7 17-16 22-9-5-16-12-16-22V10z" fill="var(--color-chart-teal-2nd)"/><path d="M16 24l6 6 10-12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+    const SELOPT_ICON_STAR=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 4l5.9 12.4L44 18.5l-10 9.7 2.4 13.8L24 35.8 11.6 42l2.4-13.8-10-9.7 14.1-2.1z" fill="var(--color-yellow-400)"/></svg>`;
+    const SELOPT_ICON_WALLET=`<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="12" width="40" height="28" rx="4" fill="var(--color-chart-blue-2nd)"/><rect x="4" y="12" width="40" height="8" fill="var(--color-navy-500)" opacity=".3"/><circle cx="34" cy="28" r="4" fill="#fff"/></svg>`;
+
+    /* 4 態並排：Hover／Pressed／Selected 直接強制掛上元件真正的狀態 class（demo-force-hover
+       僅是借用跟 .selopt:hover 相同的 CSS 規則，Pressed／Selected 則是元件本身的 is-pressed／
+       is-selected class），不用手動移滑鼠或按著不放，一次看到四態的真實視覺 */
+    const soptStates=[['enabled',false],['hover',false],['pressed',false],['selected',true]];
+    const soptStatesRow=document.getElementById('selopt-demo-states');
+    soptStates.forEach(([name,isSelected])=>{
+      const cell=document.createElement('div');cell.className='selopt-demo-cell';
+      const card=renderComponent('selection/option',SELOPT_ICON_FUND,'選項文案',{selected:isSelected,onSelect:()=>{}});
+      if(name==='hover')card.classList.add('demo-force-hover');
+      if(name==='pressed')card.classList.add('is-pressed');
+      const caption=document.createElement('div');caption.className='selopt-demo-caption';caption.textContent=name;
+      cell.appendChild(card);cell.appendChild(caption);
+      soptStatesRow.appendChild(cell);
+    });
+
+    /* icon／label 可替換：同一組單選（radiogroup）群組換上不同 icon 與長短不一的文案，
+       最後一項刻意用長文案驗證換行不會撐壞卡片版面 */
+    const soptLog=document.getElementById('selopt-log');
+    document.getElementById('selopt-demo-group').appendChild(
+      renderComponent('selection/option-group',[
+        {icon:SELOPT_ICON_FUND,label:'基金定期定額',selected:true,onSelect:i=>{soptLog.textContent='選取：'+i.label;}},
+        {icon:SELOPT_ICON_SHIELD,label:'保本型商品',onSelect:i=>{soptLog.textContent='選取：'+i.label;}},
+        {icon:SELOPT_ICON_STAR,label:'外幣定存',onSelect:i=>{soptLog.textContent='選取：'+i.label;}},
+        {icon:SELOPT_ICON_WALLET,label:'這是一段用來測試文案較長時是否能正常換行、不撐破卡片版面的選項文案',disabled:true,onSelect:i=>{soptLog.textContent='選取：'+i.label;}}
+      ],{direction:'row',ariaLabel:'投資商品類型選擇'})
+    );
+
+    /* chart/line 的 render 函式內部會呼叫 appendToChat()，appendToChat() 讀的是
+       currentTurnEl||chatBox——currentTurnEl 在 engine.js 裡永遠是先賦值才讀取（例如
+       enterChat()／startTurn()），從來沒有用 let/const 宣告過，這個獨立 demo 頁沒有跑過
+       那套初始化流程，第一次讀取會是「從未賦值過的裸識別字」，直接丟 ReferenceError（跟
+       上面 message/chat-bubble 那段的既有 bug 是同一個成因）。用 window.currentTurnEl
+       存取（而不是裸寫 currentTurnEl）不會觸發這個錯誤——物件屬性讀取不存在的屬性只會拿到
+       undefined，不會丟 ReferenceError——藉此把它安全初始化成 null，之後 appendToChat()
+       就會正常 fallback 用 chatBox。 */
+    window.currentTurnEl = window.currentTurnEl || null;
+
+    chatBox = document.getElementById('linechart-demo-decline');
+    renderComponent('chart/line', [
+      {label:'4月',value:2688},{label:'5月',value:2688},
+      {label:'6月',value:717},{label:'7月',value:717},{label:'8月',value:717}
+    ], {title:'每月被動收益趨勢', splitIndex:1, splitLabel:'定存到期'});
+
+    chatBox = document.getElementById('linechart-demo-flat');
+    renderComponent('chart/line', [
+      {label:'4月',value:500},{label:'5月',value:500},{label:'6月',value:500},
+      {label:'7月',value:500},{label:'8月',value:500}
+    ], {title:'持平情境'});
+
+    chatBox = document.getElementById('linechart-demo-two');
+    renderComponent('chart/line', [
+      {label:'6月',value:1200},{label:'7月',value:9800}
+    ], {title:'僅 2 個資料點', splitIndex:0, splitLabel:'起始月'});
+
+    chatBox = document.getElementById('linechart-demo-steep');
+    renderComponent('chart/line', [
+      {label:'A',value:100},{label:'B',value:50},{label:'C',value:9000}
+    ], {title:'3 個資料點、陡升趨勢', splitIndex:'C', splitLabel:'到期在最後一點', formatValue:v=>Math.round(v).toLocaleString()+' 元'});
+
+    /* message/option 四態並排：Selected 直接用元件自己真正的 .sel class，Hover／Pressed
+       借用上面新增的 demo-force-hover／demo-force-pressed（跟真正的 :hover／:active 規則
+       完全相同），不用真的操作滑鼠就能一次看到四態 */
+    const msgoptStates=document.getElementById('msgopt-demo-states');
+    [['Enable',null],['Hover','demo-force-hover'],['Selected','sel'],['Pressed','demo-force-pressed']].forEach(([name,cls])=>{
+      const btn=renderComponent('message/option','選項標題：'+name,null,()=>{});
+      if(cls)btn.classList.add(cls);
+      msgoptStates.appendChild(btn);
+    });
+
+    /* 單選群組：直接重用真正的 popover/option-select 容器樣式（.opt-popover／.choice-group），
+       證明容器 padding／標題間距／自動編號跟production 一致；這裡不掛進 .opt-popover-wrap
+       （那是覆蓋在畫面上的絕對定位樣式，demo 頁面直接嵌在版面裡看比較方便），只借用
+       .opt-popover 本身的卡片樣式 */
+    const msgoptGroup=document.getElementById('msgopt-demo-group');
+    const msgoptPop=document.createElement('div');msgoptPop.className='opt-popover';msgoptPop.style.position='static';
+    const msgoptTitle=document.createElement('div');msgoptTitle.className='opt-popover-title';msgoptTitle.textContent='對於這筆閒置資金，您平時比較想怎麼運用它呢？';
+    const msgoptList=document.createElement('div');msgoptList.className='choice-group';
+    msgoptPop.appendChild(msgoptTitle);msgoptPop.appendChild(msgoptList);msgoptGroup.appendChild(msgoptPop);
+    const msgoptLog=document.createElement('div');msgoptLog.className='msgopt-demo-caption';msgoptGroup.appendChild(msgoptLog);
+    ['先放著，可能是備用金或短期要用','想加減賺一點零用錢，風險不要太高','想讓這筆錢成長更多，可以承擔一些風險','還沒想法，想先聽看看建議'].forEach(label=>{
+      const btn=renderComponent('message/option',label,null,()=>{
+        msgoptList.querySelectorAll('.choice').forEach(o=>o.classList.remove('sel'));
+        btn.classList.add('sel');
+        msgoptLog.textContent='選取：'+label;
+      });
+      msgoptList.appendChild(btn);
+    });
   </script>
 </body>
 </html>

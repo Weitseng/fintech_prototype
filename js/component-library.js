@@ -47,63 +47,133 @@ function renderPieChart(investedPct,amount,opts){
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
 
-/* ---- chart/line（定存到期後被動收益趨勢折線圖，見 js/flow.js stageC()）----
-   視覺參考使用者提供的 fl_chart LineChartSample2 範例（格線、粗圓角線條＋漸層、
-   曲線下方漸層填色、圖表邊框），移植成這裡的 inline SVG 寫法。
-   全線統一藍色（不用紅色標示到期前後差異，避免顏色語意混淆）；到期時間點仍用一條
-   虛線＋標籤標示，讓下降的瞬間一眼可辨，不需要額外圖例說明。
-   這裡的資料本身是「到期前一點＋到期後連續四個持平點」，不是連續起伏的數列，套用
-   fl_chart 的貝茲曲線平滑（isCurved）對這種資料不會有視覺差異（頂多是同一條斜直線／
-   水平線的另一種畫法），所以沒有實作曲線平滑；格線、漸層填色、粗圓角線條、邊框這幾項
-   確實會讓視覺更接近參考圖，都有做。
-   純展示用途（不可互動），卡片沿用 .pie-card 同一組間距／陰影 token，維持跟圓餅圖一致的卡片感。 */
+/* ---- chart/line（Figma node 374:4249「chart/pei chart」，通用折線圖元件）----
+   原本是「定存到期後被動收益趨勢」頁面（js/flow.js stageC()）寫死在頁面裡的一次性 SVG，
+   這次抽成通用元件：資料點陣列長度可變（不寫死月數）、標註哪個點用 index／label 兩種方式
+   都可以指定、貨幣格式化交給呼叫端決定，元件本身不含任何頁面文案（「依您的資產情境來看…」
+   那段說明文字留在 flow.js，這裡只畫圖）。
+   2026-08-14 依 Figma node 374:4249 用 get_design_context／get_variable_defs 讀出來的規格
+   核對修正（不是憑截圖肉眼抓色）：折線／資料點改用 --color-chart-blue-1st（稿子 Dark Mode
+   實際色碼 #1877FF，對應 Container/General/Active-Primary，先前版本誤用了「投資配置」donut
+   在用的 --color-chart-blue-2nd）；grid 改成虛線＋稿子量出來的透明度（橫向 .7／縱向 .8），
+   baseline 是稿子裡唯一的實線、拿掉另外疊加的外框矩形；數值標籤改成藥丸狀 HTML 徽章疊加在
+   SVG 上（樣式／間距見 css/component-library.css .linechart-value-badge 註解）；最後一個
+   資料點（目前最新月份）疊加一層半透明光暈、比其他點大，呼應稿子強調「目前」這個點的做法。
+   有一處規格存疑，沒有照抄，先維持原本做法：稿子裡曲線下方漸層填色的 gradient stop 方向是
+   「越靠近 baseline 越不透明、越靠近折線越透明」（跟一般「貼線最濃、往下漸淡」的方向相反），
+   且色碼 #539AFF 在專案現有 token 裡找不到精確對應（最近的 --color-sky-blue-400 是 #4E97FF，
+   不完全一樣）。這裡維持「貼線最濃、往下漸淡到底部透明」的方向與 --color-chart-blue-2nd 漸層色
+   （跟原本行為一致），沒有自行改成跟稿子相反的方向或引入沒有 token 對應的色碼，麻煩設計確認
+   稿子這裡的漸層方向是否為刻意設計，確認後再回來調整。
+   PAD_T／badge／split-label 的定位全部用「相對於資料點固定間距」計算（不是寫死絕對座標），
+   資料點數量／數值範圍改變時，標籤自然跟著資料點移動，且 PAD_T 保留的高度是「無論資料落在
+   0～maxV 哪個位置，徽章／到期標註都不會被 SVG 上緣裁掉」算出來的安全值，不是憑感覺抓的數字
+   ——這是驗收清單裡「極端情境（趨勢很平／很陡／資料點很少）版面不跑掉」的關鍵。
+   @typedef {{label:string, value:number}} LineChartPoint
+   @param {LineChartPoint[]} points 每月資料點，陣列長度可變（不限定 5 個月，2～N 個點都適用）
+   @param {object} [opts]
+   @param {string} [opts.title] 卡片標題（如「每月被動收益趨勢」），不傳則不顯示標題列
+   @param {number|string} [opts.splitIndex] 哪個資料點要加「到期／分界」標註：可傳 points 的
+     index（number），也可以直接傳該點的 label 字串（依 label 自動找對應 index），不傳則不顯示標註
+   @param {string} [opts.splitLabel] 標註文字（如「定存到期」），splitIndex 有指定才會顯示
+   @param {number} [opts.highlightIndex] 哪個資料點要用「目前/最新」的放大＋光暈樣式標示，
+     預設是陣列最後一個點（points.length-1），通常不需要另外傳
+   @param {(value:number)=>string} [opts.formatValue] 數值格式化，預設 '$'+千分位；
+     呼叫端可自訂（例如不要 $ 前綴、換別的幣別符號、四捨五入位數）
+   @param {string} [opts.ariaLabel] SVG 的 aria-label，預設「趨勢圖」 */
 let lineChartIdSeq=0;
-function renderLineChart(labels,values,splitIndex,opts){
+function renderLineChart(points,opts){
   opts=opts||{};
+  points=points||[];
+  const n=points.length;
+  const labels=points.map(p=>p.label);
+  const values=points.map(p=>p.value);
+  const formatValue=opts.formatValue||(v=>'$'+Math.round(v).toLocaleString());
+  const highlightIndex=opts.highlightIndex!=null?opts.highlightIndex:n-1;
+  let splitIndex=opts.splitIndex;
+  if(typeof splitIndex==='string')splitIndex=labels.indexOf(splitIndex);
+  const hasSplit=splitIndex!=null&&splitIndex>=0&&splitIndex<n&&!!opts.splitLabel;
   const chartId=++lineChartIdSeq;
-  /* H 原本是 220（跟圓餅圖比例相近），但這張圖只有 5 個點、不需要那麼高，疊在圓餅圖＋
-     文字說明後面，畫面還沒開始換行的初次分析階段又容易跟浮動選單擠在同一個視窗高度裡
-     （見 renderOptionPopover() 的說明），改矮一點（150）讓整段內容更容易一次容納 */
-  const W=600,H=150,PAD_L=16,PAD_R=16,PAD_T=30,PAD_B=22;
-  const innerW=W-PAD_L-PAD_R,innerH=H-PAD_T-PAD_B;
-  const baseline=H-PAD_B;
-  const maxV=Math.max(...values)*1.2||1;
-  const n=values.length;
-  const xAt=i=>PAD_L+(n===1?innerW/2:innerW*i/(n-1));
-  const yAt=v=>PAD_T+innerH-(innerH*v/maxV);
+
+  /* W／DATA_H 直接沿用 Figma 稿「data」區塊本身的座標尺寸（600x150），格線間距、
+     資料點半徑（6／9）才能跟稿子的數字一一對應，不用另外換算比例。
+     BADGE_H／LABEL_GAP／DOT_CLEARANCE／SPLIT_LABEL_H 是徽章／到期標註跟資料點之間
+     固定的視覺間距（皆量自稿子，例如徽章跟資料點永遠差 4px），PAD_T 用這幾個固定值
+     加總算出來，保證資料點無論落在 0～maxV 哪個高度，上方的徽章／到期標註都還有空間、
+     不會被 SVG 頂端裁掉；PAD_B 留給下方月份標籤。 */
+  const W=600,DATA_H=150;
+  const BADGE_H=30,LABEL_GAP=4,DOT_CLEARANCE=9,SPLIT_LABEL_H=24,SAFETY=4;
+  const PAD_T=BADGE_H+LABEL_GAP+DOT_CLEARANCE+(hasSplit?SPLIT_LABEL_H+LABEL_GAP:0)+SAFETY;
+  const PAD_B=32;
+  const H=PAD_T+DATA_H+PAD_B;
+  const baseline=PAD_T+DATA_H;
+
+  /* maxV 額外留 15% headroom：避免「所有數值相同（持平線）」或「最高點剛好是唯一資料」
+     這類情境下，資料點直接頂到資料區最上緣、視覺上太貼齊格線頂端；分母加 ||1 避免
+     所有數值都是 0 時除以 0。 */
+  const maxV=Math.max(...values,0)*1.15||1;
+  const xAt=i=>n===1?W/2:W*i/(n-1);
+  const yAt=v=>PAD_T+DATA_H-(DATA_H*v/maxV);
   const pts=values.map((v,i)=>({x:xAt(i),y:yAt(v)}));
-  const linePath=pts.map((p,idx)=>`${idx===0?'M':'L'}${p.x},${p.y}`).join(' ');
-  const areaPath=`${linePath} L${pts[pts.length-1].x},${baseline} L${pts[0].x},${baseline} Z`;
-  const fmtAmt=v=>'$'+Math.round(v).toLocaleString();
-  const dots=pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="var(--color-chart-blue-2nd)"/>
-      <text x="${p.x}" y="${p.y-14}" text-anchor="middle" class="linechart-value">${fmtAmt(values[i])}</text>`).join('');
-  /* 格線：橫向抓幾個等分刻度（不特別對齊整數金額，示意用），縱向對齊每個資料點，
-     呼應參考圖的 FlGridData（水平＋垂直格線） */
+
+  const linePath=pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+  const areaPath=n?`${linePath} L${pts[n-1].x},${baseline} L${pts[0].x},${baseline} Z`:'';
+
+  /* 格線：橫向 3 條等分（對應稿子 4 條線裡最頂端那 3 條虛線），縱向對齊每個資料點
+     （對應稿子每個資料點都有一條縱向虛線）；baseline 是稿子裡唯一的實線，另立一個
+     class，不跟其餘虛線混在一起畫。 */
   const H_GRID_LINES=3;
-  const hGrid=Array.from({length:H_GRID_LINES+1},(_,i)=>{
-    const y=PAD_T+innerH*i/H_GRID_LINES;
-    return `<line x1="${PAD_L}" y1="${y}" x2="${W-PAD_R}" y2="${y}" class="linechart-grid-line"/>`;
+  const hGrid=Array.from({length:H_GRID_LINES},(_,i)=>{
+    const y=PAD_T+DATA_H*i/H_GRID_LINES;
+    return `<line x1="0" y1="${y}" x2="${W}" y2="${y}" class="linechart-grid-h"/>`;
   }).join('');
-  const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-line"/>`).join('');
-  const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-8}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
-  const splitX=splitIndex!=null?xAt(splitIndex):null;
+  const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-v"/>`).join('');
+  const baselineLine=`<line x1="0" y1="${baseline}" x2="${W}" y2="${baseline}" class="linechart-baseline"/>`;
+
+  const dots=pts.map((p,i)=>i===highlightIndex
+    ?`<circle cx="${p.x}" cy="${p.y}" r="11.5" class="linechart-dot-glow"/><circle cx="${p.x}" cy="${p.y}" r="9" class="linechart-dot-current"/>`
+    :`<circle cx="${p.x}" cy="${p.y}" r="6" class="linechart-dot"/>`
+  ).join('');
+  const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-10}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
+
+  /* 數值徽章／到期標註改用 HTML 疊加在 SVG 上面（不是純 SVG <text>），藥丸背景才能跟著
+     文字內容自動撐開寬度。用百分比座標（不是 px）疊加，配合 .linechart-wrap 用
+     aspect-ratio 鎖住跟這裡 W:H 完全一致的比例，不管卡片實際渲染寬度多少，疊加層都會
+     精準對齊 SVG 內部畫的資料點座標。
+     第一/最後一個資料點的徽章改成「靠左/靠右對齊」而不是「以資料點為中心置中」——徽章
+     寬度會隨文字內容變化，用置中對齊在圖表最左/右兩端的資料點上，超出卡片邊界的那一半
+     沒有地方可以裁切收邊，靠左/靠右對齊能保證徽章永遠往圖表「內側」撐開，不會超出範圍。 */
+  const anchorFor=i=>i===0?'start':i===n-1?'end':'center';
+  const transformFor=anchor=>anchor==='start'?'translate(0,-100%)':anchor==='end'?'translate(-100%,-100%)':'translate(-50%,-100%)';
+  const badges=pts.map((p,i)=>{
+    const anchor=anchorFor(i);
+    const top=(p.y-DOT_CLEARANCE-LABEL_GAP)/H*100;
+    return `<span class="linechart-value-badge" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${formatValue(values[i])}</span>`;
+  }).join('');
+  const splitHtml=hasSplit?(()=>{
+    const p=pts[splitIndex],anchor=anchorFor(splitIndex);
+    const top=(p.y-DOT_CLEARANCE-LABEL_GAP-BADGE_H-LABEL_GAP)/H*100;
+    return `<span class="linechart-split-label" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${opts.splitLabel}</span>`;
+  })():'';
+
   const card=document.createElement('div');card.className='linechart-card';
-  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<svg viewBox="0 0 ${W} ${H}" class="linechart-svg" role="img" aria-label="${opts.ariaLabel||'趨勢圖'}">
-      <defs>
-        <linearGradient id="lc-fill-${chartId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <rect x="${PAD_L}" y="${PAD_T}" width="${innerW}" height="${innerH}" class="linechart-border"/>
-      ${hGrid}${vGrid}
-      ${splitX!=null?`<line x1="${splitX}" y1="${PAD_T-14}" x2="${splitX}" y2="${baseline}" class="linechart-split-line"/>
-      <text x="${splitX}" y="${PAD_T-20}" text-anchor="middle" class="linechart-split-label">${opts.splitLabel||''}</text>`:''}
-      <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
-      <path d="${linePath}" class="linechart-line"/>
-      ${dots}
-      ${xLabels}
-    </svg>`;
+  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}
+    <div class="linechart-wrap" style="aspect-ratio:${W}/${H}">
+      <svg viewBox="0 0 ${W} ${H}" class="linechart-svg" role="img" aria-label="${opts.ariaLabel||'趨勢圖'}">
+        <defs>
+          <linearGradient id="lc-fill-${chartId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="var(--color-chart-blue-2nd)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${hGrid}${baselineLine}${vGrid}
+        <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
+        <path d="${linePath}" class="linechart-line"/>
+        ${dots}
+        ${xLabels}
+      </svg>
+      ${badges}${splitHtml}
+    </div>`;
   appendToChat(card);down();
   return card;
 }
@@ -345,7 +415,11 @@ const CALC_CONFIG={
   drinkPrice:60,       // 一杯手搖飲
   dinnerPrice:800,     // 一次朋友聚會
   maxEmoji:50,         // 掉落 emoji 上限：數量直接對應換算結果，僅在超過 50 時才封頂，避免畫面過度擁擠
-  fallDurationMs:3000  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
+  /* 2026-08-14 掉落動畫時長調整為原本的 1.5 倍（2000ms→3000ms→這次 3000ms→4500ms，
+     每個 emoji 都讀同一個 CALC_CONFIG.fallDurationMs，不需要逐一調整每個實例）。
+     只調整這個時長數值，沒有動 calcFall 這個 keyframe 本身的 easing／掉落路徑，也沒有動
+     spawnEmoji() 裡 --fall／--drift／--rot-start／--rot-end 這幾個路徑相關參數。 */
+  fallDurationMs:4500  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
 };
 function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   opts=opts||{};
@@ -364,11 +438,11 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     </div>`:''}
     <div class="calc-ratio-row">
       <div class="calc-ratio-col">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--brand)"></span>${tag}</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-blue-1st)"></span>${tag}</div>
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-teal-500)"></span>活存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-teal-3rd)"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>
@@ -472,6 +546,13 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
      債券票面利率固定不隨年期變動，累計增長本來就等於把每年配息加總；基金/活存比照同一邏輯處理，
      讓兩個 tab 呈現的是「這個年期下來，資產總共有機會增長多少」，而不是重複同一個年化數字 */
   function currentYears(){return showPeriodTabs&&period==='3y'?3:1;}
+  /* 出現間隔（每個 emoji 開始下墜前的隨機延遲上限）：2026-08-14 跟著 fallDurationMs 一起
+     等比例放大 1.5 倍（0.8s→1.2s）。掉落時長變 1.5 倍、但出現間隔如果維持原本 0.8s 不變，
+     等於同一時間內畫面上會同時存在的 emoji 數量也跟著變成 1.5 倍（因為每顆在畫面上停留
+     的時間變長了，但擠進畫面的速度沒有跟著變慢），視覺上反而更擁擠、更雜亂，跟「變慢、
+     更從容」的目的相反。等比例放大間隔，才能維持原本「同時间在畫面上的 emoji 數量」這個
+     疏密感受不變，只讓每一顆看起來飄落得更慢。 */
+  const EMOJI_SPAWN_SPREAD_S=0.8*(CALC_CONFIG.fallDurationMs/3000);
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -480,7 +561,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
       const s=document.createElement('span');s.className='calc-emoji';s.textContent=emoji;
       s.style.left=(5+Math.random()*90)+'%';
       s.style.setProperty('--dur',(CALC_CONFIG.fallDurationMs/1000)+'s');
-      s.style.setProperty('--delay',(Math.random()*0.8).toFixed(2)+'s');
+      s.style.setProperty('--delay',(Math.random()*EMOJI_SPAWN_SPREAD_S).toFixed(2)+'s');
       s.style.setProperty('--fall',Math.round(110+Math.random()*70)+'px');
       s.style.setProperty('--drift',Math.round((Math.random()-0.5)*60)+'px');
       s.style.setProperty('--rot-start',Math.round((Math.random()-0.5)*40)+'deg');
@@ -727,10 +808,55 @@ function renderFeedbackQrCard(opts){
 }
 COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};
 
-/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）----
+/* ---- message/option（Figma node 374:4371「Message/option」；容器見 374:4424「optionselection」）----
+   單選文字列表選項（純文字＋自動編號，暗色主題）。跟 selection/option（icon 卡片版）是兩個
+   獨立元件，不是同一個元件的兩種 variant：兩者的互動邏輯完全不共用——這裡是原生 <button
+   onclick>＋keywords 接 activeChoices（讓自由輸入文字也能命中同一個選項，見 engine.js
+   matchChoices()），selection/option 是 ARIA role="radio"＋roving tabindex＋方向鍵換焦點。
+   這次只依 Figma 稿修正「它本身的樣式」，沒有改動既有互動行為；兩者是否適合之後合併成
+   同一元件的兩種 variant，已回報給需求方評估，這裡不自行決定。
+   4 種狀態（Enable／Hover／Selected／Pressed）樣式已用 get_design_context／get_variable_defs
+   讀出來的規格核對修正（不是憑截圖肉眼抓色），對應的 CSS 在 css/component-library.css
+   .choice／.choice-group，修正內容：
+     - 背景：Enable/Hover/Selected 皆為 Surface/Surface/White（--color-surface-white，
+       Dark Mode 實色 #030616）；只有 Pressed 換成 Container/Card/White
+       （--color-container-card-white，#1F304D，較淺一階）——先前版本 Selected 誤把背景／
+       文字一起換色，稿子裡 Selected 其實只有邊框變色，背景／文字色都跟 Enable 相同
+     - 邊框：Enable 用 Container/General/Divider（--color-container-general-divider）；
+       Hover／Selected／Pressed 三者皆為 Container/General/Active-Primary
+       （--color-container-general-active-primary）——稿子裡 Hover 跟 Selected 視覺完全相同，
+       跟 selection/option 卡片版同一套設計慣例
+     - 文字／編號顏色：不分狀態皆為 Content/General/Primary（--color-content-general-primary），
+       先前版本 Selected／Hover 會把文字跟編號變色，稿子沒有這個狀態變色，這次拿掉
+     - 圓角：Figma variable "3" → --radius-small（先前誤用 --radius-medium）
+     - 間距：padding 12/16px → --spacing-12／--spacing-16（先前寫死 13px/15px）
+   Pressed 用原生 :active 偽類，不是 JS 切 class——choiceBtn() 產生的就是一顆原生 <button>，
+   :active 對滑鼠/觸控按下都能正確觸發，維持這個元件「純 CSS、無額外 JS 狀態管理」的寫法，
+   不用額外綁 mousedown/touchstart。
+   容器（.choice-group 外層的 .opt-popover，對應 Figma 374:4424「optionselection」）也一併核對：
+   padding pt-16 px-16 pb-24（先前 pt 誤用 --spacing-12）；標題跟選項清單間距 24px（先前誤用
+   --spacing-16）。容器外框顏色稿子讀到的是 Figma「cdf-color-palette/indigo/indigo-400d」
+   （#404E73）——這個色票在目前的 One KGI Design Guideline token 裡找不到對應（本次讀到的其餘
+   顏色都能精準對應既有 token，只有這個對不上，懷疑是稿子裡殘留的另一套舊色票，不是目前這份
+   Guideline 的一部分，已在回報裡列出，需要的話麻煩確認）；這裡改用跟選項本身邊框同一顆 token
+   （--color-container-general-divider，容器與選項邊框顏色保持一致，且是能追溯到 Guideline 的
+   既有 token，不是新色碼。
+   label：選項文字；sub：可選的說明小字（見 .choice small，這題「閒置資金」的 4 個選項沒有用到，
+   其他呼叫端可能有傳）；onClick(buttonEl)：點擊時的回呼；keywords：可選字串陣列，見上方說明，
+   不是這次樣式修正的範圍。 */
+function choiceBtn(label,sub,onClick,keywords){
+  const b=document.createElement('button');
+  b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
+  b.onclick=()=>onClick(b);
+  if(keywords)activeChoices.push({el:b,keywords});
+  return b;
+}
+COMPONENTS['message/option']={render:choiceBtn};
+
+/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／374:4424「optionselection」）----
    AI 提問選項的浮動選單：問題標題＋選項清單，以覆蓋（overlay）方式掛在 .app 底下、疊在輸入框之上，
    不進 chatBox／不經過 #controls，因此不佔用 #screen 的版面高度（見 css/component-library.css
-   .opt-popover-wrap 的說明）。選項清單直接重用既有 choiceBtn()（Message/option 元件），
+   .opt-popover-wrap 的說明）。選項清單直接重用上面的 message/option（choiceBtn()），
    不重建/不修改其內部樣式；opts.kw 沿用既有 keywords 機制接上 activeChoices。
    純顯示用元件：選取後「移除浮動選單／把問題與答案顯示進聊天紀錄／觸發後續分析」皆是呼叫端
    （見 flow.js stageC()）的業務邏輯，這裡只負責渲染與回傳選取結果。
@@ -789,3 +915,120 @@ function renderOptionPopover(question,options,onPick){
   return wrap;
 }
 COMPONENTS['popover/option-select']={render:renderOptionPopover};
+
+/* ---- selection/option（Figma node 370:3005，Selection/Option）可重複使用的單選/多選選項卡 ----
+   icon／label 皆由呼叫端傳入，不寫死目前 Figma 稿裡的錢袋圖示與「選項文案」佔位字；
+   icon 可傳 SVG markup 字串或既有 DOM node，元件只負責 80x80 容器置中（見
+   css/component-library.css .selopt-icon），不處理 icon 本身的繪製，換圖示不影響排版。
+   語意預設 role="radio"＋aria-checked（單選情境，例如同一組互斥選項）；若要改成多選（checkbox），
+   呼叫端把 opts.role 傳 'checkbox' 即可——role="checkbox" 一樣讀 aria-checked，不需要改其他邏輯，
+   只是不會有「選一個、其餘取消」的互斥語意（那是 renderSelectionOptionGroup 的 radiogroup 行為）。
+   selected 是受控狀態：本元件點擊時不會自己切換 selected（避免跟外部資料狀態失去同步），
+   只會呼叫 opts.onSelect(cardEl)，實際要不要切換選取視覺由呼叫端呼叫回傳元素的
+   setSelected(bool) 決定；renderSelectionOptionGroup() 是這個模式的現成用法。
+   Pressed 狀態用 mousedown/touchstart～mouseup/touchend/mouseleave/keydown/keyup 手動切 class，
+   不用純 CSS :active——鍵盤 Enter/Space 觸發 <button> 時，:active 偽類在部分瀏覽器對「鍵盤觸發」
+   的支援不一致，手動切 class 才能讓滑鼠／觸控／鍵盤三種輸入都有一致的按下視覺回饋。
+   <button> 原生就支援 Tab 聚焦與 Enter/Space 觸發 click，不需要額外的 keydown→click 轉發。
+   Figma 稿的 Hover／Pressed 兩個 variant 視覺完全相同，Selected 疊加 Hover/Pressed 也沒有對應的稿
+   （見 css/component-library.css 這段的 TODO 註解），因此按下視覺共用同一組 CSS 規則，
+   這裡不需要在 JS 另外區分 Hover 跟 Pressed。
+   opts：{selected, onSelect, disabled, role, className}。 */
+function renderSelectionOptionCard(icon,label,opts){
+  opts=opts||{};
+  const card=document.createElement('button');
+  card.type='button';
+  card.className='selopt'+(opts.className?' '+opts.className:'');
+  card.setAttribute('role',opts.role||'radio');
+  card.disabled=!!opts.disabled;
+  card.innerHTML='<span class="selopt-icon" aria-hidden="true"></span><span class="selopt-label"></span>';
+  const iconEl=card.querySelector('.selopt-icon');
+  if(icon instanceof Node)iconEl.appendChild(icon);
+  else if(icon!=null)iconEl.innerHTML=icon;
+  card.querySelector('.selopt-label').textContent=label||'';
+
+  function setSelected(v){
+    card.classList.toggle('is-selected',!!v);
+    card.setAttribute('aria-checked',v?'true':'false');
+  }
+  setSelected(!!opts.selected);
+
+  function setPressed(v){card.classList.toggle('is-pressed',!!v);}
+  ['mousedown','touchstart'].forEach(evt=>card.addEventListener(evt,()=>setPressed(true)));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(evt=>card.addEventListener(evt,()=>setPressed(false)));
+  card.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat)setPressed(true);});
+  card.addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')setPressed(false);});
+
+  card.addEventListener('click',()=>{if(opts.onSelect)opts.onSelect(card);});
+
+  card.setSelected=setSelected;
+  return card;
+}
+COMPONENTS['selection/option']={render:renderSelectionOptionCard};
+
+/* renderSelectionOptionGroup：包一層容器重複渲染多張 selection/option 卡片（如 Figma 稿的堆疊示意），
+   預設當作單選（radio）群組使用：點擊某張卡片會自動取消其餘卡片的選取，呼叫端不用自己管理互斥邏輯；
+   opts.role 傳 'checkbox' 則關閉互斥、改成各卡片獨立切換（多選）。
+   items：[{icon,label,selected,disabled,className,onSelect}]；opts：{role,className,ariaLabel,direction}
+   direction 傳 'row' 會加上 .row modifier class（橫向排列，見 css/component-library.css .selopt-group.row），
+   預設沿用 Figma 稿的縱向堆疊＋Spacing/20 間距。
+   沒有另外加 name/groupName prop：ARIA 的 radiogroup 是靠「同一個 role="radiogroup" 容器底下的
+   role="radio" 子項」這層 DOM 包含關係辨識同一組，不像原生 <input type="radio"> 需要共用 name
+   屬性才能互斥；兩個獨立呼叫 renderSelectionOptionGroup() 本來就是兩個獨立容器，天生不會互相干擾，
+   加這個 prop 不會多解決什麼問題。
+   單選模式下鍵盤支援 WAI-ARIA Radio Group pattern 的「roving tabindex」：同一時間只有一張卡片
+   在 Tab 順序上（tabIndex=0，其餘卡片 tabIndex=-1），方向鍵（↑↓←→，不分橫直排列一律線性往前/往後）
+   在卡片間移動並「立即選取」該卡片（比照原生 <input type="radio"> 方向鍵的行為，不需要再按一次
+   Enter/Space 確認）；多選（checkbox）模式維持每張卡片各自獨立的原生 Tab 順序，不套用 roving
+   tabindex（ARIA Checkbox 沒有這個慣例，各自都要能被 Tab 到）。 */
+function renderSelectionOptionGroup(items,opts){
+  opts=opts||{};
+  const isRadio=(opts.role||'radio')==='radio';
+  const wrap=document.createElement('div');
+  wrap.className='selopt-group'+(opts.direction==='row'?' row':'')+(opts.className?' '+opts.className:'');
+  if(isRadio)wrap.setAttribute('role','radiogroup');
+  if(opts.ariaLabel)wrap.setAttribute('aria-label',opts.ariaLabel);
+  const cards=[];
+
+  function updateRovingTabIndex(){
+    if(!isRadio)return;
+    let active=cards.findIndex(c=>c.classList.contains('is-selected')&&!c.disabled);
+    if(active<0)active=cards.findIndex(c=>!c.disabled);
+    cards.forEach((c,i)=>{c.tabIndex=(i===active)?0:-1;});
+  }
+  function selectByIndex(i){
+    const card=cards[i];
+    if(!card||card.disabled)return;
+    if(isRadio)cards.forEach((c,ci)=>c.setSelected(ci===i));
+    else card.setSelected(!card.classList.contains('is-selected'));
+    updateRovingTabIndex();
+    if(items[i].onSelect)items[i].onSelect(items[i],i);
+  }
+
+  (items||[]).forEach((item,i)=>{
+    const card=renderSelectionOptionCard(item.icon,item.label,{
+      selected:!!item.selected,
+      disabled:item.disabled,
+      role:opts.role,
+      className:item.className,
+      onSelect:()=>selectByIndex(i)
+    });
+    if(isRadio)card.addEventListener('keydown',e=>{
+      const dir=(e.key==='ArrowRight'||e.key==='ArrowDown')?1:(e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:0;
+      if(!dir)return;
+      e.preventDefault();
+      let next=i;
+      for(let step=0;step<cards.length;step++){
+        next=(next+dir+cards.length)%cards.length;
+        if(!cards[next].disabled)break;
+      }
+      selectByIndex(next);
+      cards[next].focus();
+    });
+    cards.push(card);
+    wrap.appendChild(card);
+  });
+  updateRovingTabIndex();
+  return wrap;
+}
+COMPONENTS['selection/option-group']={render:renderSelectionOptionGroup};
