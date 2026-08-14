@@ -301,34 +301,48 @@ function renderAssetOverviewChart(banks,products,opts){
 }
 COMPONENTS['chart/asset-overview']={render:renderAssetOverviewChart};
 
-/* ---- card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）----
+/* ---- card/recommendation（凱基商品推薦卡片）----
    AI 完成資產評估、推薦適合方向時使用，取代原本 RECO_REASON 那一大段標題＋條列文字的 markdown
    說明（見 js/flow.js stageE()）：使用者回饋文字太多太饒口，改成一張「左圖右字」卡片，
-   左側是商品名＋色條＋幾何品牌標記，右側是標題／資金情境副標／特色勾選清單，一次評估後只
-   顯示這一種商品對應的卡片（combo／債券＋基金搭配情境例外，見下方 renderRecommendationCard）。
-   純展示卡，不可點擊、無 hover/focus 樣式；樣式收斂在 css/component-library.css 的
-   .kgi-card 命名空間，不與站內既有的 Design Guideline token 混用——交接文件裡的色票是
-   這組卡片自己的識別配色（每個 type 一組強調色），站內目前的 token 沒有完全對應的顏色，
-   混用會破壞這組卡片刻意做出的「深色霓虹光暈」視覺效果，故照文件原色實作，不另外抽 token。
+   左側是商品名＋英文標籤＋實體圖示，右側是標題／資金情境副標／分隔線／特色勾選清單，
+   一次評估後只顯示這一種商品對應的卡片（combo／債券＋基金搭配情境例外，見下方
+   renderRecommendationCard）。純展示卡，不可點擊、無 hover/focus 樣式。
+   2026-08-14 依 Figma node 393:6076（基金）／393:6001（債券）／393:5878（定存）全面重製，
+   取代原本交接文件（kgi-recommendation-card-handoff.md）指定的深色霓虹光暈視覺。舊版「整張
+   卡都不套 Design Guideline token」的判斷這次不再成立——三個節點的 variable_defs 讀出來，
+   卡片外框／內容區背景／標題副標／分隔線／打勾圖示／字級全部指向同一組既有 token（見
+   css/component-library.css .kgi-card 開頭的核對註解），已經改用對應 token。
+   2026-08-14（同日第二次修訂）：左側色塊原本是「CSS 模擬」（純色底＋radial-gradient 光暈＋
+   單獨一個小 icon），因為當時還沒有稿子的實際美術檔。現在改用 node 427:1855（定存）／
+   427:1865（債券）／427:1876（基金）的「Visual」子圖層直接匯出的背景圖（bg-usd-fixed-deposit.png／
+   bg-bonds.png／bg-funds.png，漸層＋icon 已經一起烤進圖裡），不再用 CSS 模擬色塊＋另外疊一顆
+   icon。三張圖對應的 Figma 節點裡，中英文標題文字本身是「隱藏」圖層（純粹當作內容佔位，
+   沒有實際合成進圖片），所以直接匯出整個節點就已經是純背景+icon、不含文字，不需要額外裁切。
    data 格式：{type:'bond'|'fund'|'fx', name, title, subtitle, features:[...]}
-   （見 js/content-attr-a.js／-b.js／-c.js 的 RECO_CARD.fund／.bond／.deposit）。 */
-const KGI_CARD_TICK_SVG=`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="currentColor" opacity="0.2"/><circle cx="10" cy="10" r="9.2" fill="none" stroke="currentColor" stroke-width="0.9" opacity="0.5"/><path d="M6.3 10.2l2.5 2.5 5-5.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const KGI_CARD_MARK_SVG=`<svg class="kgi-card__mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <polygon points="0,50 50,0 50,100" fill="currentColor" opacity="0.16"/>
-  <polygon points="50,0 100,0 100,50" fill="currentColor" opacity="0.10"/>
-  <polygon points="50,0 100,50 50,50" fill="currentColor" opacity="0.24"/>
-  <polygon points="50,50 100,50 50,100" fill="currentColor" opacity="0.07"/>
-</svg>`;
+   （見 js/content-attr-a.js／-b.js／-c.js 的 RECO_CARD.fund／.bond／.deposit），這次改版
+   沒有新增或修改 RECO_CARD 的欄位，左側新增的英文標籤與背景圖靠下面 KGI_CARD_THEME 這個
+   純元件內部的對照表處理（type → {background, titleEn}）。 */
+const KGI_CARD_TICK_SVG=`<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M15.2124 2.57829C15.3385 2.57833 15.4624 2.59052 15.5835 2.60856L14.1548 4.24528H4.37842C3.91841 4.24554 3.54541 4.61821 3.54541 5.07829V15.9113C3.54541 16.3714 3.91841 16.745 4.37842 16.7453H15.2124C15.6723 16.7449 16.0454 16.3713 16.0454 15.9113V9.68083L17.7124 7.77165V15.9113C17.7124 17.2918 16.5928 18.4109 15.2124 18.4113H4.37842C2.99793 18.411 1.87939 17.2918 1.87939 15.9113V5.07829C1.87939 3.69774 2.99793 2.57855 4.37842 2.57829H15.2124ZM19.5884 3.08708L10.8579 13.0871C10.6973 13.2711 10.4635 13.3753 10.2192 13.3722C9.97516 13.3691 9.74429 13.2593 9.58838 13.0715L5.81982 8.52751L7.10303 7.46305L10.2466 11.2521L18.3335 1.99137L19.5884 3.08708Z" fill="currentColor"/></svg>`;
+/* productType → 背景圖 + 英文標籤，唯一資料來源；元件與（如果未來有其他地方需要同一組
+   卡片視覺）都應該查這張表，不要各自複製一份路徑或文案字串。 */
+const KGI_CARD_THEME={
+  fund:{background:'assets/bg-funds.png',titleEn:'FUNDS'},
+  bond:{background:'assets/bg-bonds.png',titleEn:'BONDS'},
+  fx:{background:'assets/bg-usd-fixed-deposit.png',titleEn:'USD FIXED DEPOSIT'}
+};
 function renderRecommendationCardEl(data){
+  const theme=KGI_CARD_THEME[data.type]||{};
   const card=document.createElement('article');card.className=`kgi-card kgi-card--${data.type}`;
-  card.innerHTML=`<div class="kgi-card__visual">
+  card.innerHTML=`<div class="kgi-card__visual" style="background-image:url('${theme.background||''}')">
       <div class="kgi-card__name">${data.name}</div>
-      <span class="kgi-card__accent"></span>
-      ${KGI_CARD_MARK_SVG}
+      <div class="kgi-card__label-en">${theme.titleEn||''}</div>
     </div>
     <div class="kgi-card__body">
-      <h3 class="kgi-card__title">${data.title}</h3>
-      <p class="kgi-card__sub">${data.subtitle}</p>
+      <div>
+        <h3 class="kgi-card__title">${data.title}</h3>
+        <p class="kgi-card__sub">${data.subtitle}</p>
+      </div>
+      <hr class="kgi-card__divider">
       <ul class="kgi-card__feats">
         ${data.features.map(f=>`<li class="kgi-card__feat"><span class="kgi-card__tick">${KGI_CARD_TICK_SVG}</span>${f}</li>`).join('')}
       </ul>
@@ -996,12 +1010,19 @@ function renderSelectionOptionGroup(items,opts){
     if(active<0)active=cards.findIndex(c=>!c.disabled);
     cards.forEach((c,i)=>{c.tabIndex=(i===active)?0:-1;});
   }
+  /* wasSelected 記錄「這張卡片點擊前」的選取狀態：不管單選（isRadio）還是多選
+     （checkbox），一旦 wasSelected 是 false，這次操作結束後這張卡片一定會變成
+     selected（單選一定選中被點的那張；多選是從未選切到選）。用這個判斷式決定
+     要不要播放 SOUND.playSelect()，剛好符合「選中狀態真的改變了才播」的需求——
+     重複點擊同一張已選中的卡片（單選）或取消勾選（多選）都不會播。 */
   function selectByIndex(i){
     const card=cards[i];
     if(!card||card.disabled)return;
+    const wasSelected=card.classList.contains('is-selected');
     if(isRadio)cards.forEach((c,ci)=>c.setSelected(ci===i));
-    else card.setSelected(!card.classList.contains('is-selected'));
+    else card.setSelected(!wasSelected);
     updateRovingTabIndex();
+    if(!wasSelected)SOUND.playSelect();
     if(items[i].onSelect)items[i].onSelect(items[i],i);
   }
 

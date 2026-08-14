@@ -22,6 +22,10 @@
       <img class="app-header-logo-divider" src="assets/logo-divider.svg" alt="">
       <img class="app-header-logo-ai" src="assets/logo-ai-text.svg" alt="">
     </div>
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" aria-label="靜音">
+      <svg class="sound-toggle-icon sound-toggle-icon-on" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10v4h4l5 5V5L7 10H3z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <svg class="sound-toggle-icon sound-toggle-icon-off" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10v4h4l5 5V5L7 10H3z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
     <button class="reset" onclick="resetAll()">↺ <span class="reset-label">重新開始</span></button>
   </header>
   <div class="screen" id="screen"></div>
@@ -29,6 +33,7 @@
   <div id="inputbar" style="display:none"></div>
 </div>
 <!-- 共用層：積木、狀態、連接流程、商品資料（三人共用，PR 需 review） -->
+<script src="js/sound.js"></script>
 <script src="js/shaping-orb.js"></script>
 <script src="js/globe-loader.js"></script>
 <script src="js/engine.js"></script>

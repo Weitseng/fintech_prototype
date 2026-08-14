@@ -141,6 +141,18 @@ body{font-family:var(--font-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);
   background:var(--color-container-general-filter-inactive-grey);border:0;color:var(--color-content-general-secondary);
   padding:6px 10px;border-radius:var(--radius-medium);cursor:pointer}
+/* 音效靜音開關（js/sound.js）：選項卡片被選中時的音效回饋，這顆按鈕讓使用者關掉。
+   視覺上跟 .reset 用同一組 token（同樣是灰底圓角小按鈕），放在它左邊、共用同一列。
+   兩個狀態（開/靜音）各自一顆 inline SVG，用 class 切換顯示/隱藏，不是同一顆 SVG
+   動態改 path——兩個圖示的線條結構差異夠大（有沒有交叉的 X），分開寫比較好維護。 */
+.sound-toggle{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;margin-right:8px;
+  background:var(--color-container-general-filter-inactive-grey);border:0;color:var(--color-content-general-secondary);
+  border-radius:var(--radius-medium);cursor:pointer}
+.sound-toggle-icon{width:18px;height:18px;display:block}
+.sound-toggle-icon-off{display:none}
+.sound-toggle.is-muted .sound-toggle-icon-on{display:none}
+.sound-toggle.is-muted .sound-toggle-icon-off{display:block}
 /* 窄螢幕（約 iPhone SE〜一般手機寬度）下，置中的 logo＋標題文字組合寬度加上兩側「重新開始」
    按鈕，容易在同一列擠到互相重疊；這個寬度只留圖示、把文字標籤收起來，保留功能但不佔版面，
    避免跟置中的 .app-header-brand 疊字（門檻 400px 是實測 iPhone SE／一般手機寬度下兩者
