@@ -358,7 +358,11 @@ const CALC_CONFIG={
   drinkPrice:60,       // 一杯手搖飲
   dinnerPrice:800,     // 一次朋友聚會
   maxEmoji:50,         // 掉落 emoji 上限：數量直接對應換算結果，僅在超過 50 時才封頂，避免畫面過度擁擠
-  fallDurationMs:3000  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
+  /* 2026-08-14 掉落動畫時長調整為原本的 1.5 倍（2000ms→3000ms→這次 3000ms→4500ms，
+     每個 emoji 都讀同一個 CALC_CONFIG.fallDurationMs，不需要逐一調整每個實例）。
+     只調整這個時長數值，沒有動 calcFall 這個 keyframe 本身的 easing／掉落路徑，也沒有動
+     spawnEmoji() 裡 --fall／--drift／--rot-start／--rot-end 這幾個路徑相關參數。 */
+  fallDurationMs:4500  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
 };
 function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   opts=opts||{};
@@ -377,11 +381,11 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     </div>`:''}
     <div class="calc-ratio-row">
       <div class="calc-ratio-col">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--brand)"></span>${tag}</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-blue-1st)"></span>${tag}</div>
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-teal-500)"></span>活存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-teal-3rd)"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>
@@ -485,6 +489,13 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
      債券票面利率固定不隨年期變動，累計增長本來就等於把每年配息加總；基金/活存比照同一邏輯處理，
      讓兩個 tab 呈現的是「這個年期下來，資產總共有機會增長多少」，而不是重複同一個年化數字 */
   function currentYears(){return showPeriodTabs&&period==='3y'?3:1;}
+  /* 出現間隔（每個 emoji 開始下墜前的隨機延遲上限）：2026-08-14 跟著 fallDurationMs 一起
+     等比例放大 1.5 倍（0.8s→1.2s）。掉落時長變 1.5 倍、但出現間隔如果維持原本 0.8s 不變，
+     等於同一時間內畫面上會同時存在的 emoji 數量也跟著變成 1.5 倍（因為每顆在畫面上停留
+     的時間變長了，但擠進畫面的速度沒有跟著變慢），視覺上反而更擁擠、更雜亂，跟「變慢、
+     更從容」的目的相反。等比例放大間隔，才能維持原本「同時间在畫面上的 emoji 數量」這個
+     疏密感受不變，只讓每一顆看起來飄落得更慢。 */
+  const EMOJI_SPAWN_SPREAD_S=0.8*(CALC_CONFIG.fallDurationMs/3000);
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -493,7 +504,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
       const s=document.createElement('span');s.className='calc-emoji';s.textContent=emoji;
       s.style.left=(5+Math.random()*90)+'%';
       s.style.setProperty('--dur',(CALC_CONFIG.fallDurationMs/1000)+'s');
-      s.style.setProperty('--delay',(Math.random()*0.8).toFixed(2)+'s');
+      s.style.setProperty('--delay',(Math.random()*EMOJI_SPAWN_SPREAD_S).toFixed(2)+'s');
       s.style.setProperty('--fall',Math.round(110+Math.random()*70)+'px');
       s.style.setProperty('--drift',Math.round((Math.random()-0.5)*60)+'px');
       s.style.setProperty('--rot-start',Math.round((Math.random()-0.5)*40)+'deg');
@@ -740,10 +751,55 @@ function renderFeedbackQrCard(opts){
 }
 COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};
 
-/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）----
+/* ---- message/option（Figma node 374:4371「Message/option」；容器見 374:4424「optionselection」）----
+   單選文字列表選項（純文字＋自動編號，暗色主題）。跟 selection/option（icon 卡片版）是兩個
+   獨立元件，不是同一個元件的兩種 variant：兩者的互動邏輯完全不共用——這裡是原生 <button
+   onclick>＋keywords 接 activeChoices（讓自由輸入文字也能命中同一個選項，見 engine.js
+   matchChoices()），selection/option 是 ARIA role="radio"＋roving tabindex＋方向鍵換焦點。
+   這次只依 Figma 稿修正「它本身的樣式」，沒有改動既有互動行為；兩者是否適合之後合併成
+   同一元件的兩種 variant，已回報給需求方評估，這裡不自行決定。
+   4 種狀態（Enable／Hover／Selected／Pressed）樣式已用 get_design_context／get_variable_defs
+   讀出來的規格核對修正（不是憑截圖肉眼抓色），對應的 CSS 在 css/component-library.css
+   .choice／.choice-group，修正內容：
+     - 背景：Enable/Hover/Selected 皆為 Surface/Surface/White（--color-surface-white，
+       Dark Mode 實色 #030616）；只有 Pressed 換成 Container/Card/White
+       （--color-container-card-white，#1F304D，較淺一階）——先前版本 Selected 誤把背景／
+       文字一起換色，稿子裡 Selected 其實只有邊框變色，背景／文字色都跟 Enable 相同
+     - 邊框：Enable 用 Container/General/Divider（--color-container-general-divider）；
+       Hover／Selected／Pressed 三者皆為 Container/General/Active-Primary
+       （--color-container-general-active-primary）——稿子裡 Hover 跟 Selected 視覺完全相同，
+       跟 selection/option 卡片版同一套設計慣例
+     - 文字／編號顏色：不分狀態皆為 Content/General/Primary（--color-content-general-primary），
+       先前版本 Selected／Hover 會把文字跟編號變色，稿子沒有這個狀態變色，這次拿掉
+     - 圓角：Figma variable "3" → --radius-small（先前誤用 --radius-medium）
+     - 間距：padding 12/16px → --spacing-12／--spacing-16（先前寫死 13px/15px）
+   Pressed 用原生 :active 偽類，不是 JS 切 class——choiceBtn() 產生的就是一顆原生 <button>，
+   :active 對滑鼠/觸控按下都能正確觸發，維持這個元件「純 CSS、無額外 JS 狀態管理」的寫法，
+   不用額外綁 mousedown/touchstart。
+   容器（.choice-group 外層的 .opt-popover，對應 Figma 374:4424「optionselection」）也一併核對：
+   padding pt-16 px-16 pb-24（先前 pt 誤用 --spacing-12）；標題跟選項清單間距 24px（先前誤用
+   --spacing-16）。容器外框顏色稿子讀到的是 Figma「cdf-color-palette/indigo/indigo-400d」
+   （#404E73）——這個色票在目前的 One KGI Design Guideline token 裡找不到對應（本次讀到的其餘
+   顏色都能精準對應既有 token，只有這個對不上，懷疑是稿子裡殘留的另一套舊色票，不是目前這份
+   Guideline 的一部分，已在回報裡列出，需要的話麻煩確認）；這裡改用跟選項本身邊框同一顆 token
+   （--color-container-general-divider，容器與選項邊框顏色保持一致，且是能追溯到 Guideline 的
+   既有 token，不是新色碼。
+   label：選項文字；sub：可選的說明小字（見 .choice small，這題「閒置資金」的 4 個選項沒有用到，
+   其他呼叫端可能有傳）；onClick(buttonEl)：點擊時的回呼；keywords：可選字串陣列，見上方說明，
+   不是這次樣式修正的範圍。 */
+function choiceBtn(label,sub,onClick,keywords){
+  const b=document.createElement('button');
+  b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
+  b.onclick=()=>onClick(b);
+  if(keywords)activeChoices.push({el:b,keywords});
+  return b;
+}
+COMPONENTS['message/option']={render:choiceBtn};
+
+/* ---- popover/option-select（Figma node 306:1102「問題回答優化」／374:4424「optionselection」）----
    AI 提問選項的浮動選單：問題標題＋選項清單，以覆蓋（overlay）方式掛在 .app 底下、疊在輸入框之上，
    不進 chatBox／不經過 #controls，因此不佔用 #screen 的版面高度（見 css/component-library.css
-   .opt-popover-wrap 的說明）。選項清單直接重用既有 choiceBtn()（Message/option 元件），
+   .opt-popover-wrap 的說明）。選項清單直接重用上面的 message/option（choiceBtn()），
    不重建/不修改其內部樣式；opts.kw 沿用既有 keywords 機制接上 activeChoices。
    純顯示用元件：選取後「移除浮動選單／把問題與答案顯示進聊天紀錄／觸發後續分析」皆是呼叫端
    （見 flow.js stageC()）的業務邏輯，這裡只負責渲染與回傳選取結果。

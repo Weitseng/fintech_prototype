@@ -256,17 +256,45 @@
 .pcard-group-label:first-child{margin-top:0}
 .pcard-group-label+.pcard-row{margin-top:var(--spacing-8)}
 
-/* card/calculator（Figma node 202:709）：基金 vs 定存 互動試算卡 */
-.calc-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;
+/* card/calculator（Figma node 202:709／228:1149）：基金 vs 定存 互動試算卡。
+   2026-08-14 用 get_design_context／get_variable_defs 讀 node 228:1149 逐一核對修正配色
+   （不是憑截圖肉眼抓色），修正內容見各規則上方個別註解；沒有另外變更字級/間距的地方，
+   代表核對後已經跟稿子一致，不需要改。 */
+.calc-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24);margin:var(--spacing-24) 0;
   display:flex;flex-direction:column;align-items:center;gap:var(--spacing-16);
   box-shadow:var(--shadow-basic);animation:fade .4s ease}
 .calc-title{font-family:var(--font-cn);font-weight:var(--type-title-weight-cn);font-size:var(--type-title-size);line-height:var(--type-title-lh-cn);color:var(--color-content-general-primary);width:100%}
 
-.calc-tabs{display:flex;width:100%;background:var(--color-container-general-active-secondary);border-radius:var(--radius-full);padding:2px}
+/* 分頁切換（「投資一年」／「投資三年」）：
+   - 容器底色原本誤用 --color-container-general-active-secondary（Dark Mode 是實色藍
+     #1877FF），稿子讀到的其實是 Container/General/Option-Selected-Blue（半透明色
+     rgba(79,98,148,.5)），這個 token 目前專案 tokens 裡沒有獨立定義，但色值精確等於
+     --color-container-general-divider 疊 50% 透明，改用 color-mix 表示（沿用
+     css/style.css .controls 漸層底色、js/component-library.js linechart-value-badge
+     同一種寫法），不是新色碼，且底下 .calc-result-panel 讀到的是同一個 token，兩處統一用
+     同一份 color-mix 寫法
+   - 選中分頁原本背景誤用 --color-surface-white（Dark Mode 是接近黑色的深藍
+     #15202B）、文字誤用 --color-content-general-active（藍色）；稿子讀到的其實是
+     Container/General/Light Active（背景，Dark Mode #4F6294）＋
+     Content/General/Active-Single-Filter（文字，Dark Mode 白色），這次一併修正 */
+.calc-tabs{display:flex;width:100%;background:color-mix(in srgb,var(--color-container-general-divider) 50%,transparent);border-radius:var(--radius-full);padding:2px}
 .calc-tab{flex:1;text-align:center;padding:8px 12px;border-radius:var(--radius-full);font-size:var(--type-body-size);line-height:var(--type-body-lh-cn);
   font-weight:var(--type-body-r-weight-cn);color:var(--color-content-general-secondary);background:transparent;border:0;cursor:pointer;font-family:inherit;transition:.15s}
-.calc-tab.sel{background:var(--color-surface-white);color:var(--color-content-general-active)}
+.calc-tab.sel{background:var(--color-container-general-light-active);color:var(--color-content-general-active-single-filter)}
 
+/* 基金／定存圖例圓點（顏色由 js/component-library.js inline style 指定，見該檔案
+   renderAssetVsDepositCalc() 的說明）跟下方滑桿兩段顏色，核對 node 228:1149 後確認
+   兩者都跟 chart/pie donut（node 374:4210「投資配置」／「現金留存」）同一種「資產佔比」
+   語意，這次統一改成引用同一份共用 chart color token（--color-chart-blue-1st／
+   --color-chart-teal-3rd），不是各自重新定義一份色碼——只是這裡用的是該 token 家族裡
+   跟 donut 不同的兩個 shade（1st／3rd，donut 用的是 2nd／2nd），因為稿子這兩個元件本來
+   就標的是不同色階，不是同一個色碼被抄錯。
+   稿子裡「基金」圖例圓點的原始色碼實測是 #0044AD（--color-chart-blue-1st 的 Light Mode
+   值），但這個畫面是 Dark Mode，且同一個稿子裡緊接著的滑桿本身明確綁定的是
+   Container/General/Active-Primary（Dark Mode #1877FF，即 --color-chart-blue-1st 的
+   Dark Mode 值）——圖例圓點應該跟自己正下方、代表同一組資料的滑桿同色，而不是不同色階，
+   故判斷圖例圓點那個 #0044AD 是稿子裡沒有跟著切換 Dark Mode 的殘留值，改用
+   --color-chart-blue-1st（連同滑桿一起用 Dark Mode 正確值），並回報這處差異。 */
 .calc-ratio-row{display:flex;width:100%}
 .calc-ratio-col{flex:1;display:flex;flex-direction:column;gap:var(--spacing-4);min-width:0}
 .calc-ratio-col.right{align-items:flex-end}
@@ -302,27 +330,40 @@
   border-top:7px solid var(--color-navy-500)}
 @media (prefers-reduced-motion: reduce){.calc-slider-tip-float{animation:none}}
 input.calc-slider{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:var(--radius-full);outline:none;
-  background:linear-gradient(to right,var(--brand) 0,var(--brand) var(--fill,50%),var(--color-teal-500) var(--fill,50%),var(--color-teal-500) 100%)}
-/* 拖曳旋鈕（Figma node 202:835）：本體實測是 --color-container-general-active-primary
-   藍色（不是舊版沿用的白色），外面再加一圈白色 border 才會有對比、看得出邊框。
-   白色 border 的粗細（2px）在 Design Guideline 裡沒有對應的 border-width token
-   （css/tokens/ 目前只有 colors／typography／radius／shadow／spacing 五類），已跟需求方
-   確認：沒有 token 可套時，直接採用依 Figma 稿實測的 2px，顏色用既有的 --color-surface-white
-   token（不是自訂色碼）。
+  background:linear-gradient(to right,var(--color-chart-blue-1st) 0,var(--color-chart-blue-1st) var(--fill,50%),var(--color-chart-teal-3rd) var(--fill,50%),var(--color-chart-teal-3rd) 100%)}
+/* 拖曳旋鈕（Figma node 202:835／228:1149 的 Ellipse 968）：本體 --color-container-general-active-primary
+   藍色，稿子這裡明確綁定的是 Container/General/Active-Primary（互動控制元件的語意 token），
+   不是跟基金/定存資料同一組 chart token，故意不跟上面滑桿軌道改用 chart-blue-1st——旋鈕
+   代表「可拖曳的控制點」本身，跟軌道代表「資料佔比」是不同語意，稿子也是分別綁定不同 token，
+   這裡忠實對應。
+   外面一圈邊框 2026-08-14 核對 node 228:1149 修正：原本誤用 --color-surface-white
+   （Dark Mode 是接近黑色的深藍 #15202B，會讓旋鈕邊框在深色卡片上幾乎看不見），稿子裡
+   這圈邊框其實是拿卡片自己的背景色「挖」出一圈留白（Ellipse 968 stroke 顏色就是卡片底色
+   #1F304D），改用 --color-container-card-white（跟 .calc-card 卡片本身背景同一個 token），
+   讓旋鈕邊框永遠等於卡片底色、不會因為主題改變而跟卡片對不上。
+   邊框粗細（2px）在 Design Guideline 裡沒有對應的 border-width token（css/tokens/ 目前
+   只有 colors／typography／radius／shadow／spacing 五類），已跟需求方確認：沒有 token
+   可套時，直接採用依 Figma 稿實測的 2px。
    陰影固定用 --shadow-popover（Figma「Popover」效果樣式，css/tokens/shadow.css 完全對應：
    0px 4px 16px 0px #0044ad14），Default／Hover／Dragging 三個狀態都是同一個值、
    不再像先前版本那樣只在 :hover／:active 才切換陰影——頁面載入後旋鈕預設就要有陰影，
    所以直接寫在基礎規則裡，不需要另外的 :hover/:active 選取器。 */
 input.calc-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;
-  background:var(--color-container-general-active-primary);border:2px solid var(--color-surface-white);
+  background:var(--color-container-general-active-primary);border:2px solid var(--color-container-card-white);
   box-shadow:var(--shadow-popover);cursor:pointer}
 input.calc-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;
-  background:var(--color-container-general-active-primary);border:2px solid var(--color-surface-white);
+  background:var(--color-container-general-active-primary);border:2px solid var(--color-container-card-white);
   box-shadow:var(--shadow-popover);cursor:pointer}
 input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full);background:transparent}
 
 .calc-cards-row{display:flex;gap:var(--spacing-8);width:100%}
-.calc-minicard{flex:1;min-width:0;background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-16);
+/* 商品資訊卡片（Figma node 205:735／205:759「card/product」）：2026-08-14 核對 node 228:1149
+   發現稿子有 1px 外框（Container/General/Divider），先前版本沒有畫，這次補上。
+   標題／標籤／數字文字色（Content/General/Primary、Content/General/Secondary、
+   Content/Semantic/Ascend）核對後皆已正確對應既有 token，不需要改——數字用的紅色系是
+   Design Guideline 裡「Ascend／漲幅」語意色的既定色系（國內金融慣例漲=紅、跌=綠，
+   不是西方慣例的漲=綠），稿子也是同一個 Content/Semantic/Ascend token，不是誤用。 */
+.calc-minicard{flex:1;min-width:0;background:var(--color-container-card-white);border:1px solid var(--color-container-general-divider);border-radius:var(--radius-medium);padding:var(--spacing-16);
   display:flex;align-items:center;gap:var(--spacing-16);box-shadow:var(--shadow-popover)}
 .calc-minicard-name{flex:1;min-width:0;font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);color:var(--color-content-general-primary);font-family:var(--font-cn)}
 .calc-minicard-stat{flex-shrink:0;display:flex;flex-direction:column;gap:var(--spacing-4);text-align:right}
@@ -332,7 +373,11 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .calc-note{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);width:100%}
 
 .calc-result{width:100%;display:flex;flex-direction:column;gap:var(--spacing-8)}
-.calc-result-panel{position:relative;overflow:hidden;background:var(--color-surface-blue);border-radius:var(--radius-medium);
+/* 結果面板背景：2026-08-14 核對 node 228:1149，稿子讀到的是跟上面分頁切換容器同一個
+   Container/General/Option-Selected-Blue token（半透明 rgba(79,98,148,.5)），先前版本
+   誤用 --color-surface-blue（Dark Mode 是接近黑色的深藍 #030616），改成跟 .calc-tabs
+   同一份 color-mix 寫法，兩處統一引用同一個 token，不重複定義。 */
+.calc-result-panel{position:relative;overflow:hidden;background:color-mix(in srgb,var(--color-container-general-divider) 50%,transparent);border-radius:var(--radius-medium);
   padding:var(--spacing-16);display:flex;flex-direction:column;align-items:center;gap:var(--spacing-12)}
 .calc-emoji-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .calc-emoji{position:absolute;top:-10%;font-size:32px;line-height:1;will-change:transform,opacity;
@@ -345,10 +390,17 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 }
 .calc-result-label{position:relative;z-index:1;font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-primary);text-align:center;
   width:100%;font-family:var(--font-cn)}
-.calc-result-value{position:relative;z-index:1;font-family:var(--kgi-font-auto-display-s-en-family),sans-serif;font-size:var(--kgi-font-auto-display-s-en-size-rem);font-weight:var(--kgi-font-auto-display-s-en-weight);line-height:var(--kgi-font-auto-display-s-en-line-height);letter-spacing:var(--kgi-font-auto-display-s-en-letter-spacing);color:var(--color-content-semantic-ascend);
+/* 「2.85%」大數字：2026-08-14 核對 node 228:1149，字級是 Display-M（mWeb 48px），
+   先前版本誤用 Display-S（mWeb 40px，跟 chart/pie donut 中央的「72%」同一個字級——
+   donut 那個節點稿子本來就是標 Display-S，兩者字級角色本來就不同，不是抄錯後才不一致）。
+   顏色 Content/Semantic/Ascend 核對後已正確，不用改（見上面 .calc-minicard 的說明）。 */
+.calc-result-value{position:relative;z-index:1;font-family:var(--kgi-font-auto-display-m-en-family),sans-serif;font-size:var(--kgi-font-auto-display-m-en-size-rem);font-weight:var(--kgi-font-auto-display-m-en-weight);line-height:var(--kgi-font-auto-display-m-en-line-height);letter-spacing:var(--kgi-font-auto-display-m-en-letter-spacing);color:var(--color-content-semantic-ascend);
   text-align:center;width:100%}
+/* 比較文字泡泡：稿子背景是字面上的 rgba(255,255,255,.2)，沒有綁定任何 Figma 變數，
+   改用 color-mix 表示同一個數值（--color-grey-0 是永遠不隨主題切換的純白 base token），
+   不是保留硬編色碼、也不是新增色碼，只是用可追溯的 token 表達同一個視覺結果。 */
 .calc-result-sentence{position:relative;z-index:1;width:100%;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  background:rgba(255,255,255,.2);border-radius:var(--radius-medium);padding:var(--spacing-12);font-size:var(--type-body-size);line-height:var(--type-body-lh-cn);font-weight:var(--type-body-r-weight-cn);color:var(--color-content-general-primary);
+  background:color-mix(in srgb,var(--color-grey-0) 20%,transparent);border-radius:var(--radius-medium);padding:var(--spacing-12);font-size:var(--type-body-size);line-height:var(--type-body-lh-cn);font-weight:var(--type-body-r-weight-cn);color:var(--color-content-general-primary);
   text-align:center;box-shadow:var(--shadow-popover);font-family:var(--font-cn)}
 
 /* 放大 1.5 倍（scale）但保持右上角視覺邊界對齊原本 top:12px／right:12px 的位置：
@@ -356,8 +408,12 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    純用 transform:scale(1.5) 做視覺放大，並把 transform-origin 從預設的正中心
    改成 top right——這樣放大時只會往左、往下長，右上角那個點完全不動，
    不需要另外手動回推新的 top/right 座標去做位移校正。 */
+/* 珍珠奶茶／餐盤切換開關（Figma node 205:824）：2026-08-14 核對 node 228:1149，
+   底色／邊框原本誤用 --color-sky-blue-500（#3773DC），稿子讀到的是
+   Container/General/Active-Primary（Dark Mode #1877FF，跟上面滑桿旋鈕同一個 token，
+   互動控制元件統一語意）。 */
 .calc-toggle{position:absolute;top:12px;right:12px;width:58px;height:24px;border-radius:var(--radius-full);
-  background:var(--color-sky-blue-500);border:1px solid var(--color-sky-blue-500);display:flex;align-items:center;cursor:pointer;padding:0;z-index:2;
+  background:var(--color-container-general-active-primary);border:1px solid var(--color-container-general-active-primary);display:flex;align-items:center;cursor:pointer;padding:0;z-index:2;
   transform:scale(1.5);transform-origin:top right;transition:filter .15s}
 /* 320px 這類極窄機型（如 iPhone SE 第一代）實測 1.5 倍放大後會跟「資產有機會增長約」文字
    重疊（見對應討論記錄），沿用 css/style.css .app-header-brand 同一個既有 400px 斷點
@@ -396,8 +452,14 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    輪播圖示的中線 28px 處無縫交接，不需要額外處理中間縫隙），
    drink 態 left:2px、dinner 態 left:28px（56-26-2=28，算式對得起來，非隨意數字），
    兩個狀態下 knob 離 track 左右邊框都固定留 2px 內距＋1px border＝3px 視覺間距，
-   跟上下已經是的 3px 間距完全一致。 */
-.calc-toggle-knob{position:absolute;top:var(--spacing-2);left:var(--spacing-2);width:26px;height:18px;border-radius:var(--radius-full);background:var(--color-surface-white);transition:left .32s cubic-bezier(.34,1.56,.64,1)}
+   跟上下已經是的 3px 間距完全一致。
+   2026-08-14 核對 node 228:1149 修正背景色：原本誤用 --color-surface-white（Dark Mode
+   是接近黑色的深藍 #15202B，會讓這顆「高亮提示」knob 在深色 track 上幾乎隱形，看不出
+   目前選到哪一側），稿子讀到的其實是 Container/General/Picker Bg 30%（半透明白，
+   rgba(255,255,255,.3)）；專案裡 --color-container-general-picker-bg-30 這個 token
+   本身存的是不透明白（#FFFFFF，「30%」只是命名意圖、透明度要由呼叫端自己疊），改用
+   color-mix 疊 30% 透明度來套用，這裡只調整顏色，沒有動上面這段 geometry 的任何數字。 */
+.calc-toggle-knob{position:absolute;top:var(--spacing-2);left:var(--spacing-2);width:26px;height:18px;border-radius:var(--radius-full);background:color-mix(in srgb,var(--color-container-general-picker-bg-30) 30%,transparent);transition:left .32s cubic-bezier(.34,1.56,.64,1)}
 .calc-toggle.dinner .calc-toggle-knob{left:28px}
 .calc-toggle-icon{position:relative;z-index:1;flex:1;text-align:center;font-size:15px;line-height:24px;color:var(--color-content-general-light-active)}
 
@@ -500,28 +562,106 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .fbqr-qr-desc{font-family:var(--font-cn);font-size:var(--type-body-size);
   font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);color:var(--color-content-general-primary);text-align:center}
 
-/* popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）
+/* popover/option-select（Figma node 306:1102「問題回答優化」／374:4424「optionselection」）
    AI 提問選項的浮動選單：以覆蓋（overlay）方式疊在輸入框之上，掛載在 .app 下用 position:absolute
    + bottom:16px 呈現，不佔用 #screen／#controls／#inputbar 的版面高度、也不影響它們的既有邏輯。
    外層容器背景／圓角／陰影對應 Design Guideline 既有 token：Surface White／Radius-small(3px)／
    Popover 陰影（跟 .pie-card／.pcard 等既有卡片同一組陰影值），皆為既有 token，未新增任何自訂數值。
-   2026-07-30 依 Figma 更新：外層容器新增 1px 邊框，色票對應 Figma 的
-   cdf-color-palette/sky-blue/sky-blue-100（#e5f1fc），專案既有 token 已有完全對應的原色
-   --color-sky-blue-100，直接套用，未新增數值。
+   2026-08-14 依最新稿 374:4424 核對修正（get_design_context／get_variable_defs 讀出來的規格，
+   不是憑截圖肉眼抓色）：
+     - padding 由 --spacing-12 --spacing-16 --spacing-24 改為 --spacing-16 --spacing-16
+       --spacing-24（上緣稿子量出來是 16px，不是 12px）
+     - 標題跟選項清單間距由 --spacing-16 改為 --spacing-24（稿子量出來是 24px）
+     - 外框顏色改用 --color-container-general-divider：稿子這次讀到的容器外框色票是 Figma
+       「cdf-color-palette/indigo/indigo-400d」（#404E73），這個色票在目前的 One KGI Design
+       Guideline token 裡找不到精確對應（本次讀到的其餘顏色都能對應既有 token，只有這個對不上，
+       懷疑是稿子裡殘留的另一套舊色票，不是目前這份 Guideline 的一部分），改用跟選項本身邊框
+       同一顆既有 token，讓容器外框跟選項外框顏色一致，也維持「只用能追溯到 Guideline 的 token」
+       原則，沒有引入無法追溯來源的色碼；上一版（2026-07-30）用的 --color-sky-blue-100 對應的
+       是更早一版的稿子（305:1184），這次一併换掉
    標題套用 Subtitle-B 字級 token＋Content/General/Primary 色票——跟 aiAsk() 的 .md-quote
    用的是同一組 token，選完之後這句話用 aiAsk() 顯示在聊天紀錄時字級／顏色自然一致。
-   選項清單直接重用既有 .choice-group／.choice（choiceBtn()，對應 Figma Message/option 元件，
-   說明見 js/engine.js choiceBtn()），不重建、不修改其內部樣式與 hover/focus 狀態。 */
+   選項清單直接重用既有 .choice-group／.choice（message/option 元件，對應 Figma
+   node 374:4371「Message/option」，說明見 js/component-library.js choiceBtn()），
+   不重建、不修改其內部樣式與 hover/focus 狀態。 */
 .opt-popover-wrap{position:absolute;left:4%;right:4%;bottom:16px;z-index:20}
-.opt-popover{background:var(--color-surface-white);border:1px solid var(--color-sky-blue-100);
+.opt-popover{background:var(--color-surface-white);border:1px solid var(--color-container-general-divider);
   border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
-  padding:var(--spacing-12) var(--spacing-16) var(--spacing-24);
+  padding:var(--spacing-16) var(--spacing-16) var(--spacing-24);
   max-height:calc(100% - 96px);overflow-y:auto;
-  display:flex;flex-direction:column;gap:var(--spacing-16);animation:optPopIn .2s ease}
+  display:flex;flex-direction:column;gap:var(--spacing-24);animation:optPopIn .2s ease}
 @keyframes optPopIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .opt-popover-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
   color:var(--color-content-general-primary)}
+
+/* message/option（Figma node 374:4371「Message/option」）：純文字單選列表選項，暗色主題。
+   props／互動邏輯說明見 js/component-library.js choiceBtn()／COMPONENTS['message/option']；
+   這裡的 CSS 原本放在 css/style.css（choiceBtn() 也原本放在 js/engine.js），這次一併搬進
+   Component Library，跟其他正式元件收在同一個地方，命名／慣例不變（.choice／.choice-group
+   這兩個既有 class 名稱維持不變，避免動到 js 端所有既有呼叫）。
+   4 種狀態（Enable／Hover／Selected／Pressed）樣式已用 get_design_context／get_variable_defs
+   核對修正（不是憑截圖肉眼抓色），修正內容：
+     - 邊框由 1.5px 改為 1px（稿子量出來就是 1px）
+     - 圓角由 --radius-medium 改為 --radius-small（Figma variable "3"）
+     - padding 由寫死的 13px 15px 改為 --spacing-12 --spacing-16
+     - Hover 邊框色由 --color-content-general-active 改為
+       --color-container-general-active-primary（稿子這次讀到的 Hover 實際 token）
+     - Selected（.sel）原本會把背景換成 --color-container-general-light-active-blue、
+       文字／編號換成 --color-content-general-active；稿子裡 Selected 只有邊框變色
+       （跟 Hover 用同一個 --color-container-general-active-primary），背景／文字都
+       維持 Enable 的樣子，這次拿掉多餘的背景／文字變色
+     - 新增 Pressed 狀態（:active 偽類，不是 JS 切 class——choiceBtn() 產生的是原生
+       <button>，:active 對滑鼠/觸控按下都能正確觸發，不需要額外綁 mousedown/touchstart）：
+       背景換成 --color-container-card-white（比 Enable 的 --color-surface-white 淺一階），
+       邊框同 Hover/Selected 的 --color-container-general-active-primary；先前版本完全
+       沒有 Pressed 樣式
+     - 編號／選項文字顏色統一為 --color-content-general-primary，不分狀態；先前版本
+       Selected 狀態下編號／文字會變色，稿子沒有這個狀態變色，這次拿掉
+   .checkopt（多選核取方塊樣式）不在這次 Figma 稿的範圍內，維持原本的勾選框視覺與定位數值，
+   只共用上面這些「跟單/多選都無關」的外殼樣式（邊框寬度／圓角／padding／字級），確保兩種
+   選取樣式的外殼視覺一致。 */
+.choice{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1px solid var(--color-container-general-divider);
+  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
+  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
+  padding:var(--spacing-12) var(--spacing-16);border-radius:var(--radius-small);margin:8px 0;cursor:pointer;transition:.15s}
+@media (hover:hover) and (pointer:fine){
+  .choice:hover{border-color:var(--color-container-general-active-primary)}
+}
+.choice:active{background:var(--color-container-card-white);border-color:var(--color-container-general-active-primary)}
+.choice small{display:block;font-family:var(--font-cn);font-weight:var(--type-caption-weight-cn);font-size:var(--type-caption-size);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);margin-top:2px}
+.choice.sel{border-color:var(--color-container-general-active-primary)}
+/* 非 checkopt（純選項按鈕，如首頁的問卷選項）依 DOM 順序由上往下自動編號；
+   checkopt（多選核取方塊樣式）維持原本的勾選框，不疊加編號 */
+.choice:not(.checkopt){position:relative;padding-left:42px;counter-increment:choice-num}
+.choice:not(.checkopt)::before{content:counter(choice-num)'.';position:absolute;left:15px;top:50%;
+  transform:translateY(-50%);font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-primary)}
+.choice.checkopt{position:relative;padding-left:42px}
+.choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:var(--radius-small);border:1.5px solid var(--color-container-general-divider);background:var(--color-surface-white);transition:.15s}
+.choice.checkopt.sel::before{background:var(--color-container-general-active-primary);border-color:var(--color-container-general-active-primary)}
+/* 打勾符號改用 SVG 遮罩（mask-image）畫出來，不再用「✓」文字字元——文字字元的視覺
+   置中受字型影響：這裡的字型堆疊第一順位是中文字型（Microsoft JhengHei 等），中文字型
+   繪製 ✓ 這類符號字元時，字符本身在自己的字身框（advance box）裡經常不是左右對稱的，
+   即使用 transform:translate(-50%,-50%) 把「字身框」置中，肉眼看到的墨跡（實際打勾的線條）
+   還是會偏左，這正是先前只調整 transform 卻沒解決偏左問題的原因。改成 SVG 遮罩後，
+   置中依據的是 SVG 本身精確的座標（Material 對勾圖示，視覺上左右對稱），
+   搭配固定的 width/height + mask-size:contain + mask-position:center，
+   不管字型、瀏覽器怎麼變，勾勾的「幾何」中心都會準確對齊核取方塊正中央。
+   left 從方框幾何中心 23px 再加 1.5px：對勾圖案右上那筆斜線比左下那筆短撇長、
+   視覺重量偏右上，即使幾何置中，肉眼仍會覺得整體偏左，這裡額外做一點點
+   「視覺置中」的手動微調（optical alignment），不是算錯，是刻意補償。 */
+.choice.checkopt.sel::after{content:'';position:absolute;left:24.5px;top:50%;
+  width:12px;height:12px;transform:translate(-50%,-50%);
+  background:var(--color-content-general-light-active);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
+.choice:disabled{opacity:.4;cursor:not-allowed}
+/* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
+   每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
+  （#controls 本身已經在上面 css/style.css counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
+.choice-group{counter-reset:choice-num}
 
 /* ============================================================
    selection/option（Figma node 370:3005，Selection/Option）可重複使用的單選/多選選項卡
