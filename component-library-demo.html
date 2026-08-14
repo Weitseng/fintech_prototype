@@ -33,6 +33,13 @@
   .selopt-demo-row{display:flex;flex-wrap:wrap;gap:20px;padding:24px;background:#0b1220}
   .selopt-demo-cell{display:flex;flex-direction:column;align-items:center;gap:8px}
   .selopt-demo-caption{font-size:12px;color:#9aa8c7;font-family:sans-serif}
+
+  /* message/option 四態展示：Hover／Pressed 都是純 CSS 偽類（:hover／:active），沒有真的
+     滑鼠移入/按著滑鼠不放就看不到，借用跟真正規則相同的樣式掛兩個 demo 專用 class
+     （見上方 selection/option 的 demo-force-hover 說明，同一招） */
+  .choice.demo-force-hover{border-color:var(--color-container-general-active-primary)}
+  .choice.demo-force-pressed{background:var(--color-container-card-white);border-color:var(--color-container-general-active-primary)}
+  .msgopt-demo-caption{font-size:12px;color:#9aa8c7;font-family:sans-serif;margin:-4px 0 4px}
 </style>
 </head>
 <body>
@@ -134,6 +141,19 @@
   <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
     <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">chart/line — 3 個資料點、陡升趨勢＋到期標註在最後一點＋自訂數值格式（驗證標籤靠右對齊、highlightIndex 與 splitIndex 疊加不重疊）</div>
     <div id="linechart-demo-steep" style="padding:16px"></div>
+  </div>
+
+  <!-- message/option（Figma node 374:4371／374:4424）：純文字單選列表選項，暗色主題。
+       Pressed 是原生 :active 偽類（不像 selection/option 是 JS 切的 class），demo-force-pressed
+       是借用跟 .choice:active 完全相同的規則掛一個 demo 專用 class，才能不用真的按著滑鼠
+       就看到 Pressed 長相；Selected 直接用元件自己真正的 .sel class。 */ -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:600px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">message/option — 4 種狀態（Enable／Hover／Selected／Pressed，由上至下）</div>
+    <div id="msgopt-demo-states" class="choice-group" style="padding:24px"></div>
+  </div>
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:600px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a">message/option — 單選群組（沿用 popover/option-select 整組樣式，含容器 padding／間距／自動編號；點擊切換選取）</div>
+    <div id="msgopt-demo-group" style="padding:24px"></div>
   </div>
 
   <!-- down() 內部固定找 #screen 當捲動容器，這裡不需要真的捲動，放一個隱藏節點避免報錯 -->
@@ -284,6 +304,35 @@
     renderComponent('chart/line', [
       {label:'A',value:100},{label:'B',value:50},{label:'C',value:9000}
     ], {title:'3 個資料點、陡升趨勢', splitIndex:'C', splitLabel:'到期在最後一點', formatValue:v=>Math.round(v).toLocaleString()+' 元'});
+
+    /* message/option 四態並排：Selected 直接用元件自己真正的 .sel class，Hover／Pressed
+       借用上面新增的 demo-force-hover／demo-force-pressed（跟真正的 :hover／:active 規則
+       完全相同），不用真的操作滑鼠就能一次看到四態 */
+    const msgoptStates=document.getElementById('msgopt-demo-states');
+    [['Enable',null],['Hover','demo-force-hover'],['Selected','sel'],['Pressed','demo-force-pressed']].forEach(([name,cls])=>{
+      const btn=renderComponent('message/option','選項標題：'+name,null,()=>{});
+      if(cls)btn.classList.add(cls);
+      msgoptStates.appendChild(btn);
+    });
+
+    /* 單選群組：直接重用真正的 popover/option-select 容器樣式（.opt-popover／.choice-group），
+       證明容器 padding／標題間距／自動編號跟production 一致；這裡不掛進 .opt-popover-wrap
+       （那是覆蓋在畫面上的絕對定位樣式，demo 頁面直接嵌在版面裡看比較方便），只借用
+       .opt-popover 本身的卡片樣式 */
+    const msgoptGroup=document.getElementById('msgopt-demo-group');
+    const msgoptPop=document.createElement('div');msgoptPop.className='opt-popover';msgoptPop.style.position='static';
+    const msgoptTitle=document.createElement('div');msgoptTitle.className='opt-popover-title';msgoptTitle.textContent='對於這筆閒置資金，您平時比較想怎麼運用它呢？';
+    const msgoptList=document.createElement('div');msgoptList.className='choice-group';
+    msgoptPop.appendChild(msgoptTitle);msgoptPop.appendChild(msgoptList);msgoptGroup.appendChild(msgoptPop);
+    const msgoptLog=document.createElement('div');msgoptLog.className='msgopt-demo-caption';msgoptGroup.appendChild(msgoptLog);
+    ['先放著，可能是備用金或短期要用','想加減賺一點零用錢，風險不要太高','想讓這筆錢成長更多，可以承擔一些風險','還沒想法，想先聽看看建議'].forEach(label=>{
+      const btn=renderComponent('message/option',label,null,()=>{
+        msgoptList.querySelectorAll('.choice').forEach(o=>o.classList.remove('sel'));
+        btn.classList.add('sel');
+        msgoptLog.textContent='選取：'+label;
+      });
+      msgoptList.appendChild(btn);
+    });
   </script>
 </body>
 </html>

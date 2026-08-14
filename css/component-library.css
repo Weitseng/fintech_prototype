@@ -500,28 +500,106 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .fbqr-qr-desc{font-family:var(--font-cn);font-size:var(--type-body-size);
   font-weight:var(--type-body-r-weight-cn);line-height:var(--type-body-lh-cn);color:var(--color-content-general-primary);text-align:center}
 
-/* popover/option-select（Figma node 306:1102「問題回答優化」／305:1184「optionselection」）
+/* popover/option-select（Figma node 306:1102「問題回答優化」／374:4424「optionselection」）
    AI 提問選項的浮動選單：以覆蓋（overlay）方式疊在輸入框之上，掛載在 .app 下用 position:absolute
    + bottom:16px 呈現，不佔用 #screen／#controls／#inputbar 的版面高度、也不影響它們的既有邏輯。
    外層容器背景／圓角／陰影對應 Design Guideline 既有 token：Surface White／Radius-small(3px)／
    Popover 陰影（跟 .pie-card／.pcard 等既有卡片同一組陰影值），皆為既有 token，未新增任何自訂數值。
-   2026-07-30 依 Figma 更新：外層容器新增 1px 邊框，色票對應 Figma 的
-   cdf-color-palette/sky-blue/sky-blue-100（#e5f1fc），專案既有 token 已有完全對應的原色
-   --color-sky-blue-100，直接套用，未新增數值。
+   2026-08-14 依最新稿 374:4424 核對修正（get_design_context／get_variable_defs 讀出來的規格，
+   不是憑截圖肉眼抓色）：
+     - padding 由 --spacing-12 --spacing-16 --spacing-24 改為 --spacing-16 --spacing-16
+       --spacing-24（上緣稿子量出來是 16px，不是 12px）
+     - 標題跟選項清單間距由 --spacing-16 改為 --spacing-24（稿子量出來是 24px）
+     - 外框顏色改用 --color-container-general-divider：稿子這次讀到的容器外框色票是 Figma
+       「cdf-color-palette/indigo/indigo-400d」（#404E73），這個色票在目前的 One KGI Design
+       Guideline token 裡找不到精確對應（本次讀到的其餘顏色都能對應既有 token，只有這個對不上，
+       懷疑是稿子裡殘留的另一套舊色票，不是目前這份 Guideline 的一部分），改用跟選項本身邊框
+       同一顆既有 token，讓容器外框跟選項外框顏色一致，也維持「只用能追溯到 Guideline 的 token」
+       原則，沒有引入無法追溯來源的色碼；上一版（2026-07-30）用的 --color-sky-blue-100 對應的
+       是更早一版的稿子（305:1184），這次一併换掉
    標題套用 Subtitle-B 字級 token＋Content/General/Primary 色票——跟 aiAsk() 的 .md-quote
    用的是同一組 token，選完之後這句話用 aiAsk() 顯示在聊天紀錄時字級／顏色自然一致。
-   選項清單直接重用既有 .choice-group／.choice（choiceBtn()，對應 Figma Message/option 元件，
-   說明見 js/engine.js choiceBtn()），不重建、不修改其內部樣式與 hover/focus 狀態。 */
+   選項清單直接重用既有 .choice-group／.choice（message/option 元件，對應 Figma
+   node 374:4371「Message/option」，說明見 js/component-library.js choiceBtn()），
+   不重建、不修改其內部樣式與 hover/focus 狀態。 */
 .opt-popover-wrap{position:absolute;left:4%;right:4%;bottom:16px;z-index:20}
-.opt-popover{background:var(--color-surface-white);border:1px solid var(--color-sky-blue-100);
+.opt-popover{background:var(--color-surface-white);border:1px solid var(--color-container-general-divider);
   border-radius:var(--radius-small);box-shadow:var(--shadow-popover);
-  padding:var(--spacing-12) var(--spacing-16) var(--spacing-24);
+  padding:var(--spacing-16) var(--spacing-16) var(--spacing-24);
   max-height:calc(100% - 96px);overflow-y:auto;
-  display:flex;flex-direction:column;gap:var(--spacing-16);animation:optPopIn .2s ease}
+  display:flex;flex-direction:column;gap:var(--spacing-24);animation:optPopIn .2s ease}
 @keyframes optPopIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .opt-popover-title{font-family:var(--font-cn);font-size:var(--type-subtitle-size);
   font-weight:var(--type-subtitle-b-weight-cn);line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);
   color:var(--color-content-general-primary)}
+
+/* message/option（Figma node 374:4371「Message/option」）：純文字單選列表選項，暗色主題。
+   props／互動邏輯說明見 js/component-library.js choiceBtn()／COMPONENTS['message/option']；
+   這裡的 CSS 原本放在 css/style.css（choiceBtn() 也原本放在 js/engine.js），這次一併搬進
+   Component Library，跟其他正式元件收在同一個地方，命名／慣例不變（.choice／.choice-group
+   這兩個既有 class 名稱維持不變，避免動到 js 端所有既有呼叫）。
+   4 種狀態（Enable／Hover／Selected／Pressed）樣式已用 get_design_context／get_variable_defs
+   核對修正（不是憑截圖肉眼抓色），修正內容：
+     - 邊框由 1.5px 改為 1px（稿子量出來就是 1px）
+     - 圓角由 --radius-medium 改為 --radius-small（Figma variable "3"）
+     - padding 由寫死的 13px 15px 改為 --spacing-12 --spacing-16
+     - Hover 邊框色由 --color-content-general-active 改為
+       --color-container-general-active-primary（稿子這次讀到的 Hover 實際 token）
+     - Selected（.sel）原本會把背景換成 --color-container-general-light-active-blue、
+       文字／編號換成 --color-content-general-active；稿子裡 Selected 只有邊框變色
+       （跟 Hover 用同一個 --color-container-general-active-primary），背景／文字都
+       維持 Enable 的樣子，這次拿掉多餘的背景／文字變色
+     - 新增 Pressed 狀態（:active 偽類，不是 JS 切 class——choiceBtn() 產生的是原生
+       <button>，:active 對滑鼠/觸控按下都能正確觸發，不需要額外綁 mousedown/touchstart）：
+       背景換成 --color-container-card-white（比 Enable 的 --color-surface-white 淺一階），
+       邊框同 Hover/Selected 的 --color-container-general-active-primary；先前版本完全
+       沒有 Pressed 樣式
+     - 編號／選項文字顏色統一為 --color-content-general-primary，不分狀態；先前版本
+       Selected 狀態下編號／文字會變色，稿子沒有這個狀態變色，這次拿掉
+   .checkopt（多選核取方塊樣式）不在這次 Figma 稿的範圍內，維持原本的勾選框視覺與定位數值，
+   只共用上面這些「跟單/多選都無關」的外殼樣式（邊框寬度／圓角／padding／字級），確保兩種
+   選取樣式的外殼視覺一致。 */
+.choice{display:block;width:100%;text-align:left;background:var(--color-surface-white);border:1px solid var(--color-container-general-divider);
+  color:var(--color-content-general-primary);font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);
+  line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);
+  padding:var(--spacing-12) var(--spacing-16);border-radius:var(--radius-small);margin:8px 0;cursor:pointer;transition:.15s}
+@media (hover:hover) and (pointer:fine){
+  .choice:hover{border-color:var(--color-container-general-active-primary)}
+}
+.choice:active{background:var(--color-container-card-white);border-color:var(--color-container-general-active-primary)}
+.choice small{display:block;font-family:var(--font-cn);font-weight:var(--type-caption-weight-cn);font-size:var(--type-caption-size);
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);margin-top:2px}
+.choice.sel{border-color:var(--color-container-general-active-primary)}
+/* 非 checkopt（純選項按鈕，如首頁的問卷選項）依 DOM 順序由上往下自動編號；
+   checkopt（多選核取方塊樣式）維持原本的勾選框，不疊加編號 */
+.choice:not(.checkopt){position:relative;padding-left:42px;counter-increment:choice-num}
+.choice:not(.checkopt)::before{content:counter(choice-num)'.';position:absolute;left:15px;top:50%;
+  transform:translateY(-50%);font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-primary)}
+.choice.checkopt{position:relative;padding-left:42px}
+.choice.checkopt::before{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:var(--radius-small);border:1.5px solid var(--color-container-general-divider);background:var(--color-surface-white);transition:.15s}
+.choice.checkopt.sel::before{background:var(--color-container-general-active-primary);border-color:var(--color-container-general-active-primary)}
+/* 打勾符號改用 SVG 遮罩（mask-image）畫出來，不再用「✓」文字字元——文字字元的視覺
+   置中受字型影響：這裡的字型堆疊第一順位是中文字型（Microsoft JhengHei 等），中文字型
+   繪製 ✓ 這類符號字元時，字符本身在自己的字身框（advance box）裡經常不是左右對稱的，
+   即使用 transform:translate(-50%,-50%) 把「字身框」置中，肉眼看到的墨跡（實際打勾的線條）
+   還是會偏左，這正是先前只調整 transform 卻沒解決偏左問題的原因。改成 SVG 遮罩後，
+   置中依據的是 SVG 本身精確的座標（Material 對勾圖示，視覺上左右對稱），
+   搭配固定的 width/height + mask-size:contain + mask-position:center，
+   不管字型、瀏覽器怎麼變，勾勾的「幾何」中心都會準確對齊核取方塊正中央。
+   left 從方框幾何中心 23px 再加 1.5px：對勾圖案右上那筆斜線比左下那筆短撇長、
+   視覺重量偏右上，即使幾何置中，肉眼仍會覺得整體偏左，這裡額外做一點點
+   「視覺置中」的手動微調（optical alignment），不是算錯，是刻意補償。 */
+.choice.checkopt.sel::after{content:'';position:absolute;left:24.5px;top:50%;
+  width:12px;height:12px;transform:translate(-50%,-50%);
+  background:var(--color-content-general-light-active);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
+.choice:disabled{opacity:.4;cursor:not-allowed}
+/* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
+   每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
+  （#controls 本身已經在上面 css/style.css counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
+.choice-group{counter-reset:choice-num}
 
 /* ============================================================
    selection/option（Figma node 370:3005，Selection/Option）可重複使用的單選/多選選項卡

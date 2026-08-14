@@ -622,11 +622,10 @@ function meSay(text){if(suppressNextEcho){suppressNextEcho=false;return;}
   renderComponent('message/chat-bubble',text);
   requestAnimationFrame(()=>down(currentTurnEl,{smooth:true}));
 }
-function choiceBtn(label,sub,onClick,keywords){const b=document.createElement('button');
-  b.className='choice';b.innerHTML=label+(sub?'<small>'+sub+'</small>':'');
-  b.onclick=()=>onClick(b);
-  if(keywords)activeChoices.push({el:b,keywords});
-  return b;}
+/* choiceBtn() 已搬到 js/component-library.js（正式收進 Component Library，登錄為
+   COMPONENTS['message/option']，對應 Figma node 374:4371），這裡不再定義；
+   engine.js 載入順序在 component-library.js 之前，但實際呼叫 choiceBtn() 都發生在
+   使用者互動之後，component-library.js 早就載入完成，不影響任何呼叫端。 */
 /* ---- 限縮式自由輸入引擎 ---- */
 function showInput(){const b=document.getElementById('inputbar');if(b)b.style.display='flex';}
 function hideInput(){const b=document.getElementById('inputbar');if(b){b.style.display='none';const ci=b.querySelector('.icb-input');if(ci)ci.value='';}}
