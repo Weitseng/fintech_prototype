@@ -727,29 +727,33 @@ function stageH2(){
    資產級距的處理——取每個級距的中點金額／比例來估算，屬於示範用途的粗略估算，不是精確金額 */
 function h1Mid(){return {'100 萬以下':500000,'100 萬–200 萬':1500000,'200 萬以上':2800000}[S.h1Amt]||1000000;}
 const H1_RATIO_MID={'0%':0,'1–50%':0.25,'50% 以上':0.75};
-/* 現金比例（B-2 問的是「現金／活存占多少比例」）換算成投資占比範圍，兩者互為鏡像
-   （現金 95% 以上 ↔ 投資 5% 以下、現金 50–95% ↔ 投資 5–50%……），見 chart/asset-overview
-   圖例——本行投資占比直接顯示這個換算後的範圍，不需要在圖例底下又重複列一次現金比例，
-   同一個資訊只講一次。他行那題（S.h1Ratio）問的就是「投資比例」本身，不用換算，直接沿用。 */
-const CASH_TO_INVEST_RANGE={'95% 以上':'5% 以下','50–95%':'5–50%','5–50%':'50–95%','5% 以下':'95% 以上'};
+/* 現金比例（B-2 問的是「現金／活存占多少比例」）換算成投資占比級距，兩者互為鏡像
+   （現金 95% 以上 ↔ 投資 0–5%、現金 50–95% ↔ 投資 5–50%……），見 chart/asset-overview
+   的 rangeLo／rangeHi——本行那條長條的「區間」直接顯示這個換算後的級距上下界（數字，
+   不是字串），整體徽章的區間則是把本行／他行兩邊的級距依資產金額加權平均。他行那題
+   （S.h1Ratio）問的就是「投資比例」本身，級距上下界直接沿用選項本身的範圍。 */
+const BANK_INVEST_RANGE={'95% 以上':{lo:0,hi:5},'50–95%':{lo:5,hi:50},'5–50%':{lo:50,hi:95},'5% 以下':{lo:95,hi:100}};
+const OTHER_INVEST_RANGE={'0%':{lo:0,hi:0},'1–50%':{lo:1,hi:50},'50% 以上':{lo:50,hi:100}};
 function stageH3(){
   const origProd=PRODUCT_DATA[S.recoType];
   const newProd=PRODUCT_DATA[S.recoTypeH];
   const changed=S.recoTypeH!==S.recoType;
   const calcLabel=calcLabelFor(newProd);
-  /* 第一段：整合後的資產全貌。不另外加卡片標題——前面這句 aiSay 已經帶出「看一下整體樣貌」，
-     卡片再加一次標題等於同一件事講兩次。投資占比用大約的範圍表達（opts.bankRange／
-     opts.otherRange），不用算出來的中點百分比，避免看起來比原始級距資料更精確；
-     opts.bankDetail／opts.otherDetail 只留資產級距，比例已經在上面那行講過，不重複。 */
+  /* 第一段：整合後的資產全貌。chart/asset-overview 卡片自己有標題「整體投資佔比」，
+     不用再靠 opts.title 額外加一次。bankRange／otherRange 是投資占比的級距上下界
+     （數字，見上面 BANK_INVEST_RANGE／OTHER_INVEST_RANGE），只用來畫每一行下方的
+     「區間」文字與整體徽章的加權平均區間；bankInvestPct／otherInvestPct 才是實際顯示
+     在每一行標題旁的「投資 XX.X%」與長條寬度，兩者都會顯示，不再像舊版只留級距、
+     藏起算出來的中點百分比。 */
   aiSay(['幫您把本行與他行的資產整合起來，先看一下目前的整體樣貌：'],()=>{
     const bankTotal=assetMid(),otherTotal=h1Mid();
     const bankInvestPct=(1-idleEstimate().pct/100)*100,otherInvestPct=(H1_RATIO_MID[S.h1Ratio]??0)*100;
-    renderComponent('chart/asset-overview',bankTotal+otherTotal,bankInvestPct,otherInvestPct,S.h2Items,{
-      bankRange:CASH_TO_INVEST_RANGE[S.cashRatio]||'—',
-      otherRange:S.h1Ratio||'—',
-      bankDetail:`資產級距 ${S.assetRange||'—'}`,
-      otherDetail:`資產級距 ${S.h1Amt||'—'}`
-    });
+    const bankRange=BANK_INVEST_RANGE[S.cashRatio]||{lo:0,hi:100};
+    const otherRange=OTHER_INVEST_RANGE[S.h1Ratio]||{lo:0,hi:100};
+    renderComponent('chart/asset-overview',[
+      {label:'凱基銀行',amt:bankTotal,investPct:bankInvestPct,rangeLo:bankRange.lo,rangeHi:bankRange.hi},
+      {label:'其他銀行',amt:otherTotal,investPct:otherInvestPct,rangeLo:otherRange.lo,rangeHi:otherRange.hi}
+    ],S.h2Items);
     /* 第二段：配置方向改變或不變 */
     const messages=[];
     if(changed){

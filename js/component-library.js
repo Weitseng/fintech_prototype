@@ -110,66 +110,123 @@ function renderLineChart(labels,values,splitIndex,opts){
 COMPONENTS['chart/line']={render:renderLineChart};
 
 /* ---- chart/asset-overview（本行＋他行資產整合總覽，見 js/flow.js stageH3()）----
-   本行／他行的投資占比分開用兩圈同心圓弧呈現（外圈＝本行、內圈＝他行，都是「投資占比」，
-   不是同一個總數的兩個切片，所以不能沿用 chart/pie 那種單一甜甜圈依比例切色塊的做法，
-   改成兩條各自獨立的進度弧線，弧長各自對應自己的投資占比，方便使用者直接比較本行／他行
-   投資积极程度的落差；顏色沿用 One KGI Design Guideline 的圖表色票（藍／橙），跟站內其他
-   圖表同一組色票，不另外調色。中心顯示本行＋他行合計後的總資產金額（單位：萬），字級套用
-   既有的 .type-body-b（Body Bold）就好，不需要再借 chart/pie 那組給百分比用的大型
-   display 字級——這裡是三個數字裡最不需要搶焦點的一個，圖表本身（弧線＋圖例）才是重點；
-   標籤精簡成「資產總額」（不加「整合」「（約）」），避免文字寬度超出中央圓孔範圍。
-   弧線加一點 drop-shadow，讓弧線有浮起來的層次感，不是貼死在底圖上的平面色塊。
-   opts.bankDetail／opts.otherDetail（資產級距）直接併進對應顏色圖例底下，取代原本另外
-   一段獨立條列文字。opts.bankRange／opts.otherRange 是投資占比的大約範圍（例如
-   「5–50%」），圖例主行顯示這個範圍，不是 bankInvestPct／otherInvestPct 算出來的
-   中點百分比——級距資料本來就是一個範圍，秀出算出來的單一數字（如 28%）會顯得比
-   實際資料更精確，兩個數字資訊也重複；bankInvestPct／otherInvestPct 只用來畫弧線長度，
-   不再拿來顯示文字。opts.bankDetail／otherDetail 底下也只留資產級距，比例已經在
-   主行講過，不再重複列一次現金比例／投資比例。
+   舊版用兩圈同心圓弧分開呈現本行／他行投資占比，但使用者實際想先知道的是「納入他行資產後，
+   整體的投資占比大概是多少」，兩條分開的弧線反而要使用者自己心算加權平均，改成單一圓環，
+   中心顯示以資產金額加權平均後的整體投資占比（例如兩行資產分別是 75 萬／150 萬，投資占比
+   分別是 27.5%／25.5%，整體就是依資產大小加權平均的 26%，不是兩者單純平均），標籤沿用
+   chart/pie 中心大數字＋caption 兩行的排法（.pie-value／.pie-label）。中心不再另外
+   顯示「區間 X%–Y%」pill 徽章——這個加權區間已經在卡片最下面的附註文字裡講過一次，
+   圓環正下方再放一次是重複資訊，拿掉徽章讓圓環區塊更乾淨；rangeLo／rangeHi 兩個值
+   還是要算，只是只用在附註文字與每一行的「區間」文字，不進圓環中心。
+   banks：[{label,amt,investPct,rangeLo,rangeHi}, ...]，每一行各自的資產金額（NT$）、
+   投資占比中點（0–100）、投資占比級距下上界（0–100，例如現金 50–95% 換算出的投資占比
+   級距是 5–50，對應 rangeLo=5,rangeHi=50）。amt 依序決定加權比重，允許兩行以上（目前
+   呼叫端固定傳銀行＋他行兩筆，但不寫死成兩個參數，之後若要納入第三方資產可以直接多帶一筆）。
+   每一行下方各自用一條進度長條（.invov-bar）呈現自己的投資占比＋資產金額＋級距範圍。
+   投資金額／現金部位兩個底部統計數字，都是用整體投資占比（而非各行分別的占比）反推：
+   投資金額＝總資產×整體占比、現金部位＝總資產－投資金額，兩者相加剛好等於總資產，
+   數字彼此對得起來，不會出現三個數字各自獨立計算、加總卻兜不攏的情況。
    products 是他行申報過的主要投資項目（S.h2Items），沒有投資項目時顯示提示文字，不留空白
-   區塊；標籤樣式沿用既有的 .pcard-tag（商品卡標籤），不另外造一組新的 pill 樣式。 */
-function renderAssetOverviewChart(totalAmt,bankInvestPct,otherInvestPct,products,opts){
+   區塊；標籤樣式沿用既有的 .pcard-tag（商品卡標籤），純文字即可，不加圓點等額外裝飾；
+   位置放在圓環正下方、跟圓環同一欄（.invov-left），文字靠左對齊卡片標題的左邊界，
+   不是置中在圓環正下方——呼應使用者提供的排版參考圖，投資類型是「這個整體圓環」的補充
+   說明，跟銀行別長條（比較偏向明細數字）分屬左右兩欄，不擠在同一欄。
+   主打平板瀏覽，卡片分左右兩欄（.invov-left／.invov-side，中間用 .invov-vdivider
+   分隔）：左欄是圓環＋投資類型標籤，右欄是兩行銀行別長條，不再整個垂直堆疊——平板寬度夠，
+   並排可以讓這張卡片矮一截，不用一路往下滑才看完；下方的總資產／投資金額／現金部位跟
+   附註仍維持獨立一列、貫穿卡片全寬，跟並排區塊分開。斷點沿用同檔案 .kgi-card 已經在用的
+   max-width:640px（見下方 card/recommendation 說明）：小於這個寬度視為窄手機，才改回
+   垂直堆疊、隱藏 .invov-vdivider，640px 以上（含平板直向 768px）都走並排版面。
+   兩行銀行別長條统一用同一個藍色 token（不再本行藍／他行橙兩色分開）——銀行名稱本身已經
+   標示得很清楚，不需要再靠顏色區分，兩條都跟圓環同一個藍，色票更單純、視覺上也跟「同一個
+   整體」的概念一致。
+   圓環弧線改用固定 stroke-dasharray（全圓周長）＋動態 stroke-dashoffset 來畫進度
+   （取代原本用 stroke-dasharray 直接切一段的做法）：這樣掛載後只要把 dashoffset 從滿圈
+   （0%）動畫到目標值，就能用單一 CSS transition 做出「弧線長出來」的效果，不用另外算兩段
+   dasharray 的動畫路徑。長條寬度同樣先掛載成 0%、下一影格才設回目標寬度，觸發 .invov-bar-fill
+   既有的 width transition。animate()／prefersReducedMotion() 判斷沿用 engine.js 已有的
+   斷點函式：使用者開啟「減少動態效果」時直接顯示最終數值，不跑進場動畫。 */
+function weightedAvg(banks,key){
+  const totalAmt=banks.reduce((s,b)=>s+b.amt,0);
+  if(!totalAmt)return 0;
+  return banks.reduce((s,b)=>s+b.amt*b[key],0)/totalAmt;
+}
+const INVOV_BANK_COLORS=['var(--color-chart-blue-1st)','var(--color-chart-blue-1st)'];
+function renderAssetOverviewChart(banks,products,opts){
   opts=opts||{};
-  const totalWan=Math.round(totalAmt/10000);
-  const R_OUTER=80,R_INNER=58,STROKE=14;
-  const circ=r=>2*Math.PI*r;
-  const arcDash=(pct,r)=>{const c=circ(r),d=Math.max(0,Math.min(100,pct))/100*c;return `${d} ${c-d}`;};
+  const totalAmt=banks.reduce((s,b)=>s+b.amt,0);
+  const overallPct=weightedAvg(banks,'investPct');
+  const rangeLo=Math.round(weightedAvg(banks,'rangeLo'));
+  const rangeHi=Math.round(weightedAvg(banks,'rangeHi'));
+  const investAmt=totalAmt*overallPct/100;
+  const totalWan=Math.round(totalAmt/10000),investWan=Math.round(investAmt/10000),cashWan=totalWan-investWan;
+  const R=80,STROKE=14,circ=2*Math.PI*R;
+  const targetOffset=circ*(1-Math.max(0,Math.min(100,overallPct))/100);
   const productsHtml=(products&&products.length)
-    ?`<div class="assetoverview-tags">${products.map(p=>`<span class="pcard-tag">${p}</span>`).join('')}</div>`
-    :`<div class="assetoverview-empty">目前尚無申報的投資項目</div>`;
-  const card=document.createElement('div');card.className='pie-card';
-  card.innerHTML=`${opts.title?`<div class="chart-card-title">${opts.title}</div>`:''}<div class="pie-overview">
-      <div class="ringchart">
-        <svg viewBox="0 0 200 200" class="ringchart-svg" role="img" aria-label="${opts.ariaLabel||'本行與他行投資占比'}">
-          <circle class="ringchart-track" cx="100" cy="100" r="${R_OUTER}" stroke-width="${STROKE}"/>
-          <circle class="ringchart-arc" cx="100" cy="100" r="${R_OUTER}" stroke-width="${STROKE}" stroke="var(--color-chart-blue-2nd)" stroke-dasharray="${arcDash(bankInvestPct,R_OUTER)}" transform="rotate(-90 100 100)"/>
-          <circle class="ringchart-track" cx="100" cy="100" r="${R_INNER}" stroke-width="${STROKE}"/>
-          <circle class="ringchart-arc" cx="100" cy="100" r="${R_INNER}" stroke-width="${STROKE}" stroke="var(--color-chart-orange-2nd)" stroke-dasharray="${arcDash(otherInvestPct,R_INNER)}" transform="rotate(-90 100 100)"/>
-        </svg>
-        <div class="ringchart-center"><div><div class="type-body-b">${totalWan}萬</div><div class="pie-label">資產總額</div></div></div>
+    ?`<div class="invov-tags">${products.map(p=>`<span class="pcard-tag">${p}</span>`).join('')}</div>`
+    :`<div class="invov-empty">目前尚無申報的投資項目</div>`;
+  const tagsLabel=products&&products.length?'已有投資類型':'';
+  const banksHtml=banks.map((b,i)=>{
+    const color=INVOV_BANK_COLORS[i%INVOV_BANK_COLORS.length];
+    const pct=Math.max(0,Math.min(100,b.investPct));
+    return `<div class="invov-bank">
+      <div class="invov-bank-head">
+        <span class="invov-bank-name">${b.label}</span>
+        <span class="invov-bank-pct" style="color:${color}">投資 ${b.investPct.toFixed(1)}%</span>
       </div>
-      <div class="pie-legend">
-        <div class="pie-legend-item">
-          <span class="pie-dot" style="background:var(--color-chart-blue-2nd)"></span>
-          <span class="assetoverview-legend-text">
-            <span class="assetoverview-legend-main">本行投資占比 <b>${opts.bankRange||Math.round(bankInvestPct)+'%'}</b></span>
-            ${opts.bankDetail?`<span class="assetoverview-legend-detail">${opts.bankDetail}</span>`:''}
-          </span>
-        </div>
-        <div class="pie-legend-item">
-          <span class="pie-dot" style="background:var(--color-chart-orange-2nd)"></span>
-          <span class="assetoverview-legend-text">
-            <span class="assetoverview-legend-main">他行投資占比 <b>${opts.otherRange||Math.round(otherInvestPct)+'%'}</b></span>
-            ${opts.otherDetail?`<span class="assetoverview-legend-detail">${opts.otherDetail}</span>`:''}
-          </span>
-        </div>
+      <div class="invov-bar"><div class="invov-bar-fill" data-w="${pct}" style="background:${color}"></div></div>
+      <div class="invov-bank-foot">
+        <span>資產約 ${Math.round(b.amt/10000)} 萬</span>
+        <span>區間 ${Math.round(b.rangeLo)}%–${Math.round(b.rangeHi)}%</span>
       </div>
+    </div>`;
+  }).join('');
+  const card=document.createElement('div');card.className='pie-card invov-card';
+  card.innerHTML=`
+    <div class="invov-header">
+      <div class="invov-title">${opts.title||'整體投資佔比'}</div>
     </div>
-    <div class="assetoverview-products">
-      <div class="assetoverview-products-label">已投資商品</div>
-      ${productsHtml}
+    <div class="invov-main">
+      <div class="invov-left">
+        <div class="invov-ring">
+          <svg viewBox="0 0 200 200" class="invov-ring-svg" role="img" aria-label="${opts.ariaLabel||'整體投資占比'}">
+            <circle class="invov-ring-track" cx="100" cy="100" r="${R}" stroke-width="${STROKE}"/>
+            <circle class="invov-ring-arc" cx="100" cy="100" r="${R}" stroke-width="${STROKE}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" transform="rotate(-90 100 100)"/>
+          </svg>
+          <div class="invov-ring-center">
+            <div><div class="pie-value invov-ring-value">${Math.round(overallPct)}%</div><div class="pie-label">投資佔比（估算）</div></div>
+          </div>
+        </div>
+        <div class="invov-tags-label">${tagsLabel}</div>
+        ${productsHtml}
+      </div>
+      <div class="invov-vdivider"></div>
+      <div class="invov-side">
+        <div class="invov-rmain">
+          <div class="invov-banks">${banksHtml}</div>
+          <div class="invov-divider"></div>
+          <div class="invov-summary">
+            <div class="invov-summary-item"><div class="invov-summary-label">總資產</div><div class="invov-summary-value">${totalWan}<span>萬</span></div></div>
+            <div class="invov-summary-item"><div class="invov-summary-label">投資金額</div><div class="invov-summary-value">${investWan}<span>萬</span></div></div>
+            <div class="invov-summary-item"><div class="invov-summary-label">現金部位</div><div class="invov-summary-value">${cashWan}<span>萬</span></div></div>
+          </div>
+        </div>
+        <div class="invov-footnote">* 依級距估算，實際投資佔比約落在 ${rangeLo}%–${rangeHi}%。實際上線後將更精準計算數值。</div>
+      </div>
     </div>`;
   appendToChat(card);down();
+  if(!prefersReducedMotion()){
+    const arc=card.querySelector('.invov-ring-arc');
+    const fills=card.querySelectorAll('.invov-bar-fill');
+    requestAnimationFrame(()=>{
+      arc.style.transition='stroke-dashoffset .9s cubic-bezier(.4,0,.2,1)';
+      arc.setAttribute('stroke-dashoffset',targetOffset);
+      fills.forEach(el=>{el.style.width=el.dataset.w+'%';});
+    });
+  }else{
+    card.querySelector('.invov-ring-arc').setAttribute('stroke-dashoffset',targetOffset);
+    card.querySelectorAll('.invov-bar-fill').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  }
   return card;
 }
 COMPONENTS['chart/asset-overview']={render:renderAssetOverviewChart};
