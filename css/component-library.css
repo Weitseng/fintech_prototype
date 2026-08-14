@@ -58,7 +58,7 @@
        座標對齊 SVG 內部畫的線／點，不會因為卡片寬度改變就跑位）
    有一處規格存疑，沒有照抄，維持原本做法，已在 js/component-library.js renderLineChart()
    開頭記錄、等設計確認：曲線下方漸層填色的方向與色碼（稿子的漸層方向跟色碼待確認）。 */
-.linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
+.linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-60);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;animation:fade .4s ease}
 .linechart-wrap{position:relative;width:100%}
 .linechart-svg{display:block;width:100%;height:100%;overflow:visible}
