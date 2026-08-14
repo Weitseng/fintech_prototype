@@ -158,31 +158,40 @@
 }
 
 /* ============================================================
-   card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）
-   取代 stageE() 原本的 RECO_REASON 大段文字說明，深色、平板直式優先、純展示卡（不可點擊）。
-   全部收斂在 .kgi-card 命名空間下，故意不套用站內既有的 Design Guideline token——文件裡
-   的色票（--kgi-* 變數）是這組卡片自己的識別配色，站內 token 沒有完全對應的顏色，
-   混用會破壞文件指定的「深色霓虹光暈＋雜訊底紋」視覺效果，改動時請直接依交接文件調整，
-   不要把這裡的色票換成別的元件在用的 --color-* token。
+   card/recommendation（凱基商品推薦卡片）。
+   2026-08-14 依 Figma node 393:6076（基金）／393:6001（債券）／393:5878（定存）
+   用 get_design_context／get_metadata／get_variable_defs 全面核對重製，取代舊版交接文件
+   （kgi-recommendation-card-handoff.md）指定的深色霓虹光暈＋雜訊底紋視覺。
+   舊版判斷「全部不套 Design Guideline token」的理由這次不再成立：三個新節點的
+   variable_defs 讀出來，卡片外框／內容區背景／標題副標／分隔線／打勾圖示／字級全部都是
+   Container/Card/White、Content/General/Primary、Content/General/Secondary、
+   Container/General/Divider、Chart/Blue 3rd 這幾個既有 Guideline token，三個商品共用
+   同一組，已經改用對應 token（見下面各規則旁的核對註解）。
+   2026-08-14（同日第二次修訂，取代下面「左側色塊維持識別色」的做法）：
+   左側視覺區塊改成直接用 Figma node 427:1855（定存）／427:1865（債券）／427:1876（基金）
+   的「Visual」子圖層匯出的背景圖（assets/bg-usd-fixed-deposit.png／bg-bonds.png／
+   bg-funds.png），漸層底＋icon 線稿已經一起烤進圖裡，不再用 --kgi-panel 純色＋
+   radial-gradient 光暈＋另外疊一顆 icon SVG 做 CSS 模擬（那是在還沒有實際美術圖檔時的
+   權宜做法）。三個節點裡「美金定存／USD FIXED DEPOSIT」等中英文標題文字圖層在 Figma
+   本身就是隱藏狀態（純內容佔位，不是真的合成進畫面的美術字），所以匯出整個節點時就已經
+   是純背景+icon、不含文字，不需要另外去背或裁切文字。
+   文字部分（商品名稱、英文標籤）維持系統上字（真正的 HTML/CSS 文字節點），沒有烤進圖片；
+   顏色沿用 Content/General/Primary／Secondary 這兩個既有 token——這兩個 token 在
+   index.html 設定的 [data-theme="dark"] 下會解析成白色／淺灰藍（見 css/tokens/colors.css），
+   跟稿子上（Figma 預設淺色畫布）量到的深色數值不衝突，只是同一個 token 在深色主題下的
+   對應值，套在這幾張深色背景圖上維持了清楚的對比度，不需要另外新增字色 fallback。
+   字級／字重／行高／字距（中文標題 32px/400/1.5、英文標籤 12px/400/1.4/letter-spacing
+   .08em）直接對應 get_design_context 讀到的稿子數值，沒有變動。
    .kgi-card-group：combo（債券＋基金搭配）情境會同時渡入兩筆資料、疊出兩張卡（見
    js/component-library.js renderRecommendationCard()），這裡只負責讓兩張卡上下排列、
    統一間距，不是卡片本身的樣式。 */
 .kgi-card-group{display:flex;flex-direction:column;gap:var(--spacing-16)}
 .kgi-card{
-  --kgi-surface:#16213A;
-  --kgi-panel:#101B31;
-  --kgi-line:rgba(255,255,255,.09);
-  --kgi-line-soft:rgba(255,255,255,.06);
-  --kgi-text:#EEF2F8;
-  --kgi-muted:#93A0B8;
-  --kgi-soft:#D7DEEA;
-
   display:flex;
-  background:var(--kgi-surface);
-  border:1px solid var(--kgi-line);
-  border-radius:8px;
+  background:var(--color-container-card-white);
+  border:1px solid var(--color-container-general-divider);
+  border-radius:var(--radius-medium);
   overflow:hidden;
-  box-shadow:0 10px 30px rgba(0,0,0,.38);
   font-family:var(--font-cn);
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
@@ -190,76 +199,81 @@
 }
 .kgi-card-group .kgi-card{margin:0}
 
-.kgi-card--bond{ --kgi-accent:#4E97FF; --kgi-name:#8FBCFF; --kgi-glow:rgba(24,119,255,.42); }
-.kgi-card--fund{ --kgi-accent:#FF9A5A; --kgi-name:#FFB183; --kgi-glow:rgba(255,106,44,.40); }
-.kgi-card--fx  { --kgi-accent:#5FD3A6; --kgi-name:#84E3BC; --kgi-glow:rgba(46,196,137,.38); }
-
 @media (max-width:640px){ .kgi-card{ flex-direction:column; } }
 
+/* 背景圖原始尺寸 220×301（node 內建的裁切區域，Visual 子圖層本身較高，被父節點裁掉超出
+   範圍的部分），跟 .kgi-card__visual 目前的實際渲染高度（依卡片內容多寡而定，落在同一個
+   量級）很接近；用 cover＋center 讓比例不完全一致時用「裁切」而不是「等比縮放拉伸」，
+   避免圖片變形——裁切幅度很小（肉眼確認過三種商品都沒有明顯裁到 icon 主體），所以不需要
+   另外跟你確認裁切/縮放的取捨。
+   2026-08-14（第三次修訂）：文字位置修正。稿子 node 429:1931/1988/2046（三個商品完整
+   卡片 mockup，非孤立的背景圖節點）量到文字區塊是 left:20px、相對面板頂端固定
+   40px（不是垂直置中）——之前用 justify-content:center 把文字整個垂直置中在 220×301
+   的面板正中央，跟稿子實際位置（偏上方）不符，這次改成從頂部固定距離對齊。
+   20px／40px 剛好對應既有 spacing token --spacing-20／--spacing-40，不是新的隨意數字。 */
 .kgi-card__visual{
-  flex:none; width:224px; position:relative; overflow:hidden;
-  display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
-  gap:14px; padding:30px 26px;
-  background:var(--kgi-panel);
-  box-shadow:inset -1px 0 0 var(--kgi-line-soft);
+  flex:none; width:220px; position:relative; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:flex-start; align-items:flex-start;
+  gap:var(--spacing-4); padding:var(--spacing-40) var(--spacing-20) var(--spacing-32);
+  background-size:cover; background-position:center; background-repeat:no-repeat;
 }
 @media (max-width:640px){
-  .kgi-card__visual{ width:100%; box-shadow:inset 0 -1px 0 var(--kgi-line-soft); }
+  .kgi-card__visual{ width:100%; }
 }
-.kgi-card__visual::before{
-  content:""; position:absolute; width:230px; height:230px; border-radius:50%;
-  right:-84px; top:-80px; z-index:0; pointer-events:none;
-  background:radial-gradient(circle, var(--kgi-glow), transparent 66%);
-}
-.kgi-card__visual::after{
-  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
-  opacity:.5; mix-blend-mode:soft-light; background-size:140px 140px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.kgi-card__visual > *{ position:relative; z-index:1; }
 
+/* 商品名稱＋英文標籤：中文名稱、英文標籤都是稿子裡三個商品共用同一個
+   Content/General/Primary／Secondary token（在本專案的 dark theme 下會是白色／淺灰藍，
+   見上方大註解），字重是一般 Regular（不是粗體）。
+   英文標籤文字（FUNDS/BONDS/USD FIXED DEPOSIT）由 KGI_CARD_THEME 這個對照表決定
+   （js/component-library.js），不是 RECO_CARD 資料本身的欄位——維持 RECO_CARD 資料
+   結構不變，只在元件內部依 data.type 查表。 */
 .kgi-card__name{
-  font-size:clamp(32px,4.4vw,40px);
-  font-weight:900; letter-spacing:-.01em; line-height:1;
-  color:var(--kgi-name);
+  font-family:var(--font-cn);
+  font-size:32px; font-weight:400; line-height:1.5;
+  color:var(--color-content-general-primary);
 }
-.kgi-card__accent{
-  display:block; width:36px; height:4px; border-radius:2px;
-  background:var(--kgi-accent);
-}
-.kgi-card__mark{
-  position:absolute; right:-42px; bottom:-40px; width:190px; height:190px;
-  z-index:0; pointer-events:none; transform:rotate(-6deg);
-  color:var(--kgi-accent);
+.kgi-card__label-en{
+  font-family:var(--font-en);
+  font-size:12px; font-weight:400; line-height:1.4; letter-spacing:.08em;
+  color:var(--color-content-general-secondary);
 }
 
 .kgi-card__body{
-  flex:1; min-width:0; padding:28px 30px;
-  display:flex; flex-direction:column; justify-content:center;
+  flex:1; min-width:0; padding:var(--spacing-32);
+  display:flex; flex-direction:column; gap:var(--spacing-16);
 }
 .kgi-card__title{
-  margin:0 0 7px;
-  font-size:clamp(20px,2.7vw,24px);
-  font-weight:800; letter-spacing:-.015em; color:var(--kgi-text);
+  margin:0 0 4px;
+  font-family:var(--font-cn);
+  font-size:var(--type-title-size); font-weight:var(--type-title-weight-cn);
+  line-height:var(--type-title-lh-cn); color:var(--color-content-general-primary);
 }
 .kgi-card__sub{
-  margin:0 0 18px;
-  font-size:clamp(13.5px,1.8vw,15px);
-  color:var(--kgi-muted); letter-spacing:.01em;
+  margin:0;
+  font-family:var(--font-cn);
+  font-size:var(--type-caption-size); font-weight:400;
+  line-height:var(--type-caption-lh-cn); color:var(--color-content-general-secondary);
 }
+/* 分隔線：舊版沒有這條線，稿子在標題區塊跟勾選清單之間多了一條 1px 分隔線
+   （Container/General/Divider，跟卡片外框同一個 token）。 */
+.kgi-card__divider{ width:100%; height:1px; background:var(--color-container-general-divider); border:0; margin:0; }
+/* 勾選清單：舊版疊了一層半透明背景＋邊框的卡中卡（.kgi-card__feats 原本的
+   background/border/padding），稿子裡沒有這層卡中卡，清單直接鋪在卡片內容區背景上，
+   這次拿掉，只保留清單本身的排版。 */
 .kgi-card__feats{
-  list-style:none; margin:0; padding:18px 20px;
-  display:flex; flex-direction:column; gap:14px;
-  background:rgba(255,255,255,.045);
-  border:1px solid var(--kgi-line-soft); border-radius:6px;
+  list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column; gap:var(--spacing-12);
 }
 .kgi-card__feat{
-  display:flex; align-items:center; gap:12px;
-  font-size:clamp(13.5px,1.8vw,15px);
-  font-weight:500; color:var(--kgi-soft);
+  display:flex; align-items:center; gap:var(--spacing-8);
+  font-family:var(--font-cn);
+  font-size:var(--type-body-size); font-weight:var(--type-body-b-weight-cn);
+  line-height:var(--type-body-lh-cn); color:var(--color-content-general-primary);
 }
-.kgi-card__tick{ flex:none; width:22px; height:22px; color:var(--kgi-accent); }
-.kgi-card__tick svg{ display:block; width:22px; height:22px; }
+/* 打勾圖示：舊版依商品類型換色（--kgi-accent），稿子三個商品的打勾圖示其實是同一個
+   固定顏色 Chart/Blue 3rd，不分商品，這次拿掉依類型變色的邏輯。 */
+.kgi-card__tick{ flex:none; width:20px; height:20px; color:var(--color-chart-blue-3rd); }
+.kgi-card__tick svg{ display:block; width:20px; height:20px; }
 
 /* card/product（Figma node 178:664）：名稱＋標籤、雙數值、膠囊按鈕的商品卡樣式（基金／債券共用）。
    2026-07-27 依 Figma 更新：移除外框線，改用 Popover 陰影 token（跟 .calc-result-sentence 同一組陰影值）。 */
