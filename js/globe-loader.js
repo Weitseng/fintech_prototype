@@ -93,15 +93,13 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)return {destroy:function(){canvas.remove();}};
 
-    /* 起始 rotY 從 0.4 換成 0.16：這是凱基銀行（台灣）的產品搜尋 loading，Taipei 理應是
-       畫面上比較顯眼的據點之一。原本試過 rotY=5.91，數學上能讓 Taipei 轉到離鏡頭最近、
-       畫面正中央的位置，但那個角度會讓 Tokyo 的據點也剛好轉到很接近 Taipei 的螢幕位置，
-       兩個地名的垂直落點只差 5px，實際會疊字看不清楚（見使用者回報）。rotY=0.16 是換算
-       過的折衷值：Taipei 仍轉到相當靠前（z 接近全程能達到的最小值，dot 明顯比預設角度
-       大、亮），且跟其他同時顯示地名的據點（最近的是 Singapore）之間有夠的垂直間距，
-       不會疊字；同時 Tokyo 在這個角度反而不夠正面、不會顯示地名，也就不存在跟 Taipei
-       擠在一起的風險；Johannesburg 在這個角度整個 6 秒 loading 期間地名全程顯示。 */
-    let rotY=0.16,rotX=0.3,time=0;
+    /* 起始 rotY：5.625（讓 Taipei 精確置中）實測會跟 Delhi 疊字成「TaipeiDelhi」——
+       用估計字寬算出來「不重疊」，但實際字型量出來的寬度比估的寬，兩個地名還是黏在一起，
+       所以改用有留足夠安全間距、實測過不會疊字的角度（5.355）：Taipei 落在螢幕偏中央
+       （非正中央，但已經是這幾個候選角度裡最靠近中央、z 值也最靠前的一個），跟其他
+       據點之間留了明顯的垂直間距，不會疊字；Johannesburg 顯示時間比例較低，這裡優先
+       確保 Taipei 清楚可讀、不疊字。 */
+    let rotY=5.355,rotX=0.3,time=0;
 
     // Fibonacci sphere
     const dots=[];
