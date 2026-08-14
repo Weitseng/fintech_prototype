@@ -358,7 +358,11 @@ const CALC_CONFIG={
   drinkPrice:60,       // 一杯手搖飲
   dinnerPrice:800,     // 一次朋友聚會
   maxEmoji:50,         // 掉落 emoji 上限：數量直接對應換算結果，僅在超過 50 時才封頂，避免畫面過度擁擠
-  fallDurationMs:3000  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
+  /* 2026-08-14 掉落動畫時長調整為原本的 1.5 倍（2000ms→3000ms→這次 3000ms→4500ms，
+     每個 emoji 都讀同一個 CALC_CONFIG.fallDurationMs，不需要逐一調整每個實例）。
+     只調整這個時長數值，沒有動 calcFall 這個 keyframe 本身的 easing／掉落路徑，也沒有動
+     spawnEmoji() 裡 --fall／--drift／--rot-start／--rot-end 這幾個路徑相關參數。 */
+  fallDurationMs:4500  // 掉落動畫時長（每個 emoji 從頂部飄落到底部所需時間）
 };
 function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
   opts=opts||{};
@@ -377,11 +381,11 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
     </div>`:''}
     <div class="calc-ratio-row">
       <div class="calc-ratio-col">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--brand)"></span>${tag}</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-blue-1st)"></span>${tag}</div>
         <div class="calc-ratio-value"><span class="calc-num calc-fund-ratio"></span><span class="calc-pct">%</span></div>
       </div>
       <div class="calc-ratio-col right">
-        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-teal-500)"></span>活存</div>
+        <div class="calc-ratio-label"><span class="calc-ratio-dot" style="background:var(--color-chart-teal-3rd)"></span>活存</div>
         <div class="calc-ratio-value"><span class="calc-num calc-deposit-ratio"></span><span class="calc-pct">%</span></div>
       </div>
     </div>
@@ -485,6 +489,13 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
      債券票面利率固定不隨年期變動，累計增長本來就等於把每年配息加總；基金/活存比照同一邏輯處理，
      讓兩個 tab 呈現的是「這個年期下來，資產總共有機會增長多少」，而不是重複同一個年化數字 */
   function currentYears(){return showPeriodTabs&&period==='3y'?3:1;}
+  /* 出現間隔（每個 emoji 開始下墜前的隨機延遲上限）：2026-08-14 跟著 fallDurationMs 一起
+     等比例放大 1.5 倍（0.8s→1.2s）。掉落時長變 1.5 倍、但出現間隔如果維持原本 0.8s 不變，
+     等於同一時間內畫面上會同時存在的 emoji 數量也跟著變成 1.5 倍（因為每顆在畫面上停留
+     的時間變長了，但擠進畫面的速度沒有跟著變慢），視覺上反而更擁擠、更雜亂，跟「變慢、
+     更從容」的目的相反。等比例放大間隔，才能維持原本「同時间在畫面上的 emoji 數量」這個
+     疏密感受不變，只讓每一顆看起來飄落得更慢。 */
+  const EMOJI_SPAWN_SPREAD_S=0.8*(CALC_CONFIG.fallDurationMs/3000);
   function spawnEmoji(count){
     emojiLayer.innerHTML='';
     const emoji=mode==='dinner'?'🍽️':'🧋';
@@ -493,7 +504,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
       const s=document.createElement('span');s.className='calc-emoji';s.textContent=emoji;
       s.style.left=(5+Math.random()*90)+'%';
       s.style.setProperty('--dur',(CALC_CONFIG.fallDurationMs/1000)+'s');
-      s.style.setProperty('--delay',(Math.random()*0.8).toFixed(2)+'s');
+      s.style.setProperty('--delay',(Math.random()*EMOJI_SPAWN_SPREAD_S).toFixed(2)+'s');
       s.style.setProperty('--fall',Math.round(110+Math.random()*70)+'px');
       s.style.setProperty('--drift',Math.round((Math.random()-0.5)*60)+'px');
       s.style.setProperty('--rot-start',Math.round((Math.random()-0.5)*40)+'deg');
