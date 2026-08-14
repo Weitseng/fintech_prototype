@@ -677,6 +677,10 @@ function classifyH2(keys){
    跟 reconcileWithOriginal() 的理由文字是同一個原則 */
 function adjustH2(base){
   let{result,reason}=base;
+  /* rawResult：reconcileWithOriginal() 封頂之前的原始訊號，用來判斷下面「債券被一年內
+     排除後該退回哪裡」時，往上（基金）還是往下（定存）才貼近使用者實際的原始訊號
+     （見下方「if(result==='bond'&&S.q1==='一年內')」的說明） */
+  const rawResult=result;
   if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
     result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高、配置仍偏保守。*建議先以債券為主，穩健地累積收益。';
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
@@ -684,7 +688,25 @@ function adjustH2(base){
   }
   ({result,reason}=reconcileWithOriginal({result,reason}));
   if(result==='bond'&&S.q1==='一年內'){
-    result='fund';reason=`*這筆資金一年內可能會用到，但${BOND_MATURITY_CAVEAT}*因此改為規劃彈性較高的基金，兼顧收益與資金靈活度。`;
+    /* 債券被「一年內可能要用」排除後，接下來該往哪裡走要看兩件事：
+       1. rawResult（封頂前的原始訊號）是不是 deposit——他行完全沒投資，classifyH2()
+          判斷極度保守，只是被 reconcileWithOriginal() 封頂只讓它降一級到債券。
+       2. S.horizonOverride——本行原本的「基金」推薦是不是本來就是被迫換上來的
+          （使用者 q3 其實選的是債券／組合，只是因為一年內要用、債券不能推薦，
+          resolveAttribute() 才改推基金，見 flow.js 開頭 resolveAttribute()）。
+       只有兩者同時成立才退回定存：這種情況下「基金」從一開始就不是使用者的真心
+       選擇，只是債券的替代方案，他行資產一補充進來顯示更保守的真實輪廓，改成定存
+       （一樣滿足一年內能動用）才貼近原始訊號。
+       如果 S.horizonOverride 是 false（使用者當初 q3 就是主動選基金，是真心要成長型
+       商品），即使他行 0% 投資，也不該只靠這一個訊號把使用者剛表達過的偏好整個蓋掉、
+       跳兩級退到定存——這正是 reconcileWithOriginal() 開頭註解（見上方）想避免的事，
+       這裡維持退到基金，不擴大他行資訊的影響力 */
+    if(rawResult==='deposit'&&S.horizonOverride){
+      result='deposit';
+      reason=`*他行資產顯示您目前的投資經驗或占比仍偏保守，且${BOND_MATURITY_CAVEAT}*建議先以美元定存為主，天期彈性、資金運用也更有餘裕。`;
+    }else{
+      result='fund';reason=`*這筆資金一年內可能會用到，但${BOND_MATURITY_CAVEAT}*因此改為規劃彈性較高的基金，兼顧收益與資金靈活度。`;
+    }
   }
   return{result,reason};
 }
