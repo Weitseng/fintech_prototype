@@ -105,7 +105,7 @@ function stepB(){
   p.querySelector('#startBtnMount').appendChild(startBtn);
   const checkReady=()=>{startBtn.disabled=!(S.assetRange&&S.cashRatio);};
   buildSingleSelectOptionGroup(ro,['50 萬以下','50–100 萬','100 萬 – 200 萬','200 萬以上'],ASSET_RANGE_ICONS,x=>{S.assetRange=x;checkReady();},'總資產級距');
-  buildSingleSelectOptionGroup(co,['95% 以上','50–95%','5–50%','5% 以下'],CASH_RATIO_ICONS,x=>{S.cashRatio=x;checkReady();},'現金占比');
+  buildSingleSelectOptionGroup(co,['5% 以下','5–50%','50–95%','95% 以上'],CASH_RATIO_ICONS,x=>{S.cashRatio=x;checkReady();},'現金占比');
 }
 
 /* ================= 階段 C｜智富管家分析 ================= */
