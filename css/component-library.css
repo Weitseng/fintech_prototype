@@ -82,31 +82,80 @@
 .linechart-xlabel{font-family:var(--kgi-font-auto-body-regular-tc-family),sans-serif;font-size:var(--kgi-font-auto-body-regular-tc-size-rem);
   font-weight:var(--kgi-font-auto-body-regular-tc-weight);fill:var(--color-content-general-secondary)}
 
-/* chart/asset-overview（本行＋他行資產整合總覽，見 js/flow.js stageH3()）：外層卡片／圖例
-   沿用 .pie-card／.pie-overview／.pie-legend 本身的樣式；本行／他行投資占比各自獨立、
-   不是同一個總數的切片，改用兩條同心圓弧（ringchart）取代 chart/pie 的甜甜圈，弧線用
-   stroke-dasharray 依各自占比裁切，rotate(-90deg) 讓起點對齊 12 點鐘方向，跟一般
-   進度環（如 Apple Watch 三環）閱讀習慣一致；.ringchart-track 是圈底色，讓沒被進度弧
-   蓋到的部分仍看得出完整圓圈範圍，不會像缺了一角。 */
-/* 208px（比 chart/pie 的 180px 甜甜圈略大）：中心要放兩行字（金額＋「資產總額」），
-   180px 時「資產總額」這行常會頂到內圈弧線甚至溢出，加大中央可用直徑給文字留空間，
-   比繼續縮小字級更保險（字級已經是最小可讀的 caption 尺寸，再縮會影響可讀性）。 */
-.ringchart{position:relative;width:208px;height:208px;flex-shrink:0}
-.ringchart-svg{width:100%;height:100%;display:block}
-.ringchart-track{fill:none;stroke:var(--color-container-general-divider);opacity:.5}
-.ringchart-arc{fill:none;stroke-linecap:round;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
-.ringchart-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
-/* opts.bankDetail／opts.otherDetail：併進圖例文字裡的資產級距說明，跟圖例的顏色圓點／
-   百分比放在同一個區塊，讓每個色塊「是誰、占比多少、根據什麼算出來」一次看完，不用
-   再對照卡片上另一段獨立的條列文字 */
-.assetoverview-legend-text{display:flex;flex-direction:column;gap:2px}
-.assetoverview-legend-main{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary)}
-.assetoverview-legend-main b{font-family:var(--kgi-font-auto-caption-regular-en-family),sans-serif;font-weight:var(--type-body-b-weight-cn);color:var(--color-content-general-primary)}
-.assetoverview-legend-detail{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-tertiary)}
-.assetoverview-products{margin-top:var(--spacing-24);padding-top:var(--spacing-16);border-top:1px solid var(--color-container-general-divider);width:100%}
-.assetoverview-products-label{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-secondary);margin-bottom:var(--spacing-8);text-align:center}
-.assetoverview-tags{display:flex;flex-wrap:wrap;gap:var(--spacing-8);justify-content:center}
-.assetoverview-empty{font-size:var(--type-caption-size);line-height:var(--type-caption-lh-cn);color:var(--color-content-general-tertiary);text-align:center}
+/* chart/asset-overview（整體投資占比＋本行／他行明細，見 js/flow.js stageH3()）：外層卡片
+   沿用 .pie-card 本身的樣式；中央圓環改成單一整體占比（取代舊版兩條同心圓弧），弧線用
+   固定 stroke-dasharray（圓周長）＋動態 stroke-dashoffset 畫出進度（見 renderAssetOverviewChart()
+   掛載後的動畫邏輯），rotate(-90deg) 讓起點對齊 12 點鐘方向，跟一般進度環（如 Apple Watch
+   三環）閱讀習慣一致；.invov-ring-track 是圈底色，讓沒被進度弧蓋到的部分仍看得出完整圓圈
+   範圍，不會像缺了一角。中心大數字沿用 chart/pie 的 .pie-value／.pie-label 尺寸、間距與
+   顏色（純色，不加漸層）。
+   主打平板瀏覽，預設（基準樣式）就是圓環＋明細左右並排：卡片分左欄（.invov-left，圓環＋
+   投資類型標籤）／右欄（.invov-side，銀行別長條＋總資產／投資金額／現金部位＋附註），
+   中間用 .invov-vdivider 隔開，不是一路垂直堆疊到底——平板寬度綽綽有餘，並排能讓卡片
+   矮很多，不用一直往下滑。總資產那排統計數字與最下面的附註文字都收在右欄裡（跟著銀行別
+   長條同一欄寬度），不再貫穿卡片全寬——這三塊本來就是同一組「明細數字」，收在同一欄比
+   分成「並排區塊」＋「全寬區塊」兩段更完整、也更貼近使用者提供的排版參考。右欄內部再拆
+   .invov-rmain（長條＋統計數字，置中在欄位可用高度內）／.invov-footnote（固定貼底，
+   不參與置中）兩塊，讓右欄整體高度跟左欄（圓環＋標籤）對齊時，明細不會頂到最上緣、
+   附註不會跟著置中飄到中間。左欄本身是置中對齊（讓圓環維持置中），但投資類型標籤／
+   標籤列改用 align-self:flex-start 蓋回去，靠左對齊卡片標題的左邊界——投資類型是文字
+   說明，靠左讀起來比跟著圓環置中更順。斷點沿用同檔案 .kgi-card 已經在用的
+   max-width:640px（見下方 card/recommendation 說明）：小於這個寬度才視為窄手機，
+   改回垂直堆疊、隱藏 .invov-vdivider、置中對齊。
+   顏色一律用站內既有 Design Guideline tokens；弧線／長條／投資占比數字改用
+   --color-chart-blue-1st（比原本的 --color-chart-blue-2nd 更深、對比更高，在白色卡片
+   背景上更清楚，不會看起來偏淡）；弧線與長條都是純色描邊／填色，不加 drop-shadow／
+   box-shadow 螢光或漸層文字效果——維持跟站內其他圖表（chart/pie／chart/line）一致的
+   樸素配色調性；兩行銀行別長條統一同一個藍色 token，不再分本行／他行兩色。數字類文字
+   （百分比、萬元金額、區間）統一加
+   font-variant-numeric:tabular-nums，直式對齊、數字變動時版面不會抖動；標籤／說明文字
+   統一補上 letter-spacing token（--type-caption-ls-cn／--type-subtitle-ls-cn／
+   --type-body-ls-cn），跟站內其他使用同一組 Typography Token 的元件（如 card/product）
+   字距一致。 */
+.invov-card{width:100%}
+.invov-header{align-self:flex-start;margin-bottom:var(--spacing-16)}
+.invov-title{font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);color:var(--color-content-general-primary)}
+.invov-main{width:100%;display:flex;align-items:stretch;gap:var(--spacing-24)}
+.invov-left{flex:0 0 40%;min-width:0;display:flex;flex-direction:column;align-items:center}
+.invov-vdivider{flex-shrink:0;width:1px;background:var(--color-container-general-divider)}
+.invov-ring{position:relative;width:208px;height:208px;flex-shrink:0}
+.invov-ring-svg{width:100%;height:100%;display:block}
+.invov-ring-track{fill:none;stroke:var(--color-container-general-divider);opacity:.5}
+.invov-ring-arc{fill:none;stroke:var(--color-chart-blue-1st);stroke-linecap:round}
+.invov-ring-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.invov-ring-value{font-variant-numeric:tabular-nums}
+.invov-side{flex:1;min-width:0;display:flex;flex-direction:column}
+.invov-rmain{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+.invov-tags-label{align-self:flex-start;width:100%;font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-tertiary);margin-top:auto;margin-bottom:var(--spacing-8)}
+.invov-tags-label:empty{display:none}
+.invov-tags{align-self:flex-start;display:flex;flex-wrap:wrap;gap:var(--spacing-8);justify-content:flex-start}
+.invov-empty{align-self:flex-start;width:100%;font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-tertiary);text-align:left;margin-top:auto}
+.invov-divider{width:100%;border-top:1px solid var(--color-container-general-divider);margin:var(--spacing-16) 0}
+.invov-banks{width:100%;display:flex;flex-direction:column;gap:var(--spacing-16)}
+.invov-bank-head{display:flex;justify-content:space-between;align-items:baseline}
+.invov-bank-name{font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);color:var(--color-content-general-primary)}
+.invov-bank-pct{font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);font-variant-numeric:tabular-nums}
+.invov-bar{width:100%;height:10px;border-radius:var(--radius-full,999px);background:var(--color-container-general-divider);overflow:hidden;margin:var(--spacing-8) 0}
+.invov-bar-fill{width:0;height:100%;border-radius:var(--radius-full,999px);transition:width .9s cubic-bezier(.4,0,.2,1)}
+.invov-bank-foot{display:flex;justify-content:space-between;font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-tertiary);font-variant-numeric:tabular-nums}
+.invov-summary{width:100%;display:flex;justify-content:space-between;text-align:center}
+.invov-summary-item{flex:1}
+.invov-summary-item+.invov-summary-item{border-left:1px solid var(--color-container-general-divider)}
+.invov-summary-label{font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary)}
+.invov-summary-value{font-size:var(--type-body-size);font-weight:var(--type-body-b-weight-cn);line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn);color:var(--color-content-general-primary);margin-top:2px;font-variant-numeric:tabular-nums}
+.invov-summary-value span{font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);margin-left:2px}
+.invov-footnote{width:100%;font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-tertiary);margin-top:var(--spacing-16);font-variant-numeric:tabular-nums}
+/* 窄手機（同一檔案 .kgi-card 也用這個斷點，見上方 card/recommendation 說明）改回垂直堆疊、
+   置中對齊——不夠寬並排的話，圓環跟明細擠在一起反而字都要縮小，還不如維持原本一行一行看。 */
+@media (max-width:640px){
+  .invov-main{flex-direction:column;align-items:center}
+  .invov-left{flex:0 0 auto;width:100%}
+  .invov-vdivider{display:none}
+  .invov-ring{margin:0 auto}
+  .invov-tags{justify-content:center;align-self:center}
+  .invov-tags-label{text-align:center;align-self:center}
+  .invov-empty{text-align:center;align-self:center}
+}
 
 /* ============================================================
    card/recommendation（凱基商品推薦卡片，交接文件：kgi-recommendation-card-handoff.md）
