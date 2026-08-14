@@ -953,12 +953,19 @@ function renderSelectionOptionGroup(items,opts){
     if(active<0)active=cards.findIndex(c=>!c.disabled);
     cards.forEach((c,i)=>{c.tabIndex=(i===active)?0:-1;});
   }
+  /* wasSelected 記錄「這張卡片點擊前」的選取狀態：不管單選（isRadio）還是多選
+     （checkbox），一旦 wasSelected 是 false，這次操作結束後這張卡片一定會變成
+     selected（單選一定選中被點的那張；多選是從未選切到選）。用這個判斷式決定
+     要不要播放 SOUND.playSelect()，剛好符合「選中狀態真的改變了才播」的需求——
+     重複點擊同一張已選中的卡片（單選）或取消勾選（多選）都不會播。 */
   function selectByIndex(i){
     const card=cards[i];
     if(!card||card.disabled)return;
+    const wasSelected=card.classList.contains('is-selected');
     if(isRadio)cards.forEach((c,ci)=>c.setSelected(ci===i));
-    else card.setSelected(!card.classList.contains('is-selected'));
+    else card.setSelected(!wasSelected);
     updateRovingTabIndex();
+    if(!wasSelected)SOUND.playSelect();
     if(items[i].onSelect)items[i].onSelect(items[i],i);
   }
 
