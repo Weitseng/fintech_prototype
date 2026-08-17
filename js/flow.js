@@ -33,7 +33,7 @@ function stepA(){
       <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
-  screen().innerHTML='';screen().appendChild(p);
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
   p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
 }
 
@@ -102,6 +102,25 @@ const CASH_RATIO_ICONS={
    檔案會被瀏覽器 CORS 規則擋下來（瀏覽器本身的安全限制，程式改不了），但 <script>
    標籤載入本機檔案不受這個限制——這也是這個專案其他 js/*.js 檔案本來就能正常運作的
    原因，動畫資料比照辦理就不會受 file:// 影響。 */
+/* 現金占比選項卡的 4 個 Lottie 動畫是逐格點陣圖序列（每個 90 frame、320x320 PNG），單一
+   動畫檔（assets/lottie/cash-*.js）就有 1.1～1.2MB base64，4 張卡片同時播放等於同時把
+   90*4=360 張點陣圖解碼進記憶體；lottie.loadAnimation() 建立的 anim 執行個體如果沒有明確
+   呼叫 .destroy()，即使容器 <canvas> 已經被移出畫面（例如 stepB() 選完進入下一頁，
+   screen().innerHTML='' 把整個 #screen 清空），lottie 內部的 rAF 動畫迴圈跟已解碼的圖片
+   資料並不會自動釋放——會一路留在記憶體裡到頁面重整為止。桌機瀏覽器記憶體餘裕大，不容易
+   感覺到；iPad Safari（WKWebView）對單一分頁的記憶體上限緊得多，選完資產卡片進入對話後，
+   這些從沒釋放的動畫持續佔用記憶體，到流程最後 render 結尾的 Confetti 動畫（js/component-
+   library.js renderFeedbackQrCard）時，記憶體已經被前面 4 個動畫榨乾，導致 Confetti（甚至
+   前面現金占比卡片本身）在部分平板／手機上直接播不出來、也不丟出任何 JS 錯誤（WebKit 在
+   記憶體壓力下對圖片解碼的失敗模式就是安靜地不畫，不是丟例外）。
+   activeLottieAnims 追蹤目前所有還在播放中的 anim 執行個體，destroyActiveLottieIcons()
+   在每次要清空 #screen 換頁之前呼叫（見 stepA()／stepB()／engine.js enterChat()），確保
+   上一頁的動畫記憶體在下一頁開始播放新動畫之前就先釋放，不會一路累積到結尾。 */
+let activeLottieAnims=[];
+function destroyActiveLottieIcons(){
+  activeLottieAnims.forEach(anim=>{try{anim.destroy();}catch(e){}});
+  activeLottieAnims=[];
+}
 function initLottieIcon(el){
   if(el.dataset.lottieInit)return;
   el.dataset.lottieInit='1';
@@ -111,6 +130,7 @@ function initLottieIcon(el){
   const loop=el.dataset.lottieLoop==='true';
   try{
     const anim=lottie.loadAnimation({container:el,renderer:'canvas',loop,autoplay:true,animationData:data});
+    activeLottieAnims.push(anim);
     if(!loop)anim.addEventListener('complete',()=>anim.goToAndStop(Math.max(0,anim.totalFrames-1),true));
     anim.addEventListener('data_failed',()=>{anim.destroy();console.warn('[lottie] data_failed：',key);});
   }catch(e){console.warn('[lottie] 初始化失敗：',key,e);}
@@ -148,7 +168,7 @@ function stepB(){
     <div class="q">2. 其中隨時能動用的現金（活存／定存）大概占多少比例？</div>
     <div id="cashOpts"></div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
-  screen().innerHTML='';screen().appendChild(p);
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
   const ro=p.querySelector('#rangeOpts'),co=p.querySelector('#cashOpts');
   const startBtn=renderComponent('button/primary','立即分析',{disabled:true,onClick:()=>enterChat()});
   p.querySelector('#startBtnMount').appendChild(startBtn);

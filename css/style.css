@@ -111,11 +111,12 @@ body{font-family:var(--font-cn);
   height:58px;padding:var(--spacing-12) 14px;border-bottom:1px solid var(--color-container-general-divider);
   background:var(--color-surface-grey)}
 /* Dark Mode 下維持圖示標記（.app-header-logo-icon）原始的多色品牌識別色（橘/綠/藍漸層＋深藍），
-   這是凱基銀行的品牌圖示，不能改色；但「凱基銀行」「AI 智富管家」文字圖跟中間分隔線
-   （.app-header-logo-kgib／-divider／-ai）都是單一深藍色（#00367B 系列）純色向量圖，
-   直接疊在深色 header 背景上會幾乎看不見，且素材本身沒有另外準備淺色版本、也不是 inline SVG
-   （CSS 沒辦法用 fill/color 直接改色）——這三個圖層改用 filter 轉成純白：brightness(0) 先把
-   不透明像素轉黑（保留原本的透明區域），invert(1) 再把黑轉白，是重新上色純色圖示的通用做法。
+   這是凱基銀行的品牌圖示，不能改色；但「凱基銀行」「AI 智富管家」文字圖（單一深藍色
+   #00367B 系列純色向量圖）跟中間分隔線（純色 CSS 色塊，見下方 .app-header-logo-divider）
+   直接疊在深色 header 背景上會幾乎看不見，文字圖素材本身沒有另外準備淺色版本、也不是
+   inline SVG（CSS 沒辦法用 fill/color 直接改色）——這三個圖層統一改用 filter 轉成純白：
+   brightness(0) 先把不透明像素轉黑（保留原本的透明區域），invert(1) 再把黑轉白，是重新
+   上色純色圖示的通用做法，同一顆 filter 對 <img> 或純色 <span> 一視同仁。
    刻意只選這三個 class、不對整個 .app-header-brand 套用，避免連圖示標記也被一併轉成單色。 */
 [data-theme="dark"] .app-header-logo-kgib,
 [data-theme="dark"] .app-header-logo-divider,
@@ -135,7 +136,13 @@ body{font-family:var(--font-cn);
    role="img"+aria-label 讓整組 lockup 對螢幕報讀軟體仍有可讀的替代文字。 */
 .app-header-logo-icon{position:absolute;left:0;top:0;width:35px;height:35px;display:block}
 .app-header-logo-kgib{position:absolute;left:47px;top:7px;width:105px;height:21px;display:block}
-.app-header-logo-divider{position:absolute;left:164px;top:2.42px;width:0.793px;height:30.154px;display:block}
+/* 分隔線改用純色色塊（background），不再用 <img src=svg>：原本的向量圖寬度只有 0.793px，
+   這種次像素寬度的點陣圖在 WebKit（iOS Safari，iPad／iPhone 皆是）某些狀況下會直接不繪製，
+   導致分隔線在平板／手機上完全消失，桌機瀏覽器（Chrome/Firefox 的圖片繪製管線不同）則不受影響。
+   純色色塊由瀏覽器直接填色，不經過圖片解碼／點陣化流程，同樣次像素寬度下三種瀏覽器引擎
+   都能穩定繪製。顏色沿用原 SVG 的 fill（#00367C），Dark Mode 下方的 filter 規則對 <img>
+   或純色 <span> 一視同仁，不需要另外改。 */
+.app-header-logo-divider{position:absolute;left:164px;top:2.42px;width:0.793px;height:30.154px;display:block;background:#00367C}
 .app-header-logo-ai{position:absolute;left:176.81px;top:10.59px;width:101.453px;height:16.956px;display:block}
 .reset{flex-shrink:0;font-family:var(--font-cn);font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
   line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);
