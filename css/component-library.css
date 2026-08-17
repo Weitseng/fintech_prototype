@@ -612,7 +612,11 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .fbqr-qr{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-40);width:100%}
 /* .fbqr-intro：圖示跟「標題＋說明」文字群組間距 12px，對應 node 266:1187 的 gap-12 */
 .fbqr-intro{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-12);width:100%}
-.fbqr-icon{width:80px;height:80px;display:block}
+/* 慶祝圖示的 Lottie 動畫容器：原本疊放的靜態 SVG fallback 已依需求方要求拿掉，只留
+   js/flow.js 附加進來的 <canvas>（見 js/component-library.js renderFeedbackQrCard 的
+   說明），無限循環播放；尺寸原本沿用 .fbqr-icon 的 80x80，後續要求加大一倍到 160x160。 */
+.fbqr-icon-lottie{display:grid;width:160px;height:160px}
+.fbqr-icon-lottie>*{grid-area:1/1;width:100%;height:100%}
 /* .fbqr-copy：標題跟說明文字間距 8px，對應 node 266:1312 的 gap-8 */
 .fbqr-copy{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-8);width:100%}
 /* .fbqr 用 align-items:center，子元素預設是 hug 寬度；這裡明寫 width:100%，

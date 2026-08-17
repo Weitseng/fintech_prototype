@@ -792,7 +792,17 @@ COMPONENTS['button/primary']={render:renderButtonPrimary};
    底部的 disabled InputChatBar 不在這個元件裡渲染——那是掛在 #inputbar 的全站共用元件
    （js/bootstrap.js 已經是 disabled 狀態），呼叫端不需要另外處理。
    opts：{qrSrc, onRestart}，qrSrc 先用 placeholder 圖檔，之後有真實問卷連結的 QR 圖再替換路徑即可；
-   onRestart 預設呼叫 resetAll()，回到對話流程最初的開始體驗頁。 */
+   onRestart 預設呼叫 resetAll()，回到對話流程最初的開始體驗頁。
+   2026-08-17：慶祝圖示改用 Lottie 動畫（設計端提供的 Confetti 向量動畫，資料存在
+   assets/lottie/feedback-confetti.js，用 index.html 的 <script> 標籤載入成
+   window.__LOTTIE_DATA['feedback-confetti']，跟現金占比選項卡同一套播放機制，見
+   js/flow.js initLottieIcon()／initLottieIcons()）。
+   後續依需求方要求拿掉原本的靜態 SVG（改成只顯示動畫本身，不疊放 fallback），並改成
+   data-lottie-loop="true" 無限循環播放（不同於現金占比選項卡「播一次停在最後一幀」的
+   預設行為），容器尺寸也從原本沿用 .fbqr-icon 的 80x80 加大一倍到 160x160
+   （css/component-library.css 的 .fbqr-icon-lottie）。沒有 fallback 意味著找不到動畫
+   資料或 lottie 沒載到時這裡會是空白，這是這次明確要的效果，不再套用其他圖示那種
+   「fallback 保底不會空白」的保護。 */
 const FBQR_DEFAULTS={qrSrc:'assets/qr-placeholder.svg'};
 function renderFeedbackQrCard(opts){
   opts=opts||{};
@@ -801,7 +811,7 @@ function renderFeedbackQrCard(opts){
   card.innerHTML=`
     <div class="fbqr-qr">
       <div class="fbqr-intro">
-        <img class="fbqr-icon" src="assets/feedback-celebrate.svg" alt="">
+        <span class="fbqr-icon-lottie" data-lottie-key="feedback-confetti" data-lottie-loop="true"></span>
         <div class="fbqr-copy">
           <div class="fbqr-qr-title">感謝體驗凱基 AI 智富管家</div>
           <div class="fbqr-qr-desc">
@@ -818,6 +828,7 @@ function renderFeedbackQrCard(opts){
     renderComponent('button/primary','再體驗一次',{onClick:opts.onRestart||resetAll})
   );
   chatBox.appendChild(card);down();
+  initLottieIcons(card);
   return card;
 }
 COMPONENTS['card/feedback-qr']={render:renderFeedbackQrCard};
