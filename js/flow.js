@@ -65,11 +65,54 @@ const ASSET_RANGE_ICONS={
   '200 萬以上':'<img src="assets/icon-asset-over-200w.svg" alt="">'        // Figma node 370:2933 Fund200
 };
 const CASH_RATIO_ICONS={
-  '95% 以上':'<img src="assets/icon-cash-ratio-over-95.svg" alt="">',  // Figma node 373:3873 95%
-  '50–95%':'<img src="assets/icon-cash-ratio-50-95.svg" alt="">',      // Figma node 373:3872 50-95%
-  '5–50%':'<img src="assets/icon-cash-ratio-5-50.svg" alt="">',        // Figma node 373:3871 5-50%
-  '5% 以下':'<img src="assets/icon-cash-ratio-under-5.svg" alt="">'    // Figma node 373:3870 5%
+  /* 4 個現金占比選項全部改用 Lottie 動畫（設計端提供的水位動畫，資料存在
+     assets/lottie/cash-*.js，用 index.html 的 <script> 標籤載入成
+     window.__LOTTIE_DATA['cash-95-plus' / 'cash-50-95' / 'cash-5-50' / 'cash-under-5']，
+     播放邏輯見 initLottieIcon()）。markup 裡疊放原本的靜態 SVG 當 fallback：找不到對應
+     資料、或執行環境沒有 window.lottie 時，fallback 維持顯示，圖示位置不會空白；css 用
+     grid 疊層讓 canvas 蓋在 fallback 上面，畫得出來才會真的蓋過去（詳見 initLottieIcon
+     的說明）。 */
+  '95% 以上':'<span class="selopt-icon-lottie" data-lottie-key="cash-95-plus"><img src="assets/icon-cash-ratio-over-95.svg" alt="" class="selopt-icon-fallback"></span>',
+  '50–95%':'<span class="selopt-icon-lottie" data-lottie-key="cash-50-95"><img src="assets/icon-cash-ratio-50-95.svg" alt="" class="selopt-icon-fallback"></span>',
+  '5–50%':'<span class="selopt-icon-lottie" data-lottie-key="cash-5-50"><img src="assets/icon-cash-ratio-5-50.svg" alt="" class="selopt-icon-fallback"></span>',
+  '5% 以下':'<span class="selopt-icon-lottie" data-lottie-key="cash-under-5"><img src="assets/icon-cash-ratio-under-5.svg" alt="" class="selopt-icon-fallback"></span>'
 };
+
+/* 掃描選項卡容器裡帶 data-lottie-key 的圖示 span，用 lottie-web 播放一次不循環的動畫，
+   播完停在最後一幀（不重置回第一幀）。lottie 全域變數來自 index.html 用 <script> 載入的
+   js/vendor/lottie.min.js；沒載到就直接跳過，讓 markup 裡原本疊放的靜態 <img> fallback
+   繼續顯示。dataset.lottieInit 避免同一張卡片重複初始化。
+   renderer 用 'canvas' 而非預設的 'svg'：這份動畫來源是逐格點陣圖序列（90 個
+   frame_NNN.png layer，每個只在自己那一格 hold 一幀），SVG renderer 每一幀都要整棵
+   <svg> 子樹換掉當幀的 <image> 節點，遇過換節點速度跟不上導致某一幀短暫全空的情形；
+   canvas renderer 是同一塊 <canvas> 直接畫點陣圖，沒有這種 DOM 節點抽換的空窗期。
+   fallback 圖示自始至終都留在 DOM 裡、從來不會被隱藏——真正提供「不會空白」保證的是
+   css/component-library.css 的 .selopt-icon-lottie{display:grid} 疊層：fallback 跟
+   之後 lottie 附加進來的 <canvas> 疊在同一個 grid cell，canvas 預設透明，畫得出來的
+   時候自然蓋過 fallback，畫不出來時透明的 canvas 讓底下的 fallback 直接透出來，不需要
+   另外偵測「是不是失敗了」才決定要不要復原 fallback。
+   動畫資料改用 <script> 標籤（把 JSON 包成 window.__LOTTIE_DATA['xxx']= 賦值，見
+   index.html）在頁面載入時就準備好，這裡直接同步讀取 window.__LOTTIE_DATA[key]，
+   不再用 fetch()／lottie 內建的 path（XHR）在執行期另外抓 .json 檔：這個專案常會直接
+   用瀏覽器開本機 index.html（file:// 開頭的網址）預覽，file:// 底下 fetch／XHR 抓本機
+   檔案會被瀏覽器 CORS 規則擋下來（瀏覽器本身的安全限制，程式改不了），但 <script>
+   標籤載入本機檔案不受這個限制——這也是這個專案其他 js/*.js 檔案本來就能正常運作的
+   原因，動畫資料比照辦理就不會受 file:// 影響。 */
+function initLottieIcon(el){
+  if(el.dataset.lottieInit)return;
+  el.dataset.lottieInit='1';
+  const key=el.dataset.lottieKey;
+  const data=key&&window.__LOTTIE_DATA&&window.__LOTTIE_DATA[key];
+  if(!data||typeof lottie==='undefined')return;
+  try{
+    const anim=lottie.loadAnimation({container:el,renderer:'canvas',loop:false,autoplay:true,animationData:data});
+    anim.addEventListener('complete',()=>anim.goToAndStop(Math.max(0,anim.totalFrames-1),true));
+    anim.addEventListener('data_failed',()=>{anim.destroy();console.warn('[lottie] data_failed：',key);});
+  }catch(e){console.warn('[lottie] 初始化失敗，維持顯示靜態圖示：',key,e);}
+}
+function initLottieIcons(container){
+  container.querySelectorAll('[data-lottie-key]').forEach(initLottieIcon);
+}
 
 /* 單選題選項群組：改用通用的 selection/option-group 元件（js/component-library.js），
    拿掉舊版 .choice 純文字＋數字序號清單。container 沿用 stepB() 既有的掛載點（#rangeOpts／
@@ -83,6 +126,7 @@ const CASH_RATIO_ICONS={
 function buildSingleSelectOptionGroup(container,options,icons,onPick,ariaLabel){
   const items=options.map(label=>({icon:icons[label],label,onSelect:x=>onPick(x.label)}));
   container.appendChild(renderComponent('selection/option-group',items,{direction:'row',ariaLabel}));
+  initLottieIcons(container);
 }
 
 /* ================= 階段 B｜設定資產情境 ================= */

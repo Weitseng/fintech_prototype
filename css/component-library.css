@@ -749,12 +749,17 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
    之後設計如果補上疊加稿，請替換這裡的規則。Hover 與 Pressed 在 Figma 稿內視覺完全相同
    （背景、邊框皆同），故共用同一組樣式規則，不特別區分。 */
 .selopt-group{display:flex;flex-direction:column;align-items:flex-start;gap:var(--spacing-20)}
-.selopt-group.row{flex-direction:row;flex-wrap:wrap}
+/* row 排列固定擠在同一排、不換行：gap 歸零改用 justify-content:space-between 讓卡片間的
+   左右間距隨容器可用寬度自動撐開／縮小（.app 最大寬度 820px 時剛好 4 張卡＋均分間距
+   撐滿一整排），卡片本身的寬度（含 --selopt-label-width 文字容器）完全不受影響，只有
+   間距在變。萬一容器比 4 張卡片的最小寬度總和還窄（例如較窄的手機瀏覽器），改成整排
+   橫向捲動而不是硬擠壓卡片寬度或被裁切。 */
+.selopt-group.row{flex-direction:row;flex-wrap:nowrap;justify-content:space-between;gap:0;overflow-x:auto}
 
 .selopt{
-  --selopt-label-width:120px; /* Figma 稿量到的文字容器寬度，非 token，可由呼叫端覆寫此變數換寬度 */
+  --selopt-label-width:140px; /* Figma 稿量到的文字容器寬度，非 token，可由呼叫端覆寫此變數換寬度 */
   display:inline-flex;flex-direction:column;align-items:center;gap:var(--spacing-8);
-  padding:var(--spacing-28);border-radius:var(--radius-small);
+  padding:var(--spacing-28) var(--spacing-20);border-radius:var(--radius-small);
   border:1px solid var(--color-container-general-divider);
   background:var(--color-container-card-white);
   cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;
@@ -769,7 +774,14 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .selopt.is-selected{background:var(--color-container-general-light-active);border-color:var(--color-container-general-active-primary)}
 
 .selopt-icon{width:80px;height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.selopt-icon svg,.selopt-icon img{display:block;width:100%;height:100%}
+.selopt-icon svg,.selopt-icon img,.selopt-icon canvas{display:block;width:100%;height:100%}
+/* 現金占比「95% 以上」／「50–95%」卡片：Lottie 動畫（js/flow.js 附加進來的 <canvas>）跟
+   底下的靜態 fallback 圖示疊在同一個 grid cell，兩者都撐滿 .selopt-icon 既有的 80x80
+   尺寸，不影響卡片版面。用 grid 疊層（而不是 position:absolute）是刻意的：fallback
+   永遠留在 DOM 裡不隱藏，canvas 預設透明，畫得出來自然蓋過去、畫不出來就讓 fallback
+   透出來，圖示位置在任何失敗情況下都不會空白（見 js/flow.js initLottieIcon 的說明）。 */
+.selopt-icon-lottie{display:grid;width:100%;height:100%}
+.selopt-icon-lottie>*{grid-area:1/1;width:100%;height:100%}
 .selopt-label{width:var(--selopt-label-width);text-align:center;word-break:break-word;white-space:normal;
   font-family:var(--kgi-font-auto-body-regular-tc-family),"Microsoft JhengHei",system-ui,sans-serif;
   font-size:var(--kgi-font-auto-body-regular-tc-size-rem);
