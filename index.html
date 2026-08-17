@@ -32,6 +32,23 @@
   <div class="controls" id="controls"></div>
   <div id="inputbar" style="display:none"></div>
 </div>
+<!-- lottie-web：現金占比選項卡改用 Lottie 動畫圖示，見 js/flow.js CASH_RATIO_ICONS。
+     直接把套件檔案存在 js/vendor/（原始版本：cdnjs bodymovin 5.12.2）而不是連外部 CDN——
+     銀行內網對外部 CDN 網域的存取常受限制／被攔截，改自己 host 這個檔案就不會受影響。 -->
+<script src="js/vendor/lottie.min.js"></script>
+<!-- 現金占比選項卡的 Lottie 動畫資料本身用 <script> 標籤載入（把 JSON 包成一段
+     `window.__LOTTIE_DATA['xxx']=` 賦值語法，而不是讓 js/flow.js 在執行期用
+     fetch() 另外去抓 .json 檔）：這個專案是純靜態頁面，常會直接用瀏覽器開啟本機
+     index.html（file:// 開頭的網址）預覽，而 fetch()／XMLHttpRequest 抓同一台機器
+     上的本機檔案在 file:// 底下會被瀏覽器的 CORS 規則擋下來（這是瀏覽器本身的安全
+     限制，不是伺服器或程式能繞過的），但一般 <script src="..."> 標籤載入本機檔案
+     不受這個限制——這個專案其他 js/*.js 檔案本來就是這樣載入的。改用同一種方式載入
+     動畫資料，不管是用本機伺服器開，還是直接雙擊 index.html 開，都能正常播放。 -->
+<script src="assets/lottie/cash-95-plus.js"></script>
+<script src="assets/lottie/cash-50-95.js"></script>
+<script src="assets/lottie/cash-5-50.js"></script>
+<script src="assets/lottie/cash-under-5.js"></script>
+<script src="assets/lottie/feedback-confetti.js"></script>
 <!-- 共用層：積木、狀態、連接流程、商品資料（三人共用，PR 需 review） -->
 <script src="js/sound.js"></script>
 <script src="js/shaping-orb.js"></script>
