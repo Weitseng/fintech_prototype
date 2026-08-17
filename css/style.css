@@ -274,9 +274,17 @@ body{font-family:var(--font-cn);
    不是管家在說的重點內容」；沿用跟 .analysis-disclaimer（開場那句 AI 生成內容警語）
    同一組字級／顏色 token，全站的「警語類」文字統一同一個視覺層級。
    疊在 .ai-msg 上（多一個 class，靠特異性覆蓋掉上面的 body 字級規則），還是走同一套
-   appendToChat()／捲動邏輯，不用另外重造一個訊息容器類型。 */
+   appendToChat()／捲動邏輯，不用另外重造一個訊息容器類型。
+   margin 特別覆寫（不用 .ai-msg 預設的 16px 16px 上下對稱）：警語緊接在 stageE() 的
+   推薦卡片之後出現，語意上是「這張卡片的附註」，跟卡片應該視覺分組、間距要小；
+   但緊接在警語後面的是「配置建議」橋接句（見 idleBridgeText()），是新的一段話、
+   不是警語的延伸，兩者用一般 body 字級的落差已經有區分，但上下 margin 一樣時
+   （相鄰兄弟 margin 會 collapse 取較大值，兩段間距其實跟卡片–警語間距一樣）
+   讀起來就像警語跟橋接句黏在一起，分不出「這句是附註、那句才是新內容」——
+   改成上邊距小、下邊距大，跟卡片維持緊鄰的分組感，同時把警語後面的間距拉開。 */
 .ai-msg.disclaimer-note{font-size:var(--type-caption-size);font-weight:var(--type-caption-weight-cn);
-  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary)}
+  line-height:var(--type-caption-lh-cn);letter-spacing:var(--type-caption-ls-cn);color:var(--color-content-general-secondary);
+  margin:var(--spacing-8) 0 var(--spacing-28)}
 .ai-msg .md-ul{margin:2px 0 8px;padding-left:20px}
 .ai-msg .md-ul:last-child{margin-bottom:0}
 .ai-msg .md-ul li{margin:3px 0}

@@ -385,11 +385,12 @@ function stageE(){
       ? `另外，這筆約 <b>NT$${fmt(principal)}</b> 的資金不建議全押同一個地方，可以留一些在穩定的活存，其餘評估配置在債券或基金——您可以先看看兩份清單，再透過試算找出安心持有的比例。`
       : idleBridgeText(prod.tag,principal);
     const proceed=()=>aiSay([bridge],()=>stageF(),{label:'為您規劃資金配置中'});
-    /* 【AI_Behavior_Instruction v1.1 §8.10】這張推薦卡只要出現基金（單一 fund 或 combo
-       搭配債券＋基金）就已經在對使用者展示基金相關內容，原本漏掉警語——之前只有
-       showCatalogCards() 的商品清單才會附上，這裡的推薦卡是使用者更早看到基金內容的地方，
-       同樣要補齊，不能只在後面的清單頁才出現 */
-    sayNote(S.recoType==='fund'||S.recoType==='combo'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
+    /* 【AI_Behavior_Instruction v1.1 §8.10】這張推薦卡只要出現基金或債券（單一 fund/bond
+       或 combo 搭配債券＋基金）就已經在對使用者展示相關內容，原本漏掉警語——之前只有
+       showCatalogCards() 的商品清單才會附上，這裡的推薦卡是使用者更早看到內容的地方，
+       同樣要補齊，不能只在後面的清單頁才出現。recoRiskDisclaimerLines() 會依 recoType
+       決定要附基金警語、債券警語，還是 combo 情境下兩個都附 */
+    sayNote(recoRiskDisclaimerLines(S.recoType),proceed);
   },{label:'為您分析比較適合的方向中',heavy:true});
 }
 
@@ -496,16 +497,43 @@ function catalogGlobeLoaderOpts(items){
    警語，只能先確保這兩句必留的基金風險警語有出現，不透過 catalogDisclaimerLines(items)
    （那個版本需要真正的 catalog items 陣列）。 */
 const FUND_RISK_DISCLAIMER_LINES=[
-  '投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。',
-  '基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。'
+  '投資一定有風險，基金投資有賺有賠。申購前請詳閱公開說明書。基金績效均為過去績效，不代表未來之績效表現，亦不保證基金之投資收益，請勿視為買賣金融商品之建議。'
 ];
+/* 債券風險警語：比照 FUND_RISK_DISCLAIMER_LINES 的邏輯與涵蓋範圍——只要畫面上出現
+   債券（清單／詳情／試算／推薦卡），不論是不是搭配 issuerInfo 一起顯示，都要附上，
+   不依附在 issuerInfo 段落底下（理由同 catalogDisclaimerLines() 對 managerInfo 缺漏的
+   處理）。跟既有的 BOND_ISSUER_DISCLAIMER（catalog.js，講「公司債、留意利率/信用/匯率
+   風險」，只在有 issuerInfo 的商品詳情頁補充說明發行機構時額外出現）是兩份不同的警語，
+   不互相取代：這句是每次出現債券都要有的通用法定警語，那句是詳情頁才需要的補充說明。 */
+const BOND_RISK_DISCLAIMER_LINES=[
+  '債券投資涉及風險，發行人違約或提前賣出都可能造成損失，投資前請充分了解，如有疑問請尋求專業獨立意見。'
+];
+/* stageE()／stageH3() 的推薦卡只知道方向性的 recoType（deposit/bond/fund/combo），
+   還沒有具體商品，用這個小函式統一決定要附哪些警語，combo 兩張卡都出現時兩種警語都要有——
+   避免兩處各自重複寫一次同樣的「fund→加基金警語／bond→加債券警語／combo→兩個都加」判斷。
+   combo 情境下兩份警語不分兩段顯示，合併成一段連續的話，且順序固定「先債券、後基金」
+   （跟 stageE()／stageGList() combo 情境本身「先講債券、再講基金」的順序一致，見
+   PRODUCT_DATA.combo 的兩張卡片順序），回傳陣列只會有 0 或 1 個元素，讓 sayNote()
+   只產生一個 <p>，不是每種商品各自分段 */
+function recoRiskDisclaimerLines(recoType){
+  const parts=[];
+  if(recoType==='bond'||recoType==='combo')parts.push(...BOND_RISK_DISCLAIMER_LINES);
+  if(recoType==='fund'||recoType==='combo')parts.push(...FUND_RISK_DISCLAIMER_LINES);
+  return parts.length?[parts.join('')]:[];
+}
 function catalogDisclaimerLines(items){
-  const lines=[];
-  if(items.some(p=>p.cat==='fund'))lines.push(...FUND_RISK_DISCLAIMER_LINES);
-  if(items.some(p=>p.payFreq==='月配'||p.payFreq==='季配'||p.payFreq==='半年配')){
-    lines.push('配息可能包含本金，實際組成請以公開說明書為準。');
+  const parts=[];
+  if(items.some(p=>p.cat==='bond'))parts.push(...BOND_RISK_DISCLAIMER_LINES);
+  if(items.some(p=>p.cat==='fund')){
+    parts.push(...FUND_RISK_DISCLAIMER_LINES);
+    /* 「配息可能包含本金」只適用基金的配息型商品（配息來源可能拆分出本金，需要另外揭露）——
+       債券配息是票面利息，不會包含本金，這裡放在 fund 分支裡面判斷，確保這句只會接在
+       基金警語後面、成為同一段話的一部分，不會被債券的內容拆開或誤附到純債券清單 */
+    if(items.some(p=>p.cat==='fund'&&(p.payFreq==='月配'||p.payFreq==='季配'||p.payFreq==='半年配'))){
+      parts.push('配息可能包含本金，實際組成請以公開說明書為準。');
+    }
   }
-  return lines;
+  return parts.length?[parts.join('')]:[];
 }
 function showCatalogCards(items){
   const onDetail=p=>{
@@ -568,16 +596,19 @@ function enterProductDetail(p,items,opts){
   ].join('\n');
   const messages=[lines];
   /* noteLines：警語／風險提示改用 sayNote()（見下方 aiSay 完成後的呼叫）獨立顯示，
-     不跟著 messages 一起打字——債券的 BOND_ISSUER_DISCLAIMER、基金的
+     不跟著 messages 一起打字——債券的 BOND_ISSUER_DISCLAIMER、基金／債券共用的
      catalogDisclaimerLines() 都不是「關於這檔商品」介紹文字的一部分，獨立成一段
      才能套用 caption 字級跟一般介紹內文區分開。
-     【AI_Behavior_Instruction v1.1 §8.10】基金的部分要跟 showCatalogCards() 用同一份
-     catalogDisclaimerLines()，不要另外改寫或精簡；即使 managerInfo 缺漏（目前 catalog
-     資料都有填，但不假設永遠如此），警語仍會顯示，不依附在 managerInfo 段落底下。 */
+     【AI_Behavior_Instruction v1.1 §8.10】基金、債券都要跟 showCatalogCards() 用同一份
+     catalogDisclaimerLines()，不要另外改寫或精簡；即使 managerInfo／issuerInfo 缺漏
+     （目前 catalog 資料都有填，但不假設永遠如此），警語仍會顯示，不依附在
+     managerInfo／issuerInfo 段落底下——債券的 BOND_ISSUER_DISCLAIMER 只在有 issuerInfo、
+     額外介紹發行機構時才補充說明，跟 catalogDisclaimerLines() 帶出的通用債券風險警語
+     是兩份不同的內容，兩個都要顯示，不互相取代。 */
   let noteLines=[];
-  if(p.cat==='bond'&&p.issuerInfo){
-    messages.push(`**關於發行機構**\n${p.issuerInfo}`);
-    noteLines=[BOND_ISSUER_DISCLAIMER];
+  if(p.cat==='bond'){
+    if(p.issuerInfo)messages.push(`**關於發行機構**\n${p.issuerInfo}`);
+    noteLines=[...(p.issuerInfo?[BOND_ISSUER_DISCLAIMER]:[]),...catalogDisclaimerLines([p])];
   }else if(p.cat==='fund'){
     if(p.managerInfo)messages.push(`**關於這檔基金**\n${p.managerInfo}`);
     noteLines=catalogDisclaimerLines([p]);
@@ -726,6 +757,10 @@ function classifyH2(keys){
    跟 reconcileWithOriginal() 的理由文字是同一個原則 */
 function adjustH2(base){
   let{result,reason}=base;
+  /* rawResult：reconcileWithOriginal() 封頂之前的原始訊號，用來判斷下面「債券被一年內
+     排除後該退回哪裡」時，往上（基金）還是往下（定存）才貼近使用者實際的原始訊號
+     （見下方「if(result==='bond'&&S.q1==='一年內')」的說明） */
+  const rawResult=result;
   if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
     result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高、配置仍偏保守。*建議先以債券為主，穩健地累積收益。';
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
@@ -733,7 +768,25 @@ function adjustH2(base){
   }
   ({result,reason}=reconcileWithOriginal({result,reason}));
   if(result==='bond'&&S.q1==='一年內'){
-    result='fund';reason=`*這筆資金一年內可能會用到，但${BOND_MATURITY_CAVEAT}*因此改為規劃彈性較高的基金，兼顧收益與資金靈活度。`;
+    /* 債券被「一年內可能要用」排除後，接下來該往哪裡走要看兩件事：
+       1. rawResult（封頂前的原始訊號）是不是 deposit——他行完全沒投資，classifyH2()
+          判斷極度保守，只是被 reconcileWithOriginal() 封頂只讓它降一級到債券。
+       2. S.horizonOverride——本行原本的「基金」推薦是不是本來就是被迫換上來的
+          （使用者 q3 其實選的是債券／組合，只是因為一年內要用、債券不能推薦，
+          resolveAttribute() 才改推基金，見 flow.js 開頭 resolveAttribute()）。
+       只有兩者同時成立才退回定存：這種情況下「基金」從一開始就不是使用者的真心
+       選擇，只是債券的替代方案，他行資產一補充進來顯示更保守的真實輪廓，改成定存
+       （一樣滿足一年內能動用）才貼近原始訊號。
+       如果 S.horizonOverride 是 false（使用者當初 q3 就是主動選基金，是真心要成長型
+       商品），即使他行 0% 投資，也不該只靠這一個訊號把使用者剛表達過的偏好整個蓋掉、
+       跳兩級退到定存——這正是 reconcileWithOriginal() 開頭註解（見上方）想避免的事，
+       這裡維持退到基金，不擴大他行資訊的影響力 */
+    if(rawResult==='deposit'&&S.horizonOverride){
+      result='deposit';
+      reason=`*他行資產顯示您目前的投資經驗或占比仍偏保守，且${BOND_MATURITY_CAVEAT}*建議先以美元定存為主，天期彈性、資金運用也更有餘裕。`;
+    }else{
+      result='fund';reason=`*這筆資金一年內可能會用到，但${BOND_MATURITY_CAVEAT}*因此改為規劃彈性較高的基金，兼顧收益與資金靈活度。`;
+    }
   }
   return{result,reason};
 }
@@ -752,7 +805,11 @@ function reconcileWithOriginal(adjusted){
      這裡不重複講一次，避免同一件事被講兩次 */
   if(diff>=2){
     result=RANK_RECOTYPE[origRank];
-    reason='*他行資產顯示您已有豐富的投資經驗，*這裡仍會依您先前表達的風險考量來安排配置。';
+    /* 這裡雖然封頂只上調一級（不是他行訊號建議的兩級），實際上仍是一次方向調整，
+       stageH3() 會在這句之前先講「由 X 調整為 Y」——理由文字不能寫成「仍依您先前的
+       風險考量」，那聽起來像沒有變動，跟緊接在前面的調整宣告互相矛盾。改成直接說明
+       「調整但保守進行」，跟上面往下調（diff<=-2）分支的措辭一致，都是講清楚實際發生的事 */
+    reason='*他行資產顯示您已有豐富的投資經驗，*這裡先以小幅度調整為主，不會直接跳到最積極的方向。';
   }else if(diff<=-2){
     result=RANK_RECOTYPE[origRank-2];
     reason='*他行資產顯示您目前的投資經驗或占比仍偏保守，*這裡建議以較穩健的方向為主，兼顧收益與風險控制。';
@@ -762,9 +819,19 @@ function reconcileWithOriginal(adjusted){
 function stageH2(){
   if(S.h1Ratio==='0%'){
     const base={result:'deposit',reason:IDLE_FUNDS_REASON};
-    const adj=reconcileWithOriginal(base);
+    /* 這裡要呼叫 adjustH2()，不能只呼叫它內部的 reconcileWithOriginal()——adjustH2() 尾端
+       還有一段「resultTypeH 是債券、但 S.q1 是一年內要用」時強制改回基金的保護（債券要放到
+       到期才能保本領息，跟「一年內要用」互相矛盾），只呼叫 reconcileWithOriginal() 會跳過
+       這段保護，可能讓一年內要用的資金被導向債券 */
+    const adj=adjustH2(base);
     S.h2Items=[];S.h2Reason=adj.reason;S.recoTypeH=adj.result;
-    aiSay(['了解，看來您在其他銀行的資金也是偏保守的配置。'],()=>stageH3(),{label:'管家正在理解分析'});
+    /* 「也是偏保守」的「也」暗示本行原本的配置就已經偏保守——只有 S.recoType 本來就是
+       deposit 時這個暗示才成立；如果使用者在本行三題選的是積極或均衡方向，這句話會跟
+       使用者剛講過的偏好對不上，改成依 S.recoType 分開講 */
+    const idleAck=S.recoType==='deposit'
+      ?'了解，看來您在其他銀行的資金也是偏保守的配置。'
+      :'了解，看來您在其他銀行的資金目前大多閒置、還沒投入太多。';
+    aiSay([idleAck],()=>stageH3(),{label:'管家正在理解分析'});
     return;
   }
   aiSay(['> 您目前主要有投資哪些項目呢？','可以複選，選好之後點一下「確認送出」。'],()=>{
@@ -820,7 +887,13 @@ const OTHER_INVEST_RANGE={'0%':{lo:0,hi:0},'1–50%':{lo:1,hi:50},'50% 以上':{
 function stageH3(){
   const origProd=PRODUCT_DATA[S.recoType];
   const newProd=PRODUCT_DATA[S.recoTypeH];
-  const changed=S.recoTypeH!==S.recoType;
+  /* classifyH2()／adjustH2() 只會回傳 deposit/bond/fund 三選一，永遠不會是 combo，
+     所以原本方向是 combo（債券＋基金都推薦、使用者還沒決定要哪一種）時，S.recoTypeH
+     必定跟 S.recoType 的字串不同，會被誤判成「方向調整」——即使算出來的 fund/bond
+     本來就是 combo 卡片組裡已經出現過的其中一張。這裡只有「combo→deposit」（推薦到
+     一開始兩張卡都沒出現過的定存）才算真的調整；combo→bond／combo→fund 只是從
+     「兩個都看看」收斂成其中一個，不算方向變了，不要重講一次、不要重出一次卡片 */
+  const changed=S.recoType==='combo'?S.recoTypeH==='deposit':S.recoTypeH!==S.recoType;
   const calcLabel=calcLabelFor(newProd);
   /* 第一段：整合後的資產全貌。chart/asset-overview 卡片自己有標題「整體投資佔比」，
      不用再靠 opts.title 額外加一次。bankRange／otherRange 是投資占比的級距上下界
@@ -861,10 +934,12 @@ function stageH3(){
             onSelect:()=>{clearControls();stageH3List();}}
         ]);
       },{label:'為您規劃資金配置中'});
-      /* 【AI_Behavior_Instruction v1.1 §8.10】只有 changed 且新方向是基金時，這裡才是使用者
-         第一次看到「補充他行資產後改推薦基金」的推薦卡（!changed 時方向沒變，使用者在
-         stageE() 已經看過一次，那裡已經補了警語，這裡不用重複） */
-      sayNote(changed&&S.recoTypeH==='fund'?FUND_RISK_DISCLAIMER_LINES:[],proceed);
+      /* 【AI_Behavior_Instruction v1.1 §8.10】只有 changed 時，這裡才是使用者第一次看到
+         「補充他行資產後改推薦」的新方向推薦卡（!changed 時方向沒變，使用者在 stageE()
+         已經看過一次，那裡已經補了警語，這裡不用重複）；S.recoTypeH 不會是 combo
+         （見 classifyH2()／adjustH2()），recoRiskDisclaimerLines() 會依實際新方向
+         （基金或債券）決定要附哪一份警語 */
+      sayNote(changed?recoRiskDisclaimerLines(S.recoTypeH):[],proceed);
     },{label:'為您分析配置方向中'});
   },{label:'為您彙整資產資料中',heavy:true});
 }
