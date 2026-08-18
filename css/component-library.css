@@ -614,8 +614,12 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
 .fbqr-intro{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-12);width:100%}
 /* 慶祝圖示的 Lottie 動畫容器：原本疊放的靜態 SVG fallback 已依需求方要求拿掉，只留
    js/flow.js 附加進來的 <canvas>（見 js/component-library.js renderFeedbackQrCard 的
-   說明），無限循環播放；尺寸原本沿用 .fbqr-icon 的 80x80，後續要求加大一倍到 160x160。 */
-.fbqr-icon-lottie{display:grid;width:160px;height:160px}
+   說明），無限循環播放；尺寸原本沿用 .fbqr-icon 的 80x80，後續要求加大一倍到 160x160。
+   transform:scaleX(-1) 把整個動畫左右鏡像翻轉（需求方要求方向對調）：直接鏡像渲染出來
+   的 canvas，不動 assets/lottie/feedback-confetti.js 裡的原始動畫資料本身——這份是
+   逐格重繪的動畫，要在資料層面鏡像得把每個 shape layer 的路徑座標／anchor／position
+   全部重新換算，CSS transform 效果完全相同又不會有算錯座標、動畫跑位的風險。 */
+.fbqr-icon-lottie{display:grid;width:160px;height:160px;transform:scaleX(-1)}
 .fbqr-icon-lottie>*{grid-area:1/1;width:100%;height:100%}
 /* .fbqr-copy：標題跟說明文字間距 8px，對應 node 266:1312 的 gap-8 */
 .fbqr-copy{display:flex;flex-direction:column;align-items:center;gap:var(--spacing-8);width:100%}
