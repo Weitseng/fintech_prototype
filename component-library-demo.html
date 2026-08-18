@@ -143,6 +143,22 @@
     <div id="linechart-demo-steep" style="padding:16px"></div>
   </div>
 
+  <!-- chart/pie／chart/line 進場動畫展示（2026-08-18 新增）：跟 flow.js stageC() 實際情境
+       一樣兩張圖成對出現，一顆「重播進場動畫」按鈕同時重播兩張圖的進場效果，不用每次都
+       重新整理整個頁面才能反覆檢查。要驗證 prefers-reduced-motion 退化情境（兩張圖應該
+       直接顯示最終畫面，不跑任何畫線／縮放／計數效果），用瀏覽器 DevTools 的 Rendering
+       分頁勾選「Emulate CSS media feature prefers-reduced-motion: reduce」後重新整理
+       這個頁面（重播按鈕本身刻意繞過這個判斷、方便單獨檢視動畫效果，見下方 script 說明，
+       所以測退化情境時要整頁重新整理、不要點重播按鈕）。 -->
+  <div class="demo-section" data-theme="dark" style="background:#0b1220;max-width:760px">
+    <div class="demo-label" style="background:#0b1220;color:#9aa8c7;border-bottom-color:#26314a;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <span>chart/pie ＋ chart/line — 進場動畫（跟 stageC() 相同的資產配置＋被動收益趨勢情境）</span>
+      <button id="replay-intro-btn" type="button" style="flex-shrink:0;padding:6px 12px;border-radius:6px;border:1px solid #3a4a6b;background:#16213d;color:#cfe0ff;font-size:12px;cursor:pointer">重播進場動畫</button>
+    </div>
+    <div id="intro-demo-pie" style="padding:16px 16px 0"></div>
+    <div id="intro-demo-line" style="padding:16px"></div>
+  </div>
+
   <!-- message/option（Figma node 374:4371／374:4424）：純文字單選列表選項，暗色主題。
        Pressed 是原生 :active 偽類（不像 selection/option 是 JS 切的 class），demo-force-pressed
        是借用跟 .choice:active 完全相同的規則掛一個 demo 專用 class，才能不用真的按著滑鼠
@@ -305,6 +321,28 @@
     renderComponent('chart/line', [
       {label:'A',value:100},{label:'B',value:50},{label:'C',value:9000}
     ], {title:'3 個資料點、陡升趨勢', splitIndex:'C', splitLabel:'到期在最後一點', formatValue:v=>Math.round(v).toLocaleString()+' 元'});
+
+    /* chart/pie／chart/line 進場動畫展示：資料直接沿用跟 flow.js stageC() 相近的情境
+       （投資配置 73%／現金留存 27%、定存到期後被動收益從 $1,250 掉到 $333），renderComponent()
+       回傳的 card 本身就帶有 replayIntro（見 js/component-library.js renderPieChart／
+       renderLineChart 尾端），重播按鈕直接呼叫，不用另外重新建立卡片或重新整理頁面。
+       按鈕點擊後短暫 disable：兩張圖動畫總長度都在 1.2 秒內，這裡抓 1.3 秒的緩衝時間，
+       避免使用者在動畫還沒播完時連續快速點擊、跟自己前一輪動畫的 setTimeout 打架
+       （雖然 card.__introGen 那套世代比對已經會讓上一輪的殘留回呼自動失效，這裡單純是
+       多一層更直觀的 UI 保護，避免按鈕看起來「按了沒反應」）。 */
+    chatBox = document.getElementById('intro-demo-pie');
+    const introPieCard = renderComponent('chart/pie', 73, 750000, {title:'目前資產配置'});
+    chatBox = document.getElementById('intro-demo-line');
+    const introLineCard = renderComponent('chart/line', [
+      {label:'4月',value:1250},{label:'5月',value:1250},
+      {label:'6月',value:333},{label:'7月',value:333},{label:'8月',value:333}
+    ], {title:'每月被動收益趨勢', splitIndex:1, splitLabel:'定存到期'});
+    document.getElementById('replay-intro-btn').addEventListener('click',function(){
+      this.disabled=true;
+      introPieCard.replayIntro();
+      introLineCard.replayIntro();
+      setTimeout(()=>{this.disabled=false;},1300);
+    });
 
     /* message/option 四態並排：Selected 直接用元件自己真正的 .sel class，Hover／Pressed
        借用上面新增的 demo-force-hover／demo-force-pressed（跟真正的 :hover／:active 規則

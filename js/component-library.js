@@ -15,18 +15,98 @@ function renderComponentRow(name,items,...args){
   return comp.renderRow(items,...args);
 }
 
+/* ================= 圖表進場動畫共用工具（目前只有 chart/pie／chart/line 用到） =================
+   統一用同一條 ease-out 緩動曲線 cubic-bezier(0.16,1,0.3,1)，讓兩張圖的進場動畫感覺像同一套
+   動效系統。能用 CSS transition 做的地方（opacity／transform／stroke-dashoffset／SVG 幾何
+   屬性）直接把這條曲線字串寫進 transition，交給瀏覽器內插即可；但 donut 的弧線是用
+   conic-gradient 畫（不是 SVG path），中心百分比又是逐幀更新的文字內容，這兩處沒有 CSS
+   transition 可以套用（background-image 這類漸層屬性瀏覽器不支援內插），才需要自己在 JS 裡
+   逐幀算「這條曲線在某個時間點的值」——cubicBezier() 就是給這兩處用的，演算法採用瀏覽器
+   實作 cubic-bezier() timing function 本身也是用的標準反解公式（Newton-Raphson 逼近，
+   x1/x2 需落在 [0,1] 內才保證曲線對時間是嚴格遞增函式、反解得到唯一解，這裡用的
+   0.16／0.3 符合）。
+   chartEaseOutInv 是同一條曲線「時間↔進度」互換後的反函式：把兩個控制點的座標對調
+   （等於把原本的曲線 P(t)=(Bx(t),By(t)) 換成 P'(t)=(By(t),Bx(t))，也就是原曲線對 y=x
+   鏡射後的圖形，正好是反函式的圖形），沿用同一份 cubicBezier() 實作即可，不用另外寫
+   一套反解邏輯。折線圖用這個算「線畫到第 i 個資料點的 x 位置時，經過了整段畫線動畫
+   百分之多少的時間」，讓每個資料點的彈出時機精準對齊 ease-out 曲線實際畫到那個位置的
+   瞬間，而不是假設等速畫線、跟實際變速的筆尖位置對不上。 */
+function cubicBezier(x1,y1,x2,y2){
+  const A=(a1,a2)=>1-3*a2+3*a1;
+  const B=(a1,a2)=>3*a2-6*a1;
+  const C=a1=>3*a1;
+  const calc=(t,a1,a2)=>((A(a1,a2)*t+B(a1,a2))*t+C(a1))*t;
+  const slope=(t,a1,a2)=>3*A(a1,a2)*t*t+2*B(a1,a2)*t+C(a1);
+  return function(x){
+    if(x<=0)return 0;if(x>=1)return 1;
+    let t=x;
+    for(let i=0;i<8;i++){
+      const xEst=calc(t,x1,x2)-x;
+      if(Math.abs(xEst)<1e-4)break;
+      const d=slope(t,x1,x2);
+      if(Math.abs(d)<1e-6)break;
+      t=Math.min(1,Math.max(0,t-xEst/d));
+    }
+    return calc(t,y1,y2);
+  };
+}
+const CHART_EASE_OUT_CSS='cubic-bezier(0.16,1,0.3,1)';
+const chartEaseOut=cubicBezier(0.16,1,0.3,1);
+const chartEaseOutInv=cubicBezier(1,0.16,1,0.3);
+/* CHART_INTRO_RATE：兩張圖進場動畫整體的播放速率，1 是原本規格的速度，改成 0.5 讓整段
+   動畫慢一半（時間拉長兩倍）——animatePieIntro()／animateLineIntro() 所有時間常數都乘
+   chartMs() 換算，只需要調這一個數字，兩張圖的節奏會同步變慢，不用個別去改每一段的
+   毫秒數，也不會打亂原本各階段彼此的相對比例（例如「線畫完的瞬間＝最後一個資料點彈出
+   的瞬間」這類同步關係）。 */
+const CHART_INTRO_RATE=0.5;
+const chartMs=ms=>ms/CHART_INTRO_RATE;
+
+/* revealOnVisible：卡片捲動進可視範圍才觸發一次 cb()，不支援 IntersectionObserver 的環境
+   （保險起見還是處理一下）直接立即執行，避免圖表卡在進場動畫的隱藏起始狀態出不來。
+   只觸發一次（threshold 0.2，卡片露出二成高度就算「已進場」，不用等整張卡片完全捲入
+   畫面），觸發後立刻 disconnect，符合「動畫只在首次出現時播放一次」，使用者捲動離開
+   又捲回來不會重播。 */
+function revealOnVisible(el,cb){
+  if(typeof IntersectionObserver==='undefined'){cb();return;}
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){cb();io.disconnect();}
+    });
+  },{threshold:0.2});
+  io.observe(el);
+}
+
+/* forceReflow：「先設起始樣式、強制觸發一次同步 reflow、再改成目標值」這個慣用手法的
+   共用工具——瀏覽器要先把起始樣式真的算進 render tree，緊接著在同一個 tick 內改成目標值
+   才會被視為「有變化」而觸發 CSS transition，兩次賦值中間沒有插入任何動作的話，瀏覽器可能
+   會把兩次賦值合併成一次 style recalc，直接跳到目標值、不會播放過渡動畫。讀取任何會觸發
+   layout 的屬性都能達到強制 reflow 的效果，這裡用 offsetHeight（讀值本身不重要，只是
+   要觸發同步計算）。
+   這裡刻意不像本檔案既有的 .invov-ring-arc／.invov-bar-fill 那樣改用
+   requestAnimationFrame(()=>{...}) 「等下一影格」的寫法——兩種手法平常效果一樣，但 rAF
+   在瀏覽器分頁被切到背景／不可見時會整個暫停不執行（節省電力／效能，瀏覽器普遍行為），
+   這裡的動畫牽涉到好幾個依時間差錯開觸發的元素（資料點／徽章／到期標註…），如果依賴 rAF
+   才能觸發最終目標值，分頁還沒真正顯示在畫面上時就會卡在起始（隱藏）狀態，直到分頁重新
+   可見才會突然全部跳到定位——強制 reflow 是同步操作，不受分頁可見與否影響，能確保就算
+   卡片是在背景分頁裡預先渲染好，之後分頁一變成可見，動畫的起始狀態／目標狀態切換已經
+   確實發生過，不會停留在中間的隱藏狀態。 */
+function forceReflow(el){void el.offsetHeight;}
+
 /* ---- chart/pie（Figma node 189:853）資產配置圓餅圖 ----
    中心顯示現金留存百分比，圖例列出投資配置／現金留存金額；investedPct 為投資配置占比（0–100）。
    色塊間刻意留白（而非緊密貼合）：在每個色塊交界處插入一小段 transparent，露出 .pie-card
    本身的背景色，視覺上形成間隔；0%/100% 交界（12 點鐘方向）要分別在漸層頭尾各留一小段
    transparent 才會接成一個完整間隔。PIE_GAP_PCT 是每側留白的角度佔比（% of 360°），
    目前只有兩個色塊、兩筆真實資料落點都遠離 0%／100%（見 flow.js stageC()：investedPct
-   實際範圍約 8–80），不會出現留白大於色塊本身的情況，故不另外處理極端值 clamp。 */
+   實際範圍約 8–80），不會出現留白大於色塊本身的情況，故不另外處理極端值 clamp。
+   2026-08-18：PIE_GAP_PCT 從函式內部 const 提升到模組層級——animatePieIntro()（見下方）
+   逐幀重算 conic-gradient 時要用同一個留白值，兩處共用同一個常數，避免各自寫一份 0.4
+   之後改留白寬度得兩邊都記得改。 */
+const PIE_GAP_PCT=0.4;
 function renderPieChart(investedPct,amount,opts){
   opts=opts||{};
   const cashPct=100-investedPct;
   const inv=Math.round(amount*investedPct/100),cash=amount-inv;
-  const PIE_GAP_PCT=0.4;
   const pieBg=`conic-gradient(transparent 0% ${PIE_GAP_PCT}%,`+
     `var(--color-chart-blue-2nd) ${PIE_GAP_PCT}% ${investedPct-PIE_GAP_PCT}%,`+
     `transparent ${investedPct-PIE_GAP_PCT}% ${investedPct+PIE_GAP_PCT}%,`+
@@ -43,9 +123,90 @@ function renderPieChart(investedPct,amount,opts){
       </div>
     </div>`;
   appendToChat(card);down();
+  /* 進場動畫：卡片本身已經是最終畫面（跟改動前完全一樣），animatePieIntro() 只是
+     「暫時把幾個元素覆寫成起始狀態，再動畫回原本就算好的最終值」，不會影響
+     prefersReducedMotion() 為 true、或 IntersectionObserver 因故沒觸發時的外觀——
+     這兩種情況下 startIntro 都不會被呼叫，畫面维持 renderPieChart() 本來就會畫出來的
+     樣子。card.replayIntro 是給 component-library-demo.html 的「重播進場動畫」按鈕用的
+     掛鉤，跟正常流程共用同一份動畫邏輯，不是另外複製一套。 */
+  const startIntro=()=>animatePieIntro(card,investedPct,cashPct);
+  card.replayIntro=startIntro;
+  if(!prefersReducedMotion())revealOnVisible(card,startIntro);
   return card;
 }
 COMPONENTS['chart/pie']={render:renderPieChart};
+
+/* animatePieIntro：donut 弧線「畫出來」的進場動畫規格見需求方訊息——12 點鐘方向開始，先畫
+   投資配置（藍）、畫完緊接著畫現金留存（綠），中心百分比數字 0→目標值計數、收尾對齊弧線
+   畫完的瞬間，圖例兩項各自在自己那段弧線畫完時才淡入＋輕移，總時長落在 700–900ms。
+   現有弧線是用 .pie-chart 這個圓形 div 的 conic-gradient 畫出來，不是 SVG path，沒有
+   stroke-dasharray/stroke-dashoffset 可以套；這裡用「等效的路徑動畫方式」達成同樣的視覺
+   效果——逐幀重新計算 conic-gradient 的色塊終點百分比，從各自的起點慢慢推進到
+   renderPieChart() 已經算好的最終值，效果等同「用 stroke-dashoffset 把弧線畫出來」，
+   只是換成 conic-gradient 能吃的寫法：background-image 這類漸層屬性瀏覽器不支援 CSS
+   transition 直接內插，逐幀更新是唯一能做出「畫出來」效果的方式。
+   藍／綠兩段動畫時間依各自角度佔比分配（角度大的那段本來就該畫比較久，不是兩段各占
+   固定的一半時間）；中心數字用同一條 ease-out 曲線對「整個動畫的時間佔比」計數，兩段弧線
+   都畫完的瞬間數字剛好落在目標值，不需要另外對齊。
+   結束時強制把 background／文字都設回 renderPieChart() 原本算好的字串／數值，避免逐幀
+   計算的浮點誤差讓百分比停在跟原本文字不完全一致的邊界值上。
+   card.__introGen 是簡單的世代計數器（沿用 flow.js 既有 flowGen 那套「呼叫時記錄目前
+   世代，之後每個非同步回呼都比對世代是否還一致」的慣例）：只有 component-library-demo.html
+   的「重播」按鈕會讓同一張卡片重複呼叫這個函式，這裡確保連按重播時，上一次動畫還沒播完的
+   rAF 迴圈會自己在下一輪偵測到世代已經變了就停手，不會跟新一輪動畫互相打架。 */
+function animatePieIntro(card,investedPct,cashPct){
+  const pieEl=card.querySelector('.pie-chart');
+  const valueEl=card.querySelector('.pie-value');
+  const legendItems=card.querySelectorAll('.pie-legend-item');
+  if(!pieEl||!valueEl)return;
+  const myGen=(card.__introGen=(card.__introGen||0)+1);
+  const blueStart=PIE_GAP_PCT,blueEnd=investedPct-PIE_GAP_PCT;
+  const greenStart=investedPct+PIE_GAP_PCT,greenEnd=100-PIE_GAP_PCT;
+  const blueLen=Math.max(0,blueEnd-blueStart),greenLen=Math.max(0,greenEnd-greenStart);
+  const totalLen=blueLen+greenLen||1;
+  const TOTAL_MS=chartMs(800);
+  const blueMs=TOTAL_MS*blueLen/totalLen,greenMs=TOTAL_MS-blueMs;
+  const gradientAt=(curBlueEnd,curGreenEnd)=>`conic-gradient(transparent 0% ${PIE_GAP_PCT}%,`+
+    `var(--color-chart-blue-2nd) ${PIE_GAP_PCT}% ${curBlueEnd}%,`+
+    `transparent ${curBlueEnd}% ${greenStart}%,`+
+    `var(--color-chart-teal-2nd) ${greenStart}% ${curGreenEnd}%,`+
+    `transparent ${curGreenEnd}% 100%)`;
+  const finalBg=gradientAt(blueEnd,greenEnd);
+  pieEl.style.background=gradientAt(blueStart,greenStart);
+  valueEl.textContent='0%';
+  legendItems.forEach(item=>{
+    item.style.transition=`opacity ${chartMs(350)}ms ${CHART_EASE_OUT_CSS},transform ${chartMs(350)}ms ${CHART_EASE_OUT_CSS}`;
+    item.style.opacity='0';
+    item.style.transform='translateY(4px)';
+  });
+  const [legendBlue,legendGreen]=legendItems;
+  const showLegend=item=>{if(item){item.style.opacity='1';item.style.transform='none';}};
+  let blueLegendShown=false;
+  const start=performance.now();
+  function tick(now){
+    if(card.__introGen!==myGen)return;
+    const elapsed=now-start;
+    let curBlueEnd,curGreenEnd;
+    if(elapsed<blueMs){
+      curBlueEnd=blueStart+blueLen*chartEaseOut(blueMs?elapsed/blueMs:1);
+      curGreenEnd=greenStart;
+    }else{
+      curBlueEnd=blueEnd;
+      if(!blueLegendShown){blueLegendShown=true;showLegend(legendBlue);}
+      curGreenEnd=greenStart+greenLen*chartEaseOut(greenMs?Math.min(1,(elapsed-blueMs)/greenMs):1);
+    }
+    pieEl.style.background=gradientAt(curBlueEnd,curGreenEnd);
+    valueEl.textContent=Math.round(cashPct*chartEaseOut(Math.min(1,elapsed/TOTAL_MS)))+'%';
+    if(elapsed<TOTAL_MS){
+      requestAnimationFrame(tick);
+    }else{
+      pieEl.style.background=finalBg;
+      valueEl.textContent=cashPct+'%';
+      showLegend(legendGreen);
+    }
+  }
+  requestAnimationFrame(tick);
+}
 
 /* ---- chart/line（Figma node 374:4249「chart/pei chart」，通用折線圖元件）----
    原本是「定存到期後被動收益趨勢」頁面（js/flow.js stageC()）寫死在頁面裡的一次性 SVG，
@@ -130,9 +291,12 @@ function renderLineChart(points,opts){
   const vGrid=pts.map(p=>`<line x1="${p.x}" y1="${PAD_T}" x2="${p.x}" y2="${baseline}" class="linechart-grid-v"/>`).join('');
   const baselineLine=`<line x1="0" y1="${baseline}" x2="${W}" y2="${baseline}" class="linechart-baseline"/>`;
 
+  /* data-point-index：animateLineIntro()（見下方）用來反查「這個資料點對應哪些 DOM
+     節點」的掛鉤，純粹是動畫用的索引，不影響任何視覺樣式。highlightIndex 那個點會有
+     glow／current 兩個 circle，兩個都標同一個 index（同一個資料點的兩層疊加圖層）。 */
   const dots=pts.map((p,i)=>i===highlightIndex
-    ?`<circle cx="${p.x}" cy="${p.y}" r="11.5" class="linechart-dot-glow"/><circle cx="${p.x}" cy="${p.y}" r="9" class="linechart-dot-current"/>`
-    :`<circle cx="${p.x}" cy="${p.y}" r="6" class="linechart-dot"/>`
+    ?`<circle cx="${p.x}" cy="${p.y}" r="11.5" class="linechart-dot-glow" data-point-index="${i}"/><circle cx="${p.x}" cy="${p.y}" r="9" class="linechart-dot-current" data-point-index="${i}"/>`
+    :`<circle cx="${p.x}" cy="${p.y}" r="6" class="linechart-dot" data-point-index="${i}"/>`
   ).join('');
   const xLabels=labels.map((lb,i)=>`<text x="${xAt(i)}" y="${H-10}" text-anchor="middle" class="linechart-xlabel">${lb}</text>`).join('');
 
@@ -148,7 +312,7 @@ function renderLineChart(points,opts){
   const badges=pts.map((p,i)=>{
     const anchor=anchorFor(i);
     const top=(p.y-DOT_CLEARANCE-LABEL_GAP)/H*100;
-    return `<span class="linechart-value-badge" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${formatValue(values[i])}</span>`;
+    return `<span class="linechart-value-badge" data-point-index="${i}" style="left:${p.x/W*100}%;top:${top}%;transform:${transformFor(anchor)}">${formatValue(values[i])}</span>`;
   }).join('');
   const splitHtml=hasSplit?(()=>{
     const p=pts[splitIndex],anchor=anchorFor(splitIndex);
@@ -167,7 +331,7 @@ function renderLineChart(points,opts){
           </linearGradient>
         </defs>
         ${hGrid}${baselineLine}${vGrid}
-        <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none"/>
+        <path d="${areaPath}" fill="url(#lc-fill-${chartId})" stroke="none" class="linechart-area"/>
         <path d="${linePath}" class="linechart-line"/>
         ${dots}
         ${xLabels}
@@ -175,9 +339,163 @@ function renderLineChart(points,opts){
       ${badges}${splitHtml}
     </div>`;
   appendToChat(card);down();
+  /* 進場動畫：卡片本身已經是最終畫面（跟改動前完全一樣），animateLineIntro() 只是
+     「暫時把幾個元素覆寫成起始狀態，再動畫回原本就已經畫好的最終值」，prefersReducedMotion()
+     為 true、或 IntersectionObserver 因故沒觸發時，startIntro 都不會被呼叫，畫面維持
+     renderLineChart() 本來就會畫出來的樣子。card.replayIntro 是給
+     component-library-demo.html 的「重播進場動畫」按鈕用的掛鉤。 */
+  const startIntro=()=>animateLineIntro(card,pts,highlightIndex,hasSplit);
+  card.replayIntro=startIntro;
+  if(!prefersReducedMotion())revealOnVisible(card,startIntro);
   return card;
 }
 COMPONENTS['chart/line']={render:renderLineChart};
+
+/* animateLineIntro：折線圖進場動畫，規格見需求方訊息——格線先極快淡入（當作畫布準備好的
+   訊號）→折線用路徑長度動畫由左到右畫出來（越接近終點越慢，ease-out 曲線本身自然帶出這個
+   效果，不用另外調整）→每個資料點在「線畫到那個 x 位置」時才彈出（scale 0→1 帶一點點
+   overshoot）→數值徽章接在對應資料點彈出之後，淡入＋由下往上輕移，彼此天然錯開（見下方
+   說明）→「定存到期」註解最後才淡入→最新資料點的光暈在收尾時做一個很輕的 pulse。
+   全部用「設 transition 屬性、下一影格或 setTimeout 之後改目標值」驅動，交給瀏覽器內插，
+   沒有另外寫 rAF 迴圈算數值——這是這個檔案既有 .invov-ring-arc／.invov-bar-fill 兩處
+   進場動畫已經在用的寫法，這裡延續同一套慣例（stroke-dashoffset／scale／opacity 都支援
+   CSS transition，不像 donut 的 conic-gradient 必須自己逐幀算）。
+   每個資料點「彈出」的時機（dotDelay）不是資料點 index 乘固定間隔，而是用
+   chartEaseOutInv() 反查「線畫到這個資料點的 x 位置」實際發生在整段畫線動畫的百分之幾
+   時間點——畫線本身是套 ease-out 曲線變速前進、不是等速，資料點若照 index 等分時間，
+   會跟看得到的筆尖位置對不齊（尤其後段筆尖變慢，等分時間會讓後面幾個點看起來「提早」
+   彈出）。用點跟點之間的實際像素距離（而非 index 差）算比例，資料分佈不均勻（例如
+   陡升／持平混合的走勢）時，每個點彈出的時間點也能跟著筆尖實際位置走，天然形成有疏有密
+   的 stagger，不需要另外疊加人工間隔。
+   card.__introGen 沿用 flow.js 既有 flowGen 那套「呼叫時記錄目前世代，之後每個非同步
+   回呼都比對世代是否還一致」的慣例（跟 animatePieIntro() 同一招）：只有 demo 頁的
+   「重播」按鈕會讓同一張卡片重複呼叫這個函式，這裡確保連按重播時，上一輪還沒清完的
+   setTimeout 不會跟新一輪動畫互相打架——每個 setTimeout callback 一開始都會比對世代，
+   不一致就直接跳過。 */
+function animateLineIntro(card,pts,highlightIndex,hasSplit){
+  const svg=card.querySelector('.linechart-svg');
+  if(!svg)return;
+  const myGen=(card.__introGen=(card.__introGen||0)+1);
+  const stale=()=>card.__introGen!==myGen;
+  /* 時間常數都是配合「總長度控制在 1–1.2 秒內」反推出來的（各常數的相對比例／收尾同步
+     關係見下方各段落註解），實際毫秒數都再套一層 chartMs()——CHART_INTRO_RATE=0.5
+     讓整段動畫變慢一倍，兩張圖的節奏統一調速，不用個別調整每一段的毫秒數。 */
+  const GRID_MS=chartMs(120),LINE_START=chartMs(60),LINE_MS=chartMs(500);
+  const DOT_MS=chartMs(260),BADGE_EXTRA=chartMs(50),BADGE_MS=chartMs(180);
+  const SPLIT_EXTRA=chartMs(60),SPLIT_MS=chartMs(180),PULSE_MS=chartMs(150);
+  const n=pts.length;
+
+  /* 格線：抓目前（CSS 算好的）真正透明度再蓋回去，動畫只是「從 0 淡入到這個值」，
+     不是把透明度寫死成某個猜出來的數字，格線樣式之後改了也不用回來改這裡。 */
+  svg.querySelectorAll('.linechart-grid-h,.linechart-grid-v,.linechart-baseline').forEach(el=>{
+    const finalOpacity=getComputedStyle(el).opacity;
+    el.style.transition=`opacity ${GRID_MS}ms ${CHART_EASE_OUT_CSS}`;
+    el.style.opacity='0';
+    forceReflow(el);
+    if(!stale())el.style.opacity=finalOpacity;
+  });
+
+  /* 曲線下方的漸層填色：面積形狀本來就是跟著折線終點算出來的（見 areaPath），折線還沒畫
+     完就整片顯示會很奇怪，讓它跟著折線畫的時間一起淡入，收尾時機一致，不用另外算路徑動畫。 */
+  const areaEl=svg.querySelector('.linechart-area');
+  if(areaEl){
+    areaEl.style.transition=`opacity ${LINE_MS}ms ${CHART_EASE_OUT_CSS}`;
+    areaEl.style.opacity='0';
+    setTimeout(()=>{if(!stale())areaEl.style.opacity='1';},LINE_START);
+  }
+
+  const lineEl=svg.querySelector('.linechart-line');
+  if(lineEl){
+    const totalLength=lineEl.getTotalLength();
+    lineEl.style.strokeDasharray=totalLength;
+    lineEl.style.strokeDashoffset=totalLength;
+    setTimeout(()=>{
+      if(stale())return;
+      lineEl.style.transition=`stroke-dashoffset ${LINE_MS}ms ${CHART_EASE_OUT_CSS}`;
+      forceReflow(lineEl);
+      if(!stale())lineEl.style.strokeDashoffset='0';
+    },LINE_START);
+  }
+
+  /* 累加各資料點之間的實際像素距離（不是用 index 等分），才能反映畫線曲線在不均勻
+     資料分佈下的真實筆尖位置，詳見函式開頭註解。 */
+  const cum=[0];
+  for(let i=1;i<n;i++){
+    const dx=pts[i].x-pts[i-1].x,dy=pts[i].y-pts[i-1].y;
+    cum.push(cum[i-1]+Math.hypot(dx,dy));
+  }
+  const totalLen=cum[n-1]||1;
+  let lastDotDelay=LINE_START;
+
+  for(let i=0;i<n;i++){
+    const frac=cum[i]/totalLen;
+    const dotDelay=LINE_START+LINE_MS*chartEaseOutInv(frac);
+    lastDotDelay=Math.max(lastDotDelay,dotDelay);
+    svg.querySelectorAll(`[data-point-index="${i}"]`).forEach(dot=>{
+      const cx=dot.getAttribute('cx'),cy=dot.getAttribute('cy');
+      dot.style.transformOrigin=`${cx}px ${cy}px`;
+      dot.style.transform='scale(0)';
+      setTimeout(()=>{
+        if(stale())return;
+        dot.style.transition=`transform ${DOT_MS}ms cubic-bezier(.34,1.56,.64,1)`;
+        forceReflow(dot);
+        if(!stale())dot.style.transform='scale(1)';
+      },dotDelay);
+    });
+    const badge=card.querySelector(`.linechart-value-badge[data-point-index="${i}"]`);
+    if(badge){
+      const finalTransform=badge.style.transform;
+      badge.style.opacity='0';
+      badge.style.transform=`${finalTransform} translateY(4px)`;
+      setTimeout(()=>{
+        if(stale())return;
+        badge.style.transition=`opacity ${BADGE_MS}ms ${CHART_EASE_OUT_CSS},transform ${BADGE_MS}ms ${CHART_EASE_OUT_CSS}`;
+        forceReflow(badge);
+        if(stale())return;
+        badge.style.opacity='1';badge.style.transform=finalTransform;
+      },dotDelay+BADGE_EXTRA);
+    }
+  }
+
+  /* 「所有資料點＋徽章都跑完」的時間點，不管有沒有到期標註都先算出來，讓收尾脈動的時機
+     不受「有沒有 splitLabel」影響，兩種情境的收尾節奏一致。 */
+  const reserveMs=lastDotDelay+BADGE_EXTRA+BADGE_MS;
+  const splitDelay=reserveMs+SPLIT_EXTRA;
+  const splitEl=hasSplit?card.querySelector('.linechart-split-label'):null;
+  if(splitEl){
+    const finalTransform=splitEl.style.transform;
+    splitEl.style.opacity='0';
+    splitEl.style.transform=`${finalTransform} translateY(4px)`;
+    setTimeout(()=>{
+      if(stale())return;
+      splitEl.style.transition=`opacity ${SPLIT_MS}ms ${CHART_EASE_OUT_CSS},transform ${SPLIT_MS}ms ${CHART_EASE_OUT_CSS}`;
+      forceReflow(splitEl);
+      if(stale())return;
+      splitEl.style.opacity='1';splitEl.style.transform=finalTransform;
+    },splitDelay);
+  }
+
+  /* 最新資料點的收尾脈動：整段動畫收尾時，glow 圈短暫放大＋變淡再收回原本大小／透明度，
+     把視覺焦點留在這個點上；讀原本的 r／stroke-opacity 再動畫回去，不是寫死數字，
+     跟其他地方一樣避免跟 CSS／SVG 屬性實際數值脫鉤。 */
+  const glowEl=highlightIndex!=null?svg.querySelector(`.linechart-dot-glow[data-point-index="${highlightIndex}"]`):null;
+  if(glowEl){
+    const baseR=glowEl.getAttribute('r');
+    const baseOpacity=getComputedStyle(glowEl).strokeOpacity;
+    setTimeout(()=>{
+      if(stale())return;
+      glowEl.style.transition=`r ${PULSE_MS}ms ${CHART_EASE_OUT_CSS},stroke-opacity ${PULSE_MS}ms ${CHART_EASE_OUT_CSS}`;
+      glowEl.style.r=(parseFloat(baseR)*1.4)+'px';
+      glowEl.style.strokeOpacity='0.04';
+      setTimeout(()=>{
+        if(stale())return;
+        glowEl.style.transition=`r ${PULSE_MS}ms ${CHART_EASE_OUT_CSS},stroke-opacity ${PULSE_MS}ms ${CHART_EASE_OUT_CSS}`;
+        glowEl.style.r=baseR+'px';
+        glowEl.style.strokeOpacity=baseOpacity;
+      },PULSE_MS);
+    },splitDelay);
+  }
+}
 
 /* ---- chart/asset-overview（本行＋他行資產整合總覽，見 js/flow.js stageH3()）----
    舊版用兩圈同心圓弧分開呈現本行／他行投資占比，但使用者實際想先知道的是「納入他行資產後，
