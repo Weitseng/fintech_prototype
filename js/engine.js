@@ -303,7 +303,7 @@ function assetMid(){return {'50 萬以下':250000,'50–100 萬':750000,'100 萬
 
 function resetAll(){
   flowGen++;
-  S={assetRange:null,cashRatio:null,q1:null,depositWeight:'mid',q2:null,q3:null,
+  S={assetRange:'50–100 萬',cashRatio:'50–95%',q1:null,depositWeight:'mid',q2:null,q3:null,
      attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   if(activePopover){activePopover.remove();activePopover=null;}
   clearControls();stepA();
