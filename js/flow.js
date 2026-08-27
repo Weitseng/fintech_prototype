@@ -224,7 +224,7 @@ function stageC(){
   const est=idleEstimate();
   const income=maturedDepositIncome(est);
   const myGen=flowGen;
-  aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
+  aiSay(["您好，我是凱基銀行的智富管家，已經為您調閱本行的投資商品、定存、活存與轉帳明細，先幫您做個初步資產分析。"],()=>{
     setTimeout(()=>{
       if(myGen!==flowGen)return;
       /* 圓餅圖（資產現況）＋折線圖（到期後被動收益趨勢）先後接續呈現，兩張圖都看完
@@ -272,7 +272,13 @@ function stageC(){
         },{label:'為您分析資產配置中',heavy:true});
       },450);
     },700);
-  },{loader:'cube',loadingMs:4000});
+  },{loader:'cube',loadingMs:9000,cubeSubtitle:[
+    '正在查詢您的投資商品明細…',
+    '正在核對定存到期資訊…',
+    '正在核對活期存款餘額…',
+    '正在彙整近期轉帳明細…',
+    '正在整合您的資產數據，請稍候…'
+  ]});
 }
 
 /* ================= 階段 D｜了解投資屬性（三題釐清） =================

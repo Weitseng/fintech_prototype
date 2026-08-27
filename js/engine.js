@@ -490,7 +490,14 @@ function typeOut(text,cb,cancelToken){
    的第一個 aiSay() 呼叫（stepB 按下「立即分析」之後、進入對話的第一個 loading）會傳
    opts.loader==='cube' 用到這個函式，其他呼叫端一律不傳，維持下方 aiSay() 原本的
    發光球樣式，兩者互斥。title／subtitle 給預設值（沿用使用者提供的參考文案），
-   讓呼叫端可以不傳，也保留之後若要換文案時的彈性。 */
+   讓呼叫端可以不傳，也保留之後若要換文案時的彈性。
+   subtitle 除了單一字串，也可以傳字串陣列——這是這段 loading 使用者體驗上的第一印象，
+   刻意拉長停留時間（見 js/flow.js stageC() 的 loadingMs），若全程只顯示同一句話會顯得
+   在空轉；改成每隔 CUBE_LOADER_MSG_INTERVAL 輪替一句（查投資商品／核對定存／核對活存／
+   彙整轉帳明細……），讓使用者感覺系統真的在逐項查資料。輪替用 setInterval 由回傳物件的
+   t.destroy() 負責清掉（比照 renderGlobeLoader 的 destroy 慣例），aiSay() 收到 loading
+   結束或被取消都會呼叫，不會在節點被移除後還繼續換字。 */
+const CUBE_LOADER_MSG_INTERVAL=1800;
 function renderCubeLoader(title,subtitle){
   const t=document.createElement('div');t.className='cube-loader';
   const FACES=[['front','cyan'],['back','cyan'],['right','purple'],['left','purple'],['top','indigo'],['bottom','indigo']];
@@ -506,7 +513,22 @@ function renderCubeLoader(title,subtitle){
       <p class="cube-loader-subtitle"></p>
     </div>`;
   t.querySelector('.cube-loader-title').textContent=title||'資產彙整分析中';
-  t.querySelector('.cube-loader-subtitle').textContent=subtitle||'正在整合您的資產數據，請稍候…';
+  const subtitleEl=t.querySelector('.cube-loader-subtitle');
+  const messages=Array.isArray(subtitle)&&subtitle.length?subtitle:[subtitle||'正在整合您的資產數據，請稍候…'];
+  let idx=0;
+  const showMsg=()=>{
+    subtitleEl.innerHTML='';
+    const span=document.createElement('span');span.className='cube-loader-subtitle-msg';
+    span.textContent=messages[idx];
+    subtitleEl.appendChild(span);
+  };
+  showMsg();
+  if(messages.length>1){
+    const timer=setInterval(()=>{idx=(idx+1)%messages.length;showMsg();},CUBE_LOADER_MSG_INTERVAL);
+    t.destroy=()=>clearInterval(timer);
+  }else{
+    t.destroy=()=>{};
+  }
   return t;
 }
 /* loading/globe-loader（js/globe-loader.js mountInteractiveGlobe()，畫布繪製邏輯見該檔
@@ -542,7 +564,7 @@ function aiSay(msgs,done,opts){
     let t,destroyLoader;
     if(opts.loader==='cube'){
       t=renderCubeLoader(opts.cubeTitle,opts.cubeSubtitle);
-      destroyLoader=()=>{};
+      destroyLoader=()=>t.destroy();
     }else if(opts.loader==='globe'){
       t=renderGlobeLoader(opts.globeTitle,opts.globeSize);
       destroyLoader=()=>t.destroy();
