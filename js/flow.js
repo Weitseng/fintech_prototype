@@ -263,11 +263,27 @@ function stageC(){
              ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
              kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
           ];
+          /* opts.other 目前 disabled:true（展場期間暫停自行輸入，比照 #inputbar 既有的展覽期間鎖住
+             慣例），輸入框只顯示、不能打字送出，下面這段 onSubmit 目前不會被觸發。保留這段
+             kw 比對＋退回「還沒想法，想先聽看看建議」的邏輯不動，之後展場結束要重新開放自由
+             輸入時，只要把 disabled 拿掉就會是原本設計好的行為，不用重寫這段。 */
           const popover=renderComponent('popover/option-select',question,opts,opt=>{
             popover.remove();
             aiAsk(question);
             meSay(opt.label);
             aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+          },{
+            other:{
+              disabled:true,
+              onSubmit:text=>{
+                popover.remove();
+                aiAsk(question);
+                meSay(text);
+                const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+                const picked=matched||opts[opts.length-1];
+                aiSay([picked.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+              }
+            }
           });
         },{label:'為您分析資產配置中',heavy:true});
       },450);
