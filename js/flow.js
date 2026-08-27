@@ -316,11 +316,23 @@ function ch_d1(){
       {label:'應該一年以上都不會用到',val:'一年以上',wt:'low',kw:['一年以上','1年以上','很久','長期','不會用','都用不到','放很久']},
       {label:'還不確定，要看情況',val:'還不確定',wt:'mid',kw:['還不確定','不確定','不一定','看情況','說不準','不知道']}
     ];
+    const ch_d1Summary=val=>val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
     const popover=renderComponent('popover/option-select',question,opts,opt=>{
       popover.remove();S.q1=opt.val;S.depositWeight=opt.wt;
       aiAsk(question);meSay(opt.label);
-      const summary=opt.val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':opt.val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
-      aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+      aiSay([`*${ch_d1Summary(opt.val)}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[opts.length-1];
+          S.q1=picked.val;S.depositWeight=picked.wt;
+          aiAsk(question);meSay(text);
+          aiSay([`*${ch_d1Summary(picked.val)}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+        }
+      }
     });
   },{label:'管家思考中'});
 }
@@ -346,6 +358,21 @@ function ch_d2(){
       popover.remove();S.q2=opt.val;
       aiAsk(question);meSay(opt.label);
       aiSay([opt.ack],opt.next,{label:'管家正在理解分析'});
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          /* 這題沒有像其他題目一樣有明確的「還不確定」catch-all 選項，退回中間那個
+             「可接受小幅波動」——三個選項裡風險傾向最持平的一個，不會讓自由文字
+             誤觸發最保守（直接跳過 ch_d3）或最積極的分支。 */
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[1];
+          S.q2=picked.val;
+          aiAsk(question);meSay(text);
+          aiSay([picked.ack],picked.next,{label:'管家正在理解分析'});
+        }
+      }
     });
   },{label:'管家思考中'});
 }
@@ -364,6 +391,18 @@ function ch_d3(){
       popover.remove();S.q3=opt.val;
       aiAsk(question);meSay(opt.label);
       opt.next();
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[opts.length-1];
+          S.q3=picked.val;
+          aiAsk(question);meSay(text);
+          picked.next();
+        }
+      }
     });
   },{label:'管家思考中'});
 }
