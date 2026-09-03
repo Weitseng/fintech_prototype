@@ -365,7 +365,7 @@ let cardCancelToken=null;
    才顯示 loading、顯示完就設成 true，之後不管接了幾個 aiSay()，都只會直接接著印字，
    不會再跳出 loading，直到使用者下一次操作、startTurn() 重置旗標為止。 */
 let turnLoadingShown=false;
-function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;turnLoadingShown=false;destroyActiveLottieIcons();const s=screen();s.innerHTML='';
+function enterChat(){showInput();activeChoices=[];currentTurnEl=null;maxScrollTop=Infinity;turnLoadingShown=false;destroyActiveLottieIcons();document.querySelector('.app-header').style.display='';const s=screen();s.innerHTML='';
   chatBox=wrap();chatBox.className='chat';s.appendChild(chatBox);
   const disclaimer=document.createElement('p');disclaimer.className='analysis-disclaimer type-caption-r';
   disclaimer.innerHTML='本服務內容由 AI 自動生成，建議使用前請詳閱<span class="link">《AI 智富管家使用同意條款》</span>';
