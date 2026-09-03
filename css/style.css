@@ -247,6 +247,85 @@ body{font-family:var(--font-cn);
    margin-bottom:24px 是唯一決定間距的來源——.opening-page 用 flex 排版，flex item 之間
    不會自動 margin collapse，兩個 margin 疊加起來會變成 30px，不是 Figma 標註的 24px。 */
 .selpage-intro h1{margin-top:0}
+
+/* ================= 階段 A.5｜iPad 鎖定畫面（js/flow.js stepLock()） =================
+   Figma node 481:2893（Examples/Control Center）：插在「開始體驗」與資產情境設定
+   （stepB()，後續會接到 stageC() 的總覽圓餅圖）之間的轉場頁，模擬 iPad 鎖定畫面
+   被推播通知喚醒、點擊通知進入 App 的體驗。跟 .opening-page 一樣直接填滿 #screen
+   （height:100%），但視覺完全比照 iPadOS 系統畫面（背景圖＋白色文字），刻意不套用
+   站內 Typography Token／Surface 色票——這頁就是要讓使用者誤以為看到的是裝置本身
+   的鎖定畫面，不是站內頁面的一部分。 */
+.lockscreen-page{position:relative;height:100%;overflow:hidden;display:flex;flex-direction:column;
+  align-items:center;color:#fff;transition:opacity .38s ease,transform .38s ease}
+.lockscreen-page.unlocking{opacity:0;transform:scale(1.06)}
+.lockscreen-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.lockscreen-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  padding-top:9%;text-align:center}
+.lockscreen-lock-icon{opacity:.92;margin-bottom:6px}
+/* 日期文字比照 Figma 481:3331（Lock Screen Widget - Inline）標註的 Vibrant Secondary
+   材質：字色是中性灰（#999）、混合模式 plus-lighter——這種「疊加變亮」的混合模式會
+   讓文字顏色跟底下桌布的顏色相加，桌布較暗的區域文字接近純灰、較亮的區域文字會被
+   帶亮泛白，呈現 iOS 系統文字疊在任意背景上都能維持可讀、又不是死板純白色的「活性」
+   材質感，不是單純調 opacity 或疊陰影能做出來的效果。 */
+.lockscreen-date{font-size:16px;font-weight:590;letter-spacing:-.1px;margin-bottom:2px;
+  color:#999;mix-blend-mode:plus-lighter}
+/* 時間文字本身（不是外面包一層面板）套 iOS 26「Liquid Glass」玻璃質感：文字填色設成
+   transparent、用 background-clip:text 讓數字變成「挖空的窗口」，透出後面那層背景。
+   原本試過直接對文字元素套 backdrop-filter（即時模糊元素背後的畫面）＋
+   background-clip:text，理論上最正確，但實測在部分瀏覽器的合成路徑下兩者疊加會失真：
+   backdrop-filter 的模糊範圍沒有真的被文字形狀裁切住，變成一整塊矩形色塊蓋住數字
+   （backdrop-filter 建立的是獨立合成層，不是每個瀏覽器都會拿文字的 clip 去跟它相交）。
+   改成穩定的做法：background-clip:text 底下疊的不是即時模糊的桌布，而是一張離線
+   預先模糊好的桌布副本（assets/ipad-lockscreen-wallpaper-glass.jpg，由桌布原圖套
+   高斯模糊＋提高飽和度／亮度做出來，模擬玻璃霧化＋透光提亮的觀感）當純粹的
+   background-image 使用——這是單純的「圖片裁切成文字形狀」，不牽涉 backdrop-filter，
+   在各種瀏覽器都能正確裁出文字形狀，不會有矩形色塊蓋圖的問題。桌布本身完全靜態
+   （不是即時畫面），離線模糊跟即時模糊視覺上沒有差異，換來的是穩定的相容性。
+   漸層改成三段（亮白→半透明→深色）疊在模糊桌布上，對應 Figma 481:3358／481:3364
+   實際的「9:41」參考稿：數字頂緣受光偏亮白、底緣偏暗，做出像磨砂玻璃/金屬字一樣
+   有立體感的浮雕觀感，不是單一方向淡出的平面漸層；font-weight 提高到 700（Bold）
+   貼近參考稿裡筆畫厚實的 SF Pro Display 數字，600 偏細看不出實心玻璃塊的量感。
+   包在 @supports 裡是因為 background-clip:text＋color:transparent 只有在瀏覽器支援
+   時才看得到東西——不支援的環境文字會整個透明消失，所以外層先給一個不透明白色＋
+   陰影的基本樣式當退回，支援的環境才疊上玻璃版本蓋掉退回樣式。 */
+.lockscreen-time{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",var(--font-cn),sans-serif;
+  font-size:min(15vw,96px);font-weight:700;line-height:1;letter-spacing:-1px;font-variant-numeric:tabular-nums;
+  color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.3)}
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+  .lockscreen-time{
+    color:transparent;text-shadow:none;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.65) 0%,rgba(255,255,255,.18) 42%,rgba(0,0,0,.05) 70%,rgba(0,0,0,.22) 100%),
+      url(../assets/ipad-lockscreen-wallpaper-glass.jpg) center 32% / 260% auto;
+    -webkit-background-clip:text;background-clip:text;
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.45)) drop-shadow(0 8px 20px rgba(0,0,0,.3));
+  }
+}
+/* 通知卡片：預設疊在畫面上方外、透明、縮小、模糊（見下方 .show 的過渡目標），
+   stepLock() 在頁面渲染約 500ms 後加上 .show class，觸發「由上滑入＋回彈」的原生推播
+   動畫；transition-timing-function 用 cubic-bezier(.34,1.56,.64,1)——這條曲線會在
+   終點前越過目標值再回彈一點點（overshoot），是不額外引入動畫函式庫也能做出來、
+   最接近 iOS 彈簧動畫觀感的 CSS 近似值。 */
+.lockscreen-notification{position:absolute;left:5%;right:5%;bottom:11%;z-index:2;appearance:none;width:auto;
+  display:flex;align-items:center;gap:12px;padding:14px 16px;border:0;border-radius:24px;
+  background:rgba(255,255,255,.16);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
+  box-shadow:0 8px 40px rgba(0,0,0,.2);color:#fff;text-align:left;cursor:pointer;font-family:var(--font-cn);
+  opacity:0;transform:translateY(-160%) scale(.92);filter:blur(6px);
+  transition:transform .62s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,filter .4s ease}
+.lockscreen-notification.show{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+.lockscreen-notification.pressed{transform:translateY(0) scale(.96)}
+.lockscreen-notification:focus-visible{outline:2px solid rgba(255,255,255,.85);outline-offset:2px}
+.lockscreen-notif-icon{width:38px;height:38px;border-radius:9px;flex-shrink:0;display:block}
+.lockscreen-notif-body{flex:1;min-width:0}
+.lockscreen-notif-title{font-size:15px;font-weight:600;line-height:1.3}
+.lockscreen-notif-desc{font-size:13px;font-weight:400;opacity:.85;line-height:1.3;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lockscreen-notif-time{font-size:12px;opacity:.7;flex-shrink:0;align-self:flex-start}
+.lockscreen-home-indicator{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
+  width:120px;height:5px;border-radius:100px;background:rgba(255,255,255,.85);z-index:1}
+@media (prefers-reduced-motion: reduce){
+  .lockscreen-page,.lockscreen-notification{transition:none}
+}
 .selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);

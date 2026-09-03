@@ -19,6 +19,7 @@
 
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
+  clearLockClock();
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
   document.querySelector('.reset').style.display='none';
   const p=wrap();p.className='selpage opening-page';
@@ -34,7 +35,69 @@ function stepA(){
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
-  p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
+  p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepLock()}));
+}
+
+/* ================= 階段 A.5｜iPad 鎖定畫面 =================
+   Figma node 481:2893（Examples/Control Center）：插在「開始體驗」與 stepB()（資產情境
+   設定，後續會接到 stageC() 的總覽圓餅圖）之間的轉場——模擬 iPad 鎖定畫面被推播通知
+   喚醒、點擊通知進入 App 的體驗。時鐘／日期即時抓裝置目前時間（非設計稿寫死的
+   「9月3日・9:41」），停留期間會每秒更新；通知卡片的時間戳記固定顯示「現在」，
+   不隨時鐘一起跳動——這是這則通知剛送達的當下時間，不是裝置目前時間。
+   lockClockTimer 追蹤目前是否有時鐘在跑，比照 destroyActiveLottieIcons() 的作法：
+   換頁前一定要清掉，不然離開這頁之後 setInterval 還是會繼續在背景跑、永遠不會停。 */
+let lockClockTimer=null;
+function clearLockClock(){if(lockClockTimer){clearInterval(lockClockTimer);lockClockTimer=null;}}
+const LOCK_WEEKDAYS=['週日','週一','週二','週三','週四','週五','週六'];
+function formatLockDate(d){return `${d.getMonth()+1}月${d.getDate()}日 ${LOCK_WEEKDAYS[d.getDay()]}`;}
+function formatLockTime(d){return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function stepLock(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
+  const p=wrap();p.className='lockscreen-page';
+  p.innerHTML=`
+    <img class="lockscreen-bg" src="assets/ipad-lockscreen-wallpaper.jpg" alt="">
+    <div class="lockscreen-content">
+      <div class="lockscreen-lock-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M7 10.5V7.8C7 5.1 9.2 3 12 3s5 2.1 5 4.8v2.7" stroke="white" stroke-width="1.6" stroke-linecap="round"/><rect x="5.5" y="10.5" width="13" height="10" rx="2.4" fill="white"/></svg>
+      </div>
+      <div class="lockscreen-date" id="lockDate"></div>
+      <div class="lockscreen-time" id="lockTime"></div>
+    </div>
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：我幫您追蹤了這個月的資產變化，點兩下查看總覽">
+      <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
+      <div class="lockscreen-notif-body">
+        <div class="lockscreen-notif-title">我幫您追蹤了這個月的資產變化</div>
+        <div class="lockscreen-notif-desc">整體資產表現穩定，被動收入有 6% 的變動，點一下查看總覽</div>
+      </div>
+      <div class="lockscreen-notif-time">現在</div>
+    </button>
+    <div class="lockscreen-home-indicator" aria-hidden="true"></div>`;
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const dateEl=p.querySelector('#lockDate'),timeEl=p.querySelector('#lockTime');
+  const tick=()=>{const now=new Date();dateEl.textContent=formatLockDate(now);timeEl.textContent=formatLockTime(now);};
+  tick();lockClockTimer=setInterval(tick,1000);
+  /* 推播約 500ms 後才彈出（見需求：進入畫面後才自動觸發，不是一開場就出現），
+     這裡才加上 .show class 觸發 css 的滑入＋回彈過渡；p.isConnected 防呆使用者在
+     這 500ms 內就先按了「重新開始」把 #screen 整個清空的情形，避免對已經被移除
+     的節點加 class（雖然無害，但也沒有意義）。 */
+  const notif=p.querySelector('#lockNotif');
+  setTimeout(()=>{if(p.isConnected)notif.classList.add('show');},500);
+  /* 點擊整張通知卡才觸發：先給一個「按下」的縮小回饋（比照 iOS 通知輕觸的手感），
+     短暫停留後才開始整頁淡出＋放大的解鎖轉場，轉場動畫（.unlocking，css transition
+     380ms）跑完才呼叫 stepB()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
+     這個先後順序看得出來，而不是點擊跟換頁同時發生。 */
+  let opened=false;
+  notif.addEventListener('click',()=>{
+    if(opened)return;opened=true;
+    clearLockClock();
+    notif.classList.add('pressed');
+    setTimeout(()=>{
+      p.classList.add('unlocking');
+      setTimeout(()=>stepB(),380);
+    },150);
+  });
 }
 
 /* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
@@ -156,6 +219,7 @@ function buildSingleSelectOptionGroup(container,options,icons,onPick,ariaLabel){
 
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
+  clearLockClock();
   clearControls();
   document.querySelector('.reset').style.display='';
   const p=wrap();p.className='selpage';
