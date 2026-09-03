@@ -432,6 +432,7 @@ body{font-family:var(--font-cn);
 .cube-loader-text{display:flex;flex-direction:column;align-items:center;gap:4px}
 .cube-loader-title{font-family:var(--font-cn);font-size:14px;font-weight:600;letter-spacing:.3em;color:#67e8f9;text-transform:uppercase}
 .cube-loader-subtitle{font-family:var(--font-cn);font-size:12px;color:#94a3b8}
+.cube-loader-subtitle-msg{display:inline-block;animation:chunkFade .3s ease}
 @keyframes cubeLoaderSpin{0%{transform:rotateX(0deg) rotateY(0deg)}100%{transform:rotateX(360deg) rotateY(360deg)}}
 @keyframes cubeLoaderBreathe{0%,100%{transform:translateZ(48px);opacity:.8}50%{transform:translateZ(80px);opacity:.4;border-color:rgba(255,255,255,.8)}}
 @keyframes cubeLoaderPulse{0%,100%{transform:scale(.8);opacity:.5}50%{transform:scale(1.2);opacity:1}}
