@@ -729,30 +729,6 @@ input.calc-slider::-moz-range-track{height:10px;border-radius:var(--radius-full)
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain}
 .choice:disabled{opacity:.4;cursor:not-allowed}
-/* choice-other（popover/option-select 的 opts.other，見 js/component-library.js
-   renderOptionPopover() 說明）：選項清單最下面一列「其他，請輸入」的自由文字輸入列，
-   不算進 .choice:not(.checkopt) 的自動編號（class 名稱本來就不是 .choice，不會命中
-   ::before 那條 counter 規則），用上緣分隔線跟前面的選項隔開，呼應參考圖裡選項與
-   「Something else」輸入列之間的視覺分界。 */
-.choice-other{display:flex;align-items:center;gap:var(--spacing-8);
-  margin:16px 0 8px;padding-top:var(--spacing-16);border-top:1px solid var(--color-container-general-divider)}
-.choice-other-icon{flex:none;display:flex;color:var(--color-content-general-secondary)}
-.choice-other-icon svg{width:16px;height:16px}
-.choice-other-input{flex:1;min-width:0;border:1px solid var(--color-container-general-divider);
-  border-radius:var(--radius-small);padding:var(--spacing-12) var(--spacing-16);
-  font-family:var(--font-cn);font-size:var(--type-body-size);color:var(--color-content-general-primary);
-  background:var(--color-surface-white)}
-.choice-other-input::placeholder{color:var(--color-content-general-secondary)}
-.choice-other-input:focus{outline:none;border-color:var(--color-container-general-active-primary)}
-.choice-other-input:disabled{background:var(--color-container-general-disabled);color:var(--color-content-general-disabled);cursor:not-allowed}
-.choice-other-input:disabled::placeholder{color:var(--color-content-general-disabled)}
-.choice-other-submit{flex:none;width:32px;height:32px;border-radius:50%;border:none;
-  background:var(--color-container-general-active-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
-@media (hover:hover) and (pointer:fine){
-  .choice-other-submit:hover{opacity:.85}
-}
-.choice-other-submit:disabled{background:var(--color-container-general-disabled);cursor:not-allowed}
-.choice-other-submit svg{width:14px;height:14px}
 /* .selpage（stepA／stepB 這類不經過 #controls 的頁面）裡的 .choice 選項群組，
    每題各自的容器都要重設一次 choice-num，兩題的編號才會各自從 1 開始
   （#controls 本身已經在上面 css/style.css counter-reset 過，chat 流程裡的 .choice 不需要另外加這個 class）。 */
