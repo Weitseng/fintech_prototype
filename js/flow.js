@@ -706,15 +706,19 @@ const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
    開始自轉、還沒轉到第二個據點就結束了，尺寸也偏小看不清楚立體感，加大加長之後才看得出
    「跨地區蒐集」的動態；6000ms 比 stageC() 開場的 cube-loader（4000ms）還長，這裡不是
    整段體驗的第一印象，但使用者明確要求這個 loading 停留約 6 秒，不再刻意留短。 */
-function catalogGlobeLoaderOpts(items){
+/* titleOverride：選填，跳過下面依 cat 組成判斷標題的邏輯，直接採用呼叫端指定的文字——
+   目前只有 showETFPicks() 會傳，因為 ETF_PICKS 裡的商品 cat 都是'fund'（沿用基金的欄位
+   對應與警語邏輯，見 catalog.js 該常數的說明），如果不覆寫，這裡依 cat 判斷會顯示「搜尋
+   基金中」，沒辦法區分「使用者主動要看ETF」跟「一般基金推薦清單」這兩種不同情境。 */
+function catalogGlobeLoaderOpts(items,titleOverride){
   const cats=new Set(items.map(p=>p.cat));
-  const title=cats.size>1
+  const title=titleOverride||(cats.size>1
     ?'搜尋基金與債券中'
     :({
       bond:'搜尋債券中',
       fund:'搜尋基金中',
       deposit:'搜尋定存方案中'
-    }[[...cats][0]]||'搜尋商品中');
+    }[[...cats][0]]||'搜尋商品中'));
   return {loader:'globe',loadingMs:6000,globeSize:220,globeTitle:title};
 }
 /* 【AI_Behavior_Instruction v1.1 §8.10】基金商品清單、配息型商品清單後方必須完整保留法定警語，
@@ -865,7 +869,19 @@ function enterProductDetail(p,items,opts){
   },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
-  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),catalogGlobeLoaderOpts(items));
+  /* items===ETF_PICKS：使用者是從 ETF 清單「查看其他產品」回來的，loading 標題也要延續
+     showETFPicks() 的「搜尋ETF中」，不能落回 catalogGlobeLoaderOpts() 依 cat 判斷出的
+     「搜尋基金中」——ETF_PICKS 裡的商品 cat 都是'fund'，這裡不特別處理就會顯示錯的標題。 */
+  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),catalogGlobeLoaderOpts(items,items===ETF_PICKS?'搜尋ETF中':undefined));
+}
+/* 試算頁「我還是想再保守一點，偏好ETF」選項專用——帶出獨立於 CATALOG 之外的 ETF_PICKS
+   （見 catalog.js 該常數的說明），不經過 matchCatalogAtLeast()，因為使用者是自己主動
+   表態想看ETF，不是本行問卷算出的推薦結果。跟 showCatalogCards() 其餘呼叫端一樣走
+   globe-loader（catalogGlobeLoaderOpts()），維持「查詢商品」的一致體感。 */
+function showETFPicks(){
+  aiSay(['凱基也提供多元的ETF可以選購，跟您相近的資產與風險能力的用戶，大都買市值型ETF：'],()=>{
+    showCatalogCards(ETF_PICKS);
+  },catalogGlobeLoaderOpts(ETF_PICKS,'搜尋ETF中'));
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -909,6 +925,18 @@ function enterProductCalc(p,items,opts){
           keywords:['查看','其他','清單','商品','天期','回去','返回'],
           onSelect:()=>{clearControls();backToCatalogList(items);}}
       );
+      /* 只在債券／基金情境才提供這個轉向 ETF 的選項——定存已經是本表風險最低的商品，
+         不需要再往「更保守」的方向多繞一圈；放在 nextItems 最後一個，對應使用者要的
+         「試算頁最下方的 CTA」。點下去不經過 CATALOG／matchCatalogAtLeast()，直接帶出
+         獨立的 ETF_PICKS 清單（見 catalog.js 該常數的說明），跟本行問卷算出的推薦
+         結果是兩條不同的路，不用重新跑一次風險/資產規模比對。
+         items!==ETF_PICKS：使用者如果已經在試算 ETF_PICKS 裡的其中一檔，就不用再出現
+         這個選項——已經在看ETF了，沒有必要再繞回同一份清單。 */
+      if((p.cat==='bond'||p.cat==='fund')&&items!==ETF_PICKS){
+        nextItems.push({id:'etf',title:'我還是想再保守一點，偏好ETF',description:'看看跟您相同性質的用戶投資哪些ETF',
+          keywords:['保守','ETF','etf','市值型','穩健一點'],
+          onSelect:()=>{clearControls();showETFPicks();}});
+      }
       showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
       /* 試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把 cardAnchor（剛才點的
          商品卡片）整個推出畫面上緣；這裡再往回捲一點點，固定露出卡片下緣 PEEK_PX 高度，

@@ -195,6 +195,39 @@ const CATALOG=[
    AI_Behavior_Instruction §8.10 列舉的法定強制警語，用詞可以精簡，不受「不得改寫」限制 */
 const BOND_ISSUER_DISCLAIMER='以上皆為公司（金融）債，收益主要來自票息，須留意利率、信用（發行人違約）與匯率風險；實際條件依個別票息、到期日與債信評等而定。';
 
+/* ================= ETF 精選清單（js/flow.js showETFPicks() 專用） =================
+   刻意獨立於 CATALOG 之外，不放進共用商品陣列：這三檔只透過「我還是想再保守一點，偏好ETF」
+   這個使用者主動點選的專屬入口帶出（見 enterProductCalc()），不是本行既有問卷（風險承受度／
+   資產規模）算出來的推薦結果——放進 CATALOG 會被 matchCatalog() 依 risk／assetSize 撈進一般
+   債券／基金推薦清單，語意不對，使用者會在還沒表態「想要ETF」之前就看到這三檔。
+   cat 沿用 'fund'：ETF 本質上是基金的一種（受益憑證、可在集中市場交易），card/product／
+   catalogDisclaimerLines() 這些既有元件都是依 cat 判斷欄位與警語，用 'fund' 才能直接沿用
+   現成的「近一年報酬率／基金淨值」欄位對應與基金風險警語，不用另外開一個 'etf' 分支。
+   三檔都是追蹤台灣市值前 50 大公司的市值型ETF；009816 是凱基投信自家發行（isOwnBrand()
+   認得出來），排第一檔，呼應「凱基也提供多元的ETF」這句話。
+   NAV／近一年報酬率為 2026-09-07 網路查證的參考數字（0050／006208 為市場成交價概數，
+   009816 為官方淨值），非即時官方數據，正式上線前需業務或商品負責人覆核；009816 是
+   2026/1/22 才成立的新基金，還沒有滿一年，這裡的報酬率是成立以來的參考數字，不是
+   真正的年化報酬率——跟 catalog.js 開頭 FUND8 那則說明是同一種「示範用途、非正式數字」
+   的處理方式。 */
+const ETF_PICKS=[
+  {code:'009816',cat:'fund',name:'凱基台灣TOP50 ETF',currency:'TWD',rate:0.18,rate1y:0.18,rate3y:0.18,nav:15.91,navLabel:'收盤價',return1y:0.18,
+    payFreq:'不配息',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
+    feature:'凱基投信發行；追蹤特選臺灣TOP50指數，市值型；台灣首檔不配息ETF，成分股股利留在基金內部再投入；2026/1/22 成立，未滿一年無完整年度績效，報酬率為成立以來參考數字',
+    managerInfo:'凱基投信發行的市值型ETF，追蹤台灣市值前50大企業，成分股獲配的現金股利留在基金內部再投入，訴求長期複利累積、不另外配息。2026年初成立，尚無完整一年績效紀錄。'},
+  {code:'0050',cat:'fund',name:'元大台灣50 ETF',currency:'TWD',rate:0.35,rate1y:0.35,rate3y:0.28,nav:107.9,navLabel:'收盤價',return1y:0.35,
+    payFreq:'半年配',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
+    feature:'元大投信發行；追蹤台灣50指數，市值型；台灣規模最大、歷史最悠久的ETF之一，2003年成立',
+    managerInfo:'元大投信發行的市值型ETF，追蹤台灣市值前50大企業，是台灣歷史最悠久、規模數一數二的ETF，長期績效貼近大盤表現。'},
+  {code:'006208',cat:'fund',name:'富邦台50 ETF',currency:'TWD',rate:0.35,rate1y:0.35,rate3y:0.28,nav:247.25,navLabel:'收盤價',return1y:0.35,
+    payFreq:'半年配',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
+    feature:'富邦投信發行；追蹤台灣50指數，市值型；內扣費用率同類型中相對較低',
+    managerInfo:'富邦投信發行的市值型ETF，追蹤台灣市值前50大企業，跟0050追蹤同一指數，內扣總費用率相對較低。'}
+];
+
 /* ================= 商品篩選（依客戶屬性挑出符合需求的清單） =================
    風險接受度：使用者能接受的波動程度是「上限」，可以接受越明顯的波動，能看到的商品也越多
    資產規模：補充路徑（H）用本行／他行兩邊級距篩掉超過使用者資金規模的門檻較高商品，
