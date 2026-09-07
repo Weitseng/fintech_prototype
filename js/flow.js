@@ -431,7 +431,7 @@ function stageC(){
         },{label:'為您分析資產配置中',heavy:true});
       },450);
     },700);
-  },{loader:'cube',loadingMs:9000,cubeSubtitle:[
+  },{loader:'cube',loadingMs:5000,cubeSubtitle:[
     '正在查詢您的投資商品明細…',
     '正在核對定存到期資訊…',
     '正在核對活期存款餘額…',

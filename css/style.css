@@ -471,8 +471,13 @@ body{font-family:var(--font-cn);
 .cube-loader-shadow{position:absolute;left:50%;bottom:-80px;transform:translateX(-50%);width:96px;height:32px;
   background:rgba(0,0,0,.4);filter:blur(24px);border-radius:100%;animation:cubeLoaderShadowBreathe 3s ease-in-out infinite}
 .cube-loader-text{display:flex;flex-direction:column;align-items:center;gap:4px}
-.cube-loader-title{font-family:var(--font-cn);font-size:14px;font-weight:600;letter-spacing:.3em;color:#67e8f9;text-transform:uppercase}
-.cube-loader-subtitle{font-family:var(--font-cn);font-size:12px;color:#94a3b8}
+/* .cube-loader-subtitle 才是會變動的字（renderCubeLoader() 每 1800ms 輪替一句查詢中文案，
+   見 engine.js），.cube-loader-title 全程都是固定的「資產彙整分析中」。原本標題字級較大、
+   排在上面，會變動的內容反而字級較小、排第二——這裡把字級對調（標題 14px→12px，
+   輪替文案 12px→14px），順序也用 order 對調（輪替文案排到上面），讓使用者在等待期間
+   更容易注意到系統正在逐項查資料的動態內容，不是只看到一句不會變的標題。 */
+.cube-loader-title{order:2;font-family:var(--font-cn);font-size:12px;font-weight:600;letter-spacing:.3em;color:#67e8f9;text-transform:uppercase}
+.cube-loader-subtitle{order:1;font-family:var(--font-cn);font-size:14px;color:#94a3b8}
 .cube-loader-subtitle-msg{display:inline-block;animation:chunkFade .3s ease}
 @keyframes cubeLoaderSpin{0%{transform:rotateX(0deg) rotateY(0deg)}100%{transform:rotateX(360deg) rotateY(360deg)}}
 @keyframes cubeLoaderBreathe{0%,100%{transform:translateZ(48px);opacity:.8}50%{transform:translateZ(80px);opacity:.4;border-color:rgba(255,255,255,.8)}}
