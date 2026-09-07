@@ -705,7 +705,10 @@ function renderProductCardDisplay(p,onDetail,onCalc){
   const rateLabel=p.cat==='bond'?BOND_CARD_LABELS.rate:p.cat==='deposit'?'年利率':'近一年報酬率';
   const rateSrc=p.cat==='fund'?p.return1y:p.rate1y;
   const rate1Str=(rateSrc*100).toFixed(2);
-  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?BOND_CARD_LABELS.price:'基金淨值';
+  /* p.navLabel：選填欄位，讓 cat==='fund' 底下的個別商品覆寫第二格標題——目前只有
+     catalog.js ETF_PICKS 那三檔會傳'收盤價'（ETF 在集中市場交易，看的是收盤價，
+     不是傳統基金的每日結算淨值），一般共同基金不傳這個欄位，維持原本的「基金淨值」 */
+  const stat2Label=p.cat==='deposit'?'最高限額':p.cat==='bond'?BOND_CARD_LABELS.price:(p.navLabel||'基金淨值');
   const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?`${p.refPrice}%`:p.nav;
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
