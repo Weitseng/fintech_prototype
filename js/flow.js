@@ -915,6 +915,10 @@ function adjustH2(base){
   const rawResult=result;
   if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
     result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高、配置仍偏保守。*建議先以債券為主，穩健地累積收益。';
+    /* S.assetRange 這一半現在恆為 false：那題已拿掉，S.assetRange 固定是 resetAll() 的
+       '50–100 萬' 預設值，不會等於'200 萬以上'。這個判斷式因此實質上只看 S.h1Amt
+       （使用者真實填寫的他行資產級距）——保留 S.assetRange 這半只是不改動既有寫法，
+       不是還在依賴它，之後如果要精簡可以直接拿掉 */
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
     result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以搭配基金組合，讓資金有更大的成長空間。';
   }
