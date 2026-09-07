@@ -19,8 +19,10 @@
 
 /* ================= 階段 A｜開始體驗頁 ================= */
 function stepA(){
+  clearLockClock();
   clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
   document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='';
   const p=wrap();p.className='selpage opening-page';
   p.innerHTML=`
     <div class="selpage-hero">
@@ -29,12 +31,80 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <h1>幫您檢視目前的閒置資金，找出更合適的運用方式。</h1>
-      <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點閒置資金，找出更適合的資金運用方式。</div>
+      <h1>幫您全面檢視資產配置，打造更佳的投資組合</h1>
+      <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點投資現況，提供合適的資產分析與佈局建議。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
-  p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepB()}));
+  p.querySelector('#startBtnMount').appendChild(renderComponent('button/primary','開始體驗',{onClick:()=>stepLock()}));
+}
+
+/* ================= 階段 A.5｜iPad 鎖定畫面 =================
+   Figma node 481:2893（Examples/Control Center）：插在「開始體驗」與正式進入分析對話
+   （enterChat()）之間的轉場——模擬 iPad 鎖定畫面被推播通知喚醒、點擊通知進入 App 的
+   體驗。這條分支已把 stepB() 資產情境選擇頁隱藏、開場後直接進入分析對話（見
+   stepA() 註解），所以這裡點通知卡解鎖後銜接的是 enterChat()，不是 stepB()。
+   時鐘／日期即時抓裝置目前時間（非設計稿寫死的「9月3日・9:41」），停留期間會每秒
+   更新；通知卡片的時間戳記固定顯示「現在」，不隨時鐘一起跳動——這是這則通知剛送達
+   的當下時間，不是裝置目前時間。
+   lockClockTimer 追蹤目前是否有時鐘在跑，比照 destroyActiveLottieIcons() 的作法：
+   換頁前一定要清掉，不然離開這頁之後 setInterval 還是會繼續在背景跑、永遠不會停。 */
+let lockClockTimer=null;
+function clearLockClock(){if(lockClockTimer){clearInterval(lockClockTimer);lockClockTimer=null;}}
+const LOCK_WEEKDAYS=['週日','週一','週二','週三','週四','週五','週六'];
+function formatLockDate(d){return `${d.getMonth()+1}月${d.getDate()}日 ${LOCK_WEEKDAYS[d.getDay()]}`;}
+function formatLockTime(d){return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function stepLock(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
+  /* 整條 app-header（凱基銀行 logo／靜音鍵）在這頁也一併藏起來——這頁要讓使用者誤以為
+     看到的是裝置本身的鎖定畫面，站內的品牌 header 露出來就穿幫了。stepA()／enterChat()
+     會在離開這頁時把它還原（style.display=''），不是永久藏起來。 */
+  document.querySelector('.app-header').style.display='none';
+  const p=wrap();p.className='lockscreen-page';
+  p.innerHTML=`
+    <img class="lockscreen-bg" src="assets/ipad-lockscreen-wallpaper.jpg" alt="">
+    <div class="lockscreen-content">
+      <div class="lockscreen-lock-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M7 10.5V7.8C7 5.1 9.2 3 12 3s5 2.1 5 4.8v2.7" stroke="white" stroke-width="1.6" stroke-linecap="round"/><rect x="5.5" y="10.5" width="13" height="10" rx="2.4" fill="white"/></svg>
+      </div>
+      <div class="lockscreen-date" id="lockDate"></div>
+      <div class="lockscreen-time" id="lockTime"></div>
+    </div>
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：我幫您追蹤了這個月的資產變化，點兩下查看總覽">
+      <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
+      <div class="lockscreen-notif-body">
+        <div class="lockscreen-notif-title">我幫您追蹤了這個月的資產變化</div>
+        <div class="lockscreen-notif-desc">整體資產表現穩定，被動收入有 6% 的變動，點一下查看總覽</div>
+      </div>
+      <div class="lockscreen-notif-time">現在</div>
+    </button>
+    <div class="lockscreen-home-indicator" aria-hidden="true"></div>`;
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const dateEl=p.querySelector('#lockDate'),timeEl=p.querySelector('#lockTime');
+  const tick=()=>{const now=new Date();dateEl.textContent=formatLockDate(now);timeEl.textContent=formatLockTime(now);};
+  tick();lockClockTimer=setInterval(tick,1000);
+  /* 推播約 500ms 後才彈出（見需求：進入畫面後才自動觸發，不是一開場就出現），
+     這裡才加上 .show class 觸發 css 的滑入＋回彈過渡；p.isConnected 防呆使用者在
+     這 500ms 內就先按了「重新開始」把 #screen 整個清空的情形，避免對已經被移除
+     的節點加 class（雖然無害，但也沒有意義）。 */
+  const notif=p.querySelector('#lockNotif');
+  setTimeout(()=>{if(p.isConnected)notif.classList.add('show');},500);
+  /* 點擊整張通知卡才觸發：先給一個「按下」的縮小回饋（比照 iOS 通知輕觸的手感），
+     短暫停留後才開始整頁淡出＋放大的解鎖轉場，轉場動畫（.unlocking，css transition
+     380ms）跑完才呼叫 enterChat()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
+     這個先後順序看得出來，而不是點擊跟換頁同時發生。 */
+  let opened=false;
+  notif.addEventListener('click',()=>{
+    if(opened)return;opened=true;
+    clearLockClock();
+    notif.classList.add('pressed');
+    setTimeout(()=>{
+      p.classList.add('unlocking');
+      setTimeout(()=>enterChat(),380);
+    },150);
+  });
 }
 
 /* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
@@ -156,6 +226,7 @@ function buildSingleSelectOptionGroup(container,options,icons,onPick,ariaLabel){
 
 /* ================= 階段 B｜設定資產情境 ================= */
 function stepB(){
+  clearLockClock();
   clearControls();
   document.querySelector('.reset').style.display='';
   const p=wrap();p.className='selpage';
@@ -224,7 +295,7 @@ function stageC(){
   const est=idleEstimate();
   const income=maturedDepositIncome(est);
   const myGen=flowGen;
-  aiSay(["您好，我是凱基銀行的智富管家，先幫您依剛剛設定的資產情境做個初步分析。"],()=>{
+  aiSay(["您好，我是凱基銀行的智富管家，已經為您調閱本行的投資商品、定存、活存與轉帳明細，先幫您做個初步資產分析。"],()=>{
     setTimeout(()=>{
       if(myGen!==flowGen)return;
       /* 圓餅圖（資產現況）＋折線圖（到期後被動收益趨勢）先後接續呈現，兩張圖都看完
@@ -263,16 +334,38 @@ function stageC(){
              ack:'*沒問題，我們可以先從幾個簡單的問題開始，*逐步釐清較適合您的規劃方向。',
              kw:['聽聽','建議','聽看看','都可以','幫我','不知道','聽你的']}
           ];
+          /* opts.other 目前 disabled:true（展場期間暫停自行輸入，比照 #inputbar 既有的展覽期間鎖住
+             慣例），輸入框只顯示、不能打字送出，下面這段 onSubmit 目前不會被觸發。保留這段
+             kw 比對＋退回「還沒想法，想先聽看看建議」的邏輯不動，之後展場結束要重新開放自由
+             輸入時，只要把 disabled 拿掉就會是原本設計好的行為，不用重寫這段。 */
           const popover=renderComponent('popover/option-select',question,opts,opt=>{
             popover.remove();
             aiAsk(question);
             meSay(opt.label);
             aiSay([opt.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+          },{
+            other:{
+              disabled:true,
+              onSubmit:text=>{
+                popover.remove();
+                aiAsk(question);
+                meSay(text);
+                const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+                const picked=matched||opts[opts.length-1];
+                aiSay([picked.ack],()=>ch_d1(),{label:'管家正在理解分析'});
+              }
+            }
           });
         },{label:'為您分析資產配置中',heavy:true});
       },450);
     },700);
-  },{loader:'cube',loadingMs:4000});
+  },{loader:'cube',loadingMs:9000,cubeSubtitle:[
+    '正在查詢您的投資商品明細…',
+    '正在核對定存到期資訊…',
+    '正在核對活期存款餘額…',
+    '正在彙整近期轉帳明細…',
+    '正在整合您的資產數據，請稍候…'
+  ]});
 }
 
 /* ================= 階段 D｜了解投資屬性（三題釐清） =================
@@ -294,11 +387,23 @@ function ch_d1(){
       {label:'應該一年以上都不會用到',val:'一年以上',wt:'low',kw:['一年以上','1年以上','很久','長期','不會用','都用不到','放很久']},
       {label:'還不確定，要看情況',val:'還不確定',wt:'mid',kw:['還不確定','不確定','不一定','看情況','說不準','不知道']}
     ];
+    const ch_d1Summary=val=>val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
     const popover=renderComponent('popover/option-select',question,opts,opt=>{
       popover.remove();S.q1=opt.val;S.depositWeight=opt.wt;
       aiAsk(question);meSay(opt.label);
-      const summary=opt.val==='一年以上'?'這筆資金的時間彈性較大，適合作中長期規劃，也有更大的空間參與市場成長':opt.val==='一年內'?'這筆資金隨時可能派上用場，會優先以「靈活性與安全性」為考量':'這筆資金會採均衡配置，兼顧收益與調度彈性';
-      aiSay([`*${summary}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+      aiSay([`*${ch_d1Summary(opt.val)}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[opts.length-1];
+          S.q1=picked.val;S.depositWeight=picked.wt;
+          aiAsk(question);meSay(text);
+          aiSay([`*${ch_d1Summary(picked.val)}*。`],()=>ch_d2(),{label:'管家正在理解分析'});
+        }
+      }
     });
   },{label:'管家思考中'});
 }
@@ -324,6 +429,21 @@ function ch_d2(){
       popover.remove();S.q2=opt.val;
       aiAsk(question);meSay(opt.label);
       aiSay([opt.ack],opt.next,{label:'管家正在理解分析'});
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          /* 這題沒有像其他題目一樣有明確的「還不確定」catch-all 選項，退回中間那個
+             「可接受小幅波動」——三個選項裡風險傾向最持平的一個，不會讓自由文字
+             誤觸發最保守（直接跳過 ch_d3）或最積極的分支。 */
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[1];
+          S.q2=picked.val;
+          aiAsk(question);meSay(text);
+          aiSay([picked.ack],picked.next,{label:'管家正在理解分析'});
+        }
+      }
     });
   },{label:'管家思考中'});
 }
@@ -342,6 +462,18 @@ function ch_d3(){
       popover.remove();S.q3=opt.val;
       aiAsk(question);meSay(opt.label);
       opt.next();
+    },{
+      other:{
+        disabled:true,
+        onSubmit:text=>{
+          popover.remove();
+          const matched=opts.find(o=>(o.kw||[]).some(k=>text.includes(k)));
+          const picked=matched||opts[opts.length-1];
+          S.q3=picked.val;
+          aiAsk(question);meSay(text);
+          picked.next();
+        }
+      }
     });
   },{label:'管家思考中'});
 }

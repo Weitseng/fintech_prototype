@@ -978,6 +978,11 @@ COMPONENTS['card/calculator']={render:renderAssetVsDepositCalc};
 const ICB_ICON_SEND=`<svg viewBox="0 0 24.0684 24.0684" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M5.58759 20.4153V14.6131L12.1023 12.6791L5.58759 10.745V4.9428L21.0601 12.6791L5.58759 20.4153Z" fill="white"/>
 </svg>`;
+/* popover/option-select 的「其他」輸入列用鉛筆圖示（見 renderOptionPopover() opts.other 說明），
+   currentColor 描邊、跟 KGI_CARD_TICK_SVG 同一種單色線框畫法，沒有既有鉛筆圖示可重用，這裡新畫一個。 */
+const CHOICE_OTHER_ICON_PENCIL=`<svg viewBox="0 0 20 20" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <path d="M13.712 3.038a1.833 1.833 0 0 1 2.592 2.592L6.79 15.144l-3.61.909.91-3.61 9.622-9.405Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
 const ICB_DEFAULTS={
   placeholder:'我想要找...',
   disabledMessage:'展覽期間暫不開放，請點擊上方按鈕選項繼續操作',
@@ -1204,8 +1209,20 @@ COMPONENTS['message/option']={render:choiceBtn};
    純顯示用元件：選取後「移除浮動選單／把問題與答案顯示進聊天紀錄／觸發後續分析」皆是呼叫端
    （見 flow.js stageC()）的業務邏輯，這裡只負責渲染與回傳選取結果。
    options：[{label, sub, kw}]；onPick(option) 為選中某一項時的回呼；回傳掛載的 wrap 元素，
-   呼叫端選取後自行 .remove()。 */
-function renderOptionPopover(question,options,onPick){
+   呼叫端選取後自行 .remove()。
+   opts.other（可省略，預設不顯示）：在選項清單最下面加一列「其他，請輸入」的自由輸入列
+   （鉛筆圖示＋文字輸入框＋送出鈕），對應使用者提供的參考圖「Something else」列。刻意做成
+   opts 第 4 參數、預設不開，不是直接改 (options||[]).forEach 那段固定加在每個呼叫端——
+   目前只有 js/flow.js stageC() 那題「這筆閒置資金想怎麼運用」要加，其餘 5 處提問
+   （ch_d1／ch_d2／ch_d3／stageH1／stageH1b）維持原樣不受影響。
+   opts.other：{placeholder, onSubmit(text), disabled, disabledPlaceholder}——onSubmit 收到
+   使用者輸入的原始文字，要不要／怎麼把這段自由文字接回 options 既有的 kw／ack／next 分支邏輯，
+   交給呼叫端自己決定，這裡只負責收文字、觸發回呼，不幫忙做關鍵字比對。
+   disabled:true 時輸入框與送出鈕都比照 #inputbar 既有的 disabled 樣式（見 renderInputChatBar()
+   ICB_DEFAULTS.disabledMessage 同一套「展覽期間暫不開放」慣例）鎖住、不綁互動事件，
+   placeholder 顯示 disabledPlaceholder（預設「展場期間暫停自行輸入」），onSubmit 不會被呼叫。 */
+function renderOptionPopover(question,options,onPick,opts){
+  opts=opts||{};
   const app=document.querySelector('.app');
   const wrap=document.createElement('div');wrap.className='opt-popover-wrap';
   const pop=document.createElement('div');pop.className='opt-popover';
@@ -1224,6 +1241,26 @@ function renderOptionPopover(question,options,onPick){
       onPick(opt);
     },opt.kw));
   });
+  if(opts.other){
+    const row=document.createElement('div');row.className='choice-other';
+    const disabled=!!opts.other.disabled;
+    const placeholder=disabled?(opts.other.disabledPlaceholder||'展場期間暫停自行輸入'):(opts.other.placeholder||'或輸入其他想法…');
+    row.innerHTML=`<span class="choice-other-icon">${CHOICE_OTHER_ICON_PENCIL}</span>
+      <input type="text" class="choice-other-input" placeholder="${placeholder}" aria-label="其他，請輸入您的想法"${disabled?' disabled':''}>
+      <button type="button" class="choice-other-submit" aria-label="送出"${disabled?' disabled':''}>${ICB_ICON_SEND}</button>`;
+    if(!disabled){
+      const input=row.querySelector('.choice-other-input'),submit=row.querySelector('.choice-other-submit');
+      const submitOther=()=>{
+        const text=input.value.trim();
+        if(!text)return;
+        if(activePopover===wrap)activePopover=null;
+        opts.other.onSubmit(text);
+      };
+      submit.onclick=submitOther;
+      input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submitOther();}});
+    }
+    list.appendChild(row);
+  }
   /* 這個浮動選單釘在畫面底部（.opt-popover-wrap 是 position:absolute; bottom:16px，跟
      #screen 的捲動內容是分開的兩層），不會因為 #screen 內容變多而自動往下讓位。如果它
      前面已經生成的內容（例如 stageC() 的圓餅圖＋文字＋折線圖）比視窗還高，浮動選單就會
