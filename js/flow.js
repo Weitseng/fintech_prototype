@@ -72,11 +72,11 @@ function stepLock(){
       <div class="lockscreen-date" id="lockDate"></div>
       <div class="lockscreen-time" id="lockTime"></div>
     </div>
-    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，立即開啟凱基銀行智富管家，查看分析">
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，開啟智富管家，掌握最新分析">
       <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
       <div class="lockscreen-notif-body">
         <div class="lockscreen-notif-title">這個月，您的資產有點不一樣</div>
-        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，立即開啟凱基銀行智富管家，查看分析</div>
+        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，開啟智富管家，掌握最新分析</div>
       </div>
       <div class="lockscreen-notif-time">現在</div>
     </button>
@@ -337,10 +337,12 @@ function monthLabel(monthsAgo){
   return `${d.getMonth()+1}月`;
 }
 /* 到期當月的定存利息仍是照定存利率領到的（到期日當天才轉為活存），到期後的閒置月份
-   才會是活存利率——原本到期當月（splitIndex 那個月）就已經算進 after，等於到期那個月
-   還沒領到定存利息就被算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案
-   對不起來（N 個月閒置應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始
-   才是連續 N 個月的 after。 */
+   才會是活存利率——原本到期當月就已經算進 after，等於到期那個月還沒領到定存利息就被
+   算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案對不起來（N 個月閒置
+   應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始才是連續 N 個月的
+   after。points 陣列第 2 個點（index 1）就是這個到期當月，是 before→after 轉折的
+   那一格，但不再對外暴露成 splitIndex 欄位——折線圖已經不標「定存到期」這個轉折點
+   （見 stageC() 呼叫 chart/line 時的說明），純粹是這裡算資料點用的內部邏輯。 */
 function maturedDepositIncome(est){
   const principal=Math.round((est.lo+est.hi)/2);
   const before=principal*MATURED_DEPOSIT_RATE/12;
@@ -349,14 +351,16 @@ function maturedDepositIncome(est){
   for(let m=MATURED_MONTHS-1;m>=0;m--){
     points.push({label:monthLabel(m),value:after});
   }
-  return {principal,before,after,points,splitIndex:1};
+  return {principal,before,after,points};
 }
 /* 【AI_Behavior_Instruction v1.1 §9.4 Information Organization】先直接告訴使用者發生了什麼事
-   （您有一筆定存已經到期），再說明影響，而不是直接丟一個「## 標題」報告式開場——後者跳過了
-   「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。 */
+   （這段時間資金停留在活存、收益下降），再說明影響，而不是直接丟一個「## 標題」報告式
+   開場——後者跳過了「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。
+   這裡刻意不點名「定存到期」這個具體原因，只描述現象（收益下降）跟前後數字對比，
+   跟折線圖不再標「定存到期」轉折點是同一個考量。 */
 function maturedDepositInsight(income){
   const beforeAmt=`NT$${fmt(Math.round(income.before))}`,afterAmt=`NT$${fmt(Math.round(income.after))}`;
-  return `依您的資產情境來看，您有一筆定存已經到期 **${MATURED_MONTHS} 個月**了，這段時間資金一直停留在一般活存，被動收益明顯下降：到期前這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，到期後只剩約 **${afterAmt}**。`;
+  return `依您的資產情境來看，這段時間資金一直停留在一般活存，被動收益明顯下降：**${MATURED_MONTHS} 個月前**，這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，現在只剩約 **${afterAmt}**。`;
 }
 function stageC(){
   /* 使用者是在 stepWelcome()（AI 初始頁）點「好，我想看看資產報告」這個選項進來的，
@@ -380,7 +384,7 @@ function stageC(){
       renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
       setTimeout(()=>{
         if(myGen!==flowGen)return;
-        renderComponent('chart/line',income.points,{splitIndex:income.splitIndex,splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+        renderComponent('chart/line',income.points,{ariaLabel:'每月被動收益趨勢',title:'每月被動收益趨勢'});
         /* 結論文字的 aiSay() 也要挪進這個 setTimeout 裡、接在折線圖後面才呼叫——
            這一輪稍早的 cube-loader 已經把 turnLoadingShown 設成 true，aiSay() 內部
            看到這個旗標就會直接開始逐字打字、不會再多等 BASE_DELAY，如果沒搬進來，
