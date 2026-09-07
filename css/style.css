@@ -229,6 +229,10 @@ body{font-family:var(--font-cn);
 .selpage-hero{width:100%;aspect-ratio:1080/1274;margin-bottom:var(--spacing-24);overflow:hidden}
 .selpage-hero-video{display:block;width:100%;height:100%;object-fit:cover}
 .selpage-intro{text-align:center}
+/* 階段 A.6（js/flow.js stepWelcome()）的 IP 吉祥物圖示：獨立置中一個區塊，
+   置於標題上方，比照 .selpage-hero 讓整頁一開始就有一個明顯的視覺焦點 */
+.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-24)}
+.welcome-icon{width:120px;height:120px}
 /* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
    要優先壓縮影片區塊，標題文字／開始體驗按鈕永遠不能被擠出畫面。只加在 stepA 的 .selpage
    上（多一個 .opening-page class），不影響 stepB 等其他 .selpage 頁面——那些頁面內容

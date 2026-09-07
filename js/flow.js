@@ -31,8 +31,8 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <h1>幫您全面檢視資產配置，打造更佳的投資組合</h1>
-      <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點投資現況，提供合適的資產分析與佈局建議。</div>
+      <h1>您的資產，最近有什麼變化？</h1>
+      <div class="lead">AI 智富管家會持續追蹤您的收支狀況，主動留意閒置資金，協助您找到更有效的運用方式。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
@@ -42,8 +42,8 @@ function stepA(){
 /* ================= 階段 A.5｜iPad 鎖定畫面 =================
    Figma node 481:2893（Examples/Control Center）：插在「開始體驗」與正式進入分析對話
    （enterChat()）之間的轉場——模擬 iPad 鎖定畫面被推播通知喚醒、點擊通知進入 App 的
-   體驗。這條分支已把 stepB() 資產情境選擇頁隱藏、開場後直接進入分析對話（見
-   stepA() 註解），所以這裡點通知卡解鎖後銜接的是 enterChat()，不是 stepB()。
+   體驗。這條分支已把 stepB() 資產情境選擇頁隱藏，點通知卡解鎖後銜接的是 stepWelcome()
+   （AI 初始頁，見該函式說明），不是 stepB()，也不是直接 enterChat()。
    時鐘／日期即時抓裝置目前時間（非設計稿寫死的「9月3日・9:41」），停留期間會每秒
    更新；通知卡片的時間戳記固定顯示「現在」，不隨時鐘一起跳動——這是這則通知剛送達
    的當下時間，不是裝置目前時間。
@@ -72,11 +72,11 @@ function stepLock(){
       <div class="lockscreen-date" id="lockDate"></div>
       <div class="lockscreen-time" id="lockTime"></div>
     </div>
-    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：我幫您追蹤了這個月的資產變化，點兩下查看總覽">
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，點一下讓我說明">
       <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
       <div class="lockscreen-notif-body">
-        <div class="lockscreen-notif-title">我幫您追蹤了這個月的資產變化</div>
-        <div class="lockscreen-notif-desc">整體資產表現穩定，被動收入有 6% 的變動，點一下查看總覽</div>
+        <div class="lockscreen-notif-title">這個月，您的資產有點不一樣</div>
+        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，點一下讓我說明</div>
       </div>
       <div class="lockscreen-notif-time">現在</div>
     </button>
@@ -93,8 +93,11 @@ function stepLock(){
   setTimeout(()=>{if(p.isConnected)notif.classList.add('show');},500);
   /* 點擊整張通知卡才觸發：先給一個「按下」的縮小回饋（比照 iOS 通知輕觸的手感），
      短暫停留後才開始整頁淡出＋放大的解鎖轉場，轉場動畫（.unlocking，css transition
-     380ms）跑完才呼叫 enterChat()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
-     這個先後順序看得出來，而不是點擊跟換頁同時發生。 */
+     380ms）跑完才呼叫 stepWelcome()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
+     這個先後順序看得出來，而不是點擊跟換頁同時發生。
+     解鎖後銜接的是 stepWelcome()，不是直接 enterChat()：通知只是把 App 叫出來，
+     使用者還沒表態要做什麼，要先讓智富管家自我介紹、呼應通知上的 insight，
+     使用者自己按下「好，我想看看資產報告」才算同意進入分析，見 stepWelcome() 說明。 */
   let opened=false;
   notif.addEventListener('click',()=>{
     if(opened)return;opened=true;
@@ -102,9 +105,45 @@ function stepLock(){
     notif.classList.add('pressed');
     setTimeout(()=>{
       p.classList.add('unlocking');
-      setTimeout(()=>enterChat(),380);
+      setTimeout(()=>stepWelcome(),380);
     },150);
   });
+}
+
+/* ================= 階段 A.6｜AI 初始頁 =================
+   使用者從 iPad 鎖定畫面點開通知後，不直接進 enterChat()／stageC() 的資產分析——通知的
+   作用只是把 App 叫出來，「開始分析」這個動作要有使用者自己按下去的同意。這裡沿用
+   stepA()／stepLock() 同一套「整頁換場」慣例（不是活在 .chat 捲動容器裡的一則訊息），
+   跟真正的對話介面是兩個不同畫面：智富管家先自我介紹＋呼應通知上看到的 insight
+   （被動收入變動），下面接一個「好，我想看看資產報告」的下一步選項——樣式直接沿用
+   list/next-step 元件的 CSS class（.nsl／.nsl-item……），跟 stageF() 之後每個「下一步」
+   選單視覺一致，但這裡在 chatBox 存在之前就要顯示，不能呼叫 renderComponent('list/next-step',...)
+   （該元件內部寫死 appendToChat()，是給已經進了對話畫面之後的情境用的），所以手動組出
+   同樣的 DOM 結構，NSL_ICON_CHEVRON 沿用 component-library.js 已宣告的同一份 SVG。
+   點下去才呼叫 enterChat()：使用者這句「好，我想看看資產報告」會在 stageC() 開頭用
+   meSay() 回顯成使用者訊息泡泡，接著才是原本的 loading／資產分析（見 stageC() 說明），
+   這裡不用再重複講一次 insight 或再出現一次 IP 圖示，避免使用者連續看兩次同一件事。 */
+function stepWelcome(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='none';
+  const p=wrap();p.className='selpage welcome-page';
+  p.innerHTML=`
+    <div class="welcome-icon-wrap"><img class="welcome-icon" src="assets/IP_v2.svg" alt=""></div>
+    <div class="selpage-intro">
+      <h1>您好，我是您的智富管家</h1>
+      <div class="lead">我留意到您這個月的收支有些變化，這通常代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
+    </div>
+    <div id="welcomeNextMount"></div>`;
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const list=document.createElement('div');list.className='nsl';
+  const itemsEl=document.createElement('div');itemsEl.className='nsl-items';
+  const btn=document.createElement('button');btn.type='button';btn.className='nsl-item';
+  btn.innerHTML=`<span class="nsl-item-text"><span class="nsl-item-title">好，我想看看資產報告</span></span>${NSL_ICON_CHEVRON}`;
+  btn.onclick=()=>enterChat();
+  itemsEl.appendChild(btn);list.appendChild(itemsEl);
+  p.querySelector('#welcomeNextMount').appendChild(list);
 }
 
 /* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
@@ -292,6 +331,11 @@ function maturedDepositInsight(income){
   return `依您的資產情境來看，您有一筆定存已經到期 **${MATURED_MONTHS} 個月**了，這段時間資金一直停留在一般活存，被動收益明顯下降：到期前這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，到期後只剩約 **${afterAmt}**。`;
 }
 function stageC(){
+  /* 使用者是在 stepWelcome()（AI 初始頁）點「好，我想看看資產報告」這個選項進來的，
+     這裡先用使用者訊息泡泡把這個動作回顯出來，讓後面 AI 的分析回覆看起來是「回答使用者
+     剛才說的話」，而不是無中生有自己冒出來——跟 showNextSteps() 選完選項後一定先
+     meSay() 回顯的邏輯一致，文字要跟 stepWelcome() 那顆選項的 label 保持一致。 */
+  meSay('好，我想看看資產報告');
   const est=idleEstimate();
   const income=maturedDepositIncome(est);
   const myGen=flowGen;
