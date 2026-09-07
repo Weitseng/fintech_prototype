@@ -230,9 +230,22 @@ body{font-family:var(--font-cn);
 .selpage-hero-video{display:block;width:100%;height:100%;object-fit:cover}
 .selpage-intro{text-align:center}
 /* 階段 A.6（js/flow.js stepWelcome()）的 IP 吉祥物圖示：獨立置中一個區塊，
-   置於標題上方，比照 .selpage-hero 讓整頁一開始就有一個明顯的視覺焦點 */
-.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-24)}
-.welcome-icon{width:120px;height:120px}
+   置於標題上方，比照 .selpage-hero 讓整頁一開始就有一個明顯的視覺焦點。
+   下面四條間距／字級規則都只作用在 .welcome-page 這個頁面上、不影響 .selpage 共用的
+   stepA()／stepB()——版型規格：IP 80x80、IP 到打招呼語 12px、打招呼語（Headline，
+   沿用 .selpage h1 本來就是的 --type-headline-* 沒有另外覆寫）跟 insight（改成
+   Subtitle-R：.type-subtitle-r 用的同一組 --type-subtitle-* token，但套用字重改成
+   *-r-weight-cn，不是 .selpage .lead 原本的 body 字級）這兩句視為同一組，中間 8px，
+   這組跟下面的 CTA（.nsl／stageWelcome() 手動組出的選項列）之間 28px。
+   h1／.lead 的 margin 要蓋掉 .selpage h1（margin:6px 0 4px）／.selpage .lead
+   （margin-bottom:22px）這兩條共用預設值，選擇器多疊一層 .selpage-intro 才會贏過
+   原本兩層 class 的特異性，不用改動共用規則、也不會影響 stepA() 的版面。 */
+.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-12)}
+.welcome-icon{width:80px;height:80px}
+.welcome-page .selpage-intro h1{margin:0 0 var(--spacing-8)}
+.welcome-page .selpage-intro .lead{font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);
+  line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);margin-bottom:0}
+.welcome-page .nsl{margin-top:var(--spacing-28)}
 /* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
    要優先壓縮影片區塊，標題文字／開始體驗按鈕永遠不能被擠出畫面。只加在 stepA 的 .selpage
    上（多一個 .opening-page class），不影響 stepB 等其他 .selpage 頁面——那些頁面內容
@@ -349,6 +362,11 @@ body{font-family:var(--font-cn);
 @media (prefers-reduced-motion: reduce){
   .lockscreen-page,.lockscreen-notification{transition:none}
 }
+/* 階段 A.55（js/flow.js stepAppLaunch()）：純 logo＋黑底的 App 開啟過場，只停留約 1 秒，
+   比照原生 LaunchScreen 慣例，不套用站內其他頁面的內距／置中文字排版，直接用 flex
+   把 icon 置中在整個可視區。 */
+.app-launch-page{display:flex;align-items:center;justify-content:center;min-height:100%;background:#000}
+.app-launch-logo{width:96px;height:96px;animation:fade .3s ease}
 .selpage .lead{font-family:var(--font-cn);font-size:var(--type-body-size);font-weight:var(--type-body-r-weight-cn);
   color:var(--color-content-general-secondary);margin-bottom:22px;line-height:var(--type-body-lh-cn);letter-spacing:var(--type-body-ls-cn)}
 .selpage .q{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-b-weight-cn);

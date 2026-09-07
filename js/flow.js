@@ -31,8 +31,8 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <h1>您的資產，最近有什麼變化？</h1>
-      <div class="lead">AI 智富管家會持續追蹤您的收支狀況，主動留意閒置資金，協助您找到更有效的運用方式。</div>
+      <h1>AI 智富管家，隨時為您留意資產變化</h1>
+      <div class="lead">自動追蹤您的收支狀況，主動留意閒置資金，協助您找到更有效的運用方式。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
@@ -72,11 +72,11 @@ function stepLock(){
       <div class="lockscreen-date" id="lockDate"></div>
       <div class="lockscreen-time" id="lockTime"></div>
     </div>
-    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，點一下讓我說明">
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，立即開啟凱基銀行智富管家，查看分析">
       <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
       <div class="lockscreen-notif-body">
         <div class="lockscreen-notif-title">這個月，您的資產有點不一樣</div>
-        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，點一下讓我說明</div>
+        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，立即開啟凱基銀行智富管家，查看分析</div>
       </div>
       <div class="lockscreen-notif-time">現在</div>
     </button>
@@ -93,11 +93,12 @@ function stepLock(){
   setTimeout(()=>{if(p.isConnected)notif.classList.add('show');},500);
   /* 點擊整張通知卡才觸發：先給一個「按下」的縮小回饋（比照 iOS 通知輕觸的手感），
      短暫停留後才開始整頁淡出＋放大的解鎖轉場，轉場動畫（.unlocking，css transition
-     380ms）跑完才呼叫 stepWelcome()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
+     380ms）跑完才呼叫 stepAppLaunch()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
      這個先後順序看得出來，而不是點擊跟換頁同時發生。
-     解鎖後銜接的是 stepWelcome()，不是直接 enterChat()：通知只是把 App 叫出來，
-     使用者還沒表態要做什麼，要先讓智富管家自我介紹、呼應通知上的 insight，
-     使用者自己按下「好，我想看看資產報告」才算同意進入分析，見 stepWelcome() 說明。 */
+     解鎖後銜接的是 stepAppLaunch()（App 開啟過場，見該函式說明），不是直接 stepWelcome()
+     或 enterChat()：通知只是把 App 叫出來，使用者還沒表態要做什麼，要先讓智富管家
+     自我介紹、呼應通知上的 insight，使用者自己按下「好，我想看看資產報告」才算同意
+     進入分析，見 stepWelcome() 說明。 */
   let opened=false;
   notif.addEventListener('click',()=>{
     if(opened)return;opened=true;
@@ -105,9 +106,29 @@ function stepLock(){
     notif.classList.add('pressed');
     setTimeout(()=>{
       p.classList.add('unlocking');
-      setTimeout(()=>stepWelcome(),380);
+      setTimeout(()=>stepAppLaunch(),380);
     },150);
   });
+}
+
+/* ================= 階段 A.55｜App 開啟過場 =================
+   點通知解鎖後，模擬作業系統切到本 App、App 本身正在冷啟動的瞬間——比照 iOS 原生
+   LaunchScreen 的慣例（純 logo＋純色背景，不含任何導覽列／內容，因為這個當下 App
+   本身都還沒真正渲染完成），純黑底置中一顆品牌 icon，停留約 1 秒、沒有任何互動，
+   時間到了自動接續 stepWelcome()。header／輸入列／重新開始都不顯示——那些是「App
+   已經打開」之後才有的介面，這個過場畫面本身就是在演示「App 還沒打開好」。
+   myGen 比照 stageC() 等處的做法：防呆使用者在這 1 秒內按了「重新開始」（雖然這頁
+   本身沒有這顆按鈕，但如果之後有人在別的入口重用這個函式，這層保護不會多餘）。 */
+function stepAppLaunch(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='none';
+  const p=wrap();p.className='app-launch-page';
+  p.innerHTML='<img class="app-launch-logo" src="assets/logo-icon.svg" alt="">';
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const myGen=flowGen;
+  setTimeout(()=>{if(myGen!==flowGen)return;stepWelcome();},1000);
 }
 
 /* ================= 階段 A.6｜AI 初始頁 =================
@@ -125,9 +146,16 @@ function stepLock(){
    這裡不用再重複講一次 insight 或再出現一次 IP 圖示，避免使用者連續看兩次同一件事。 */
 function stepWelcome(){
   clearLockClock();
-  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';
+  /* 這頁在敘事上已經是「進到 App 裡」的畫面（使用者剛從鎖定畫面解鎖進來），不是
+     stepA()／stepLock() 那種還沒進 App 的展示頁，所以品牌 header（含靜音鍵）跟底部
+     disabled 輸入列都要跟真正的對話介面一樣顯示，不能沿用 stepLock() 整頁藏起來的做法；
+     只有「重新開始」維持隱藏——這顆鈕的作用是讓使用者能重跑整個展示流程，跟「使用者
+     視角下已經在使用 App」這個敘事無關，所有非對話的整頁畫面（stepA／stepLock）都
+     一致藏起來，這裡也比照辦理。 */
   document.querySelector('.reset').style.display='none';
-  document.querySelector('.app-header').style.display='none';
+  document.querySelector('.app-header').style.display='';
+  showInput();
   const p=wrap();p.className='selpage welcome-page';
   p.innerHTML=`
     <div class="welcome-icon-wrap"><img class="welcome-icon" src="assets/IP_v2.svg" alt=""></div>
