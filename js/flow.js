@@ -31,8 +31,8 @@ function stepA(){
       </video>
     </div>
     <div class="selpage-intro">
-      <h1>幫您全面檢視資產配置，打造更佳的投資組合</h1>
-      <div class="lead">花 2 分鐘，讓「AI 智富管家」幫您盤點投資現況，提供合適的資產分析與佈局建議。</div>
+      <h1>AI 智富管家，隨時為您留意資產變化</h1>
+      <div class="lead">自動追蹤您的收支狀況，主動留意閒置資金，協助您找到更有效的運用方式。</div>
     </div>
     <div id="startBtnMount" style="text-align:center;margin-top:var(--spacing-40)"></div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
@@ -42,8 +42,8 @@ function stepA(){
 /* ================= 階段 A.5｜iPad 鎖定畫面 =================
    Figma node 481:2893（Examples/Control Center）：插在「開始體驗」與正式進入分析對話
    （enterChat()）之間的轉場——模擬 iPad 鎖定畫面被推播通知喚醒、點擊通知進入 App 的
-   體驗。這條分支已把 stepB() 資產情境選擇頁隱藏、開場後直接進入分析對話（見
-   stepA() 註解），所以這裡點通知卡解鎖後銜接的是 enterChat()，不是 stepB()。
+   體驗。這條分支已把 stepB() 資產情境選擇頁隱藏，點通知卡解鎖後銜接的是 stepWelcome()
+   （AI 初始頁，見該函式說明），不是 stepB()，也不是直接 enterChat()。
    時鐘／日期即時抓裝置目前時間（非設計稿寫死的「9月3日・9:41」），停留期間會每秒
    更新；通知卡片的時間戳記固定顯示「現在」，不隨時鐘一起跳動——這是這則通知剛送達
    的當下時間，不是裝置目前時間。
@@ -72,11 +72,11 @@ function stepLock(){
       <div class="lockscreen-date" id="lockDate"></div>
       <div class="lockscreen-time" id="lockTime"></div>
     </div>
-    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：我幫您追蹤了這個月的資產變化，點兩下查看總覽">
+    <button type="button" class="lockscreen-notification" id="lockNotif" aria-label="智富管家通知：這個月，您的資產有點不一樣，我留意到有一筆資金的運用效率好像變低了，開啟智富管家，掌握最新分析">
       <img class="lockscreen-notif-icon" src="assets/logo-icon.svg" alt="">
       <div class="lockscreen-notif-body">
-        <div class="lockscreen-notif-title">我幫您追蹤了這個月的資產變化</div>
-        <div class="lockscreen-notif-desc">整體資產表現穩定，被動收入有 6% 的變動，點一下查看總覽</div>
+        <div class="lockscreen-notif-title">這個月，您的資產有點不一樣</div>
+        <div class="lockscreen-notif-desc">我留意到有一筆資金的運用效率好像變低了，開啟智富管家，掌握最新分析</div>
       </div>
       <div class="lockscreen-notif-time">現在</div>
     </button>
@@ -93,8 +93,12 @@ function stepLock(){
   setTimeout(()=>{if(p.isConnected)notif.classList.add('show');},500);
   /* 點擊整張通知卡才觸發：先給一個「按下」的縮小回饋（比照 iOS 通知輕觸的手感），
      短暫停留後才開始整頁淡出＋放大的解鎖轉場，轉場動畫（.unlocking，css transition
-     380ms）跑完才呼叫 enterChat()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
-     這個先後順序看得出來，而不是點擊跟換頁同時發生。 */
+     380ms）跑完才呼叫 stepAppLaunch()——不是點下去就立刻切頁，讓「按下→畫面回應→才離開」
+     這個先後順序看得出來，而不是點擊跟換頁同時發生。
+     解鎖後銜接的是 stepAppLaunch()（App 開啟過場，見該函式說明），不是直接 stepWelcome()
+     或 enterChat()：通知只是把 App 叫出來，使用者還沒表態要做什麼，要先讓智富管家
+     自我介紹、呼應通知上的 insight，使用者自己按下「好，我想看看資產報告」才算同意
+     進入分析，見 stepWelcome() 說明。 */
   let opened=false;
   notif.addEventListener('click',()=>{
     if(opened)return;opened=true;
@@ -102,9 +106,72 @@ function stepLock(){
     notif.classList.add('pressed');
     setTimeout(()=>{
       p.classList.add('unlocking');
-      setTimeout(()=>enterChat(),380);
+      setTimeout(()=>stepAppLaunch(),380);
     },150);
   });
+}
+
+/* ================= 階段 A.55｜App 開啟過場 =================
+   點通知解鎖後，模擬作業系統切到本 App、App 本身正在冷啟動的瞬間——比照 iOS 原生
+   LaunchScreen 的慣例（純 logo＋純色背景，不含任何導覽列／內容，因為這個當下 App
+   本身都還沒真正渲染完成），純黑底置中一顆品牌 icon，停留約 1 秒、沒有任何互動，
+   時間到了自動接續 stepWelcome()。header／輸入列／重新開始都不顯示——那些是「App
+   已經打開」之後才有的介面，這個過場畫面本身就是在演示「App 還沒打開好」。
+   myGen 比照 stageC() 等處的做法：防呆使用者在這 1 秒內按了「重新開始」（雖然這頁
+   本身沒有這顆按鈕，但如果之後有人在別的入口重用這個函式，這層保護不會多餘）。 */
+function stepAppLaunch(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';hideInput();
+  document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='none';
+  const p=wrap();p.className='app-launch-page';
+  p.innerHTML='<img class="app-launch-logo" src="assets/logo-icon.svg" alt="">';
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const myGen=flowGen;
+  setTimeout(()=>{if(myGen!==flowGen)return;stepWelcome();},1000);
+}
+
+/* ================= 階段 A.6｜AI 初始頁 =================
+   使用者從 iPad 鎖定畫面點開通知後，不直接進 enterChat()／stageC() 的資產分析——通知的
+   作用只是把 App 叫出來，「開始分析」這個動作要有使用者自己按下去的同意。這裡沿用
+   stepA()／stepLock() 同一套「整頁換場」慣例（不是活在 .chat 捲動容器裡的一則訊息），
+   跟真正的對話介面是兩個不同畫面：智富管家先自我介紹＋呼應通知上看到的 insight
+   （被動收入變動），下面接一個「好，我想看看資產報告」的下一步選項——樣式直接沿用
+   list/next-step 元件的 CSS class（.nsl／.nsl-item……），跟 stageF() 之後每個「下一步」
+   選單視覺一致，但這裡在 chatBox 存在之前就要顯示，不能呼叫 renderComponent('list/next-step',...)
+   （該元件內部寫死 appendToChat()，是給已經進了對話畫面之後的情境用的），所以手動組出
+   同樣的 DOM 結構，NSL_ICON_CHEVRON 沿用 component-library.js 已宣告的同一份 SVG。
+   點下去才呼叫 enterChat()：使用者這句「好，我想看看資產報告」會在 stageC() 開頭用
+   meSay() 回顯成使用者訊息泡泡，接著才是原本的 loading／資產分析（見 stageC() 說明），
+   這裡不用再重複講一次 insight 或再出現一次 IP 圖示，避免使用者連續看兩次同一件事。 */
+function stepWelcome(){
+  clearLockClock();
+  clearControls();ctrls().style.minHeight='';ctrls().style.display='none';
+  /* 這頁在敘事上已經是「進到 App 裡」的畫面（使用者剛從鎖定畫面解鎖進來），不是
+     stepA()／stepLock() 那種還沒進 App 的展示頁，所以品牌 header（含靜音鍵）跟底部
+     disabled 輸入列都要跟真正的對話介面一樣顯示，不能沿用 stepLock() 整頁藏起來的做法；
+     只有「重新開始」維持隱藏——這顆鈕的作用是讓使用者能重跑整個展示流程，跟「使用者
+     視角下已經在使用 App」這個敘事無關，所有非對話的整頁畫面（stepA／stepLock）都
+     一致藏起來，這裡也比照辦理。 */
+  document.querySelector('.reset').style.display='none';
+  document.querySelector('.app-header').style.display='';
+  showInput();
+  const p=wrap();p.className='selpage welcome-page';
+  p.innerHTML=`
+    <div class="welcome-icon-wrap"><img class="welcome-icon" src="assets/IP_v2.svg" alt=""></div>
+    <div class="selpage-intro">
+      <h1>您好，我是您的智富管家</h1>
+      <div class="lead">我留意到您這個月的收支有些變化，這通常代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
+    </div>
+    <div id="welcomeNextMount"></div>`;
+  destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
+  const list=document.createElement('div');list.className='nsl';
+  const itemsEl=document.createElement('div');itemsEl.className='nsl-items';
+  const btn=document.createElement('button');btn.type='button';btn.className='nsl-item';
+  btn.innerHTML=`<span class="nsl-item-text"><span class="nsl-item-title">好，我想看看資產報告</span></span>${NSL_ICON_CHEVRON}`;
+  btn.onclick=()=>enterChat();
+  itemsEl.appendChild(btn);list.appendChild(itemsEl);
+  p.querySelector('#welcomeNextMount').appendChild(list);
 }
 
 /* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
@@ -270,10 +337,12 @@ function monthLabel(monthsAgo){
   return `${d.getMonth()+1}月`;
 }
 /* 到期當月的定存利息仍是照定存利率領到的（到期日當天才轉為活存），到期後的閒置月份
-   才會是活存利率——原本到期當月（splitIndex 那個月）就已經算進 after，等於到期那個月
-   還沒領到定存利息就被算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案
-   對不起來（N 個月閒置應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始
-   才是連續 N 個月的 after。 */
+   才會是活存利率——原本到期當月就已經算進 after，等於到期那個月還沒領到定存利息就被
+   算成活存，多算了一個月的落差，也會跟「已經到期 N 個月了」的文案對不起來（N 個月閒置
+   應該從到期隔月才開始算）。改成到期當月仍用 before，從下個月開始才是連續 N 個月的
+   after。points 陣列第 2 個點（index 1）就是這個到期當月，是 before→after 轉折的
+   那一格，但不再對外暴露成 splitIndex 欄位——折線圖已經不標「定存到期」這個轉折點
+   （見 stageC() 呼叫 chart/line 時的說明），純粹是這裡算資料點用的內部邏輯。 */
 function maturedDepositIncome(est){
   const principal=Math.round((est.lo+est.hi)/2);
   const before=principal*MATURED_DEPOSIT_RATE/12;
@@ -282,16 +351,23 @@ function maturedDepositIncome(est){
   for(let m=MATURED_MONTHS-1;m>=0;m--){
     points.push({label:monthLabel(m),value:after});
   }
-  return {principal,before,after,points,splitIndex:1};
+  return {principal,before,after,points};
 }
 /* 【AI_Behavior_Instruction v1.1 §9.4 Information Organization】先直接告訴使用者發生了什麼事
-   （您有一筆定存已經到期），再說明影響，而不是直接丟一個「## 標題」報告式開場——後者跳過了
-   「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。 */
+   （這段時間資金停留在活存、收益下降），再說明影響，而不是直接丟一個「## 標題」報告式
+   開場——後者跳過了「先講清楚是什麼事」這一步，跟圓餅圖之間的銜接會顯得突然。
+   這裡刻意不點名「定存到期」這個具體原因，只描述現象（收益下降）跟前後數字對比，
+   跟折線圖不再標「定存到期」轉折點是同一個考量。 */
 function maturedDepositInsight(income){
   const beforeAmt=`NT$${fmt(Math.round(income.before))}`,afterAmt=`NT$${fmt(Math.round(income.after))}`;
-  return `依您的資產情境來看，您有一筆定存已經到期 **${MATURED_MONTHS} 個月**了，這段時間資金一直停留在一般活存，被動收益明顯下降：到期前這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，到期後只剩約 **${afterAmt}**。`;
+  return `依您的資產情境來看，這段時間資金一直停留在一般活存，被動收益明顯下降：**${MATURED_MONTHS} 個月前**，這筆約 **NT$${fmt(income.principal)}** 的資金每月約有 **${beforeAmt}** 的利息收入，現在只剩約 **${afterAmt}**。`;
 }
 function stageC(){
+  /* 使用者是在 stepWelcome()（AI 初始頁）點「好，我想看看資產報告」這個選項進來的，
+     這裡先用使用者訊息泡泡把這個動作回顯出來，讓後面 AI 的分析回覆看起來是「回答使用者
+     剛才說的話」，而不是無中生有自己冒出來——跟 showNextSteps() 選完選項後一定先
+     meSay() 回顯的邏輯一致，文字要跟 stepWelcome() 那顆選項的 label 保持一致。 */
+  meSay('好，我想看看資產報告');
   const est=idleEstimate();
   const income=maturedDepositIncome(est);
   const myGen=flowGen;
@@ -308,7 +384,7 @@ function stageC(){
       renderComponent('chart/pie',100-est.pct,assetMid(),{title:'目前資產配置'});
       setTimeout(()=>{
         if(myGen!==flowGen)return;
-        renderComponent('chart/line',income.points,{splitIndex:income.splitIndex,splitLabel:'定存到期',ariaLabel:'定存到期後每月被動收益趨勢',title:'每月被動收益趨勢'});
+        renderComponent('chart/line',income.points,{ariaLabel:'每月被動收益趨勢',title:'每月被動收益趨勢'});
         /* 結論文字的 aiSay() 也要挪進這個 setTimeout 裡、接在折線圖後面才呼叫——
            這一輪稍早的 cube-loader 已經把 turnLoadingShown 設成 true，aiSay() 內部
            看到這個旗標就會直接開始逐字打字、不會再多等 BASE_DELAY，如果沒搬進來，
@@ -359,7 +435,7 @@ function stageC(){
         },{label:'為您分析資產配置中',heavy:true});
       },450);
     },700);
-  },{loader:'cube',loadingMs:9000,cubeSubtitle:[
+  },{loader:'cube',loadingMs:5000,cubeSubtitle:[
     '正在查詢您的投資商品明細…',
     '正在核對定存到期資訊…',
     '正在核對活期存款餘額…',
@@ -630,15 +706,19 @@ const CATALOG_CAT_LABEL={bond:'債券',fund:'基金',deposit:'定存'};
    開始自轉、還沒轉到第二個據點就結束了，尺寸也偏小看不清楚立體感，加大加長之後才看得出
    「跨地區蒐集」的動態；6000ms 比 stageC() 開場的 cube-loader（4000ms）還長，這裡不是
    整段體驗的第一印象，但使用者明確要求這個 loading 停留約 6 秒，不再刻意留短。 */
-function catalogGlobeLoaderOpts(items){
+/* titleOverride：選填，跳過下面依 cat 組成判斷標題的邏輯，直接採用呼叫端指定的文字——
+   目前只有 showETFPicks() 會傳，因為 ETF_PICKS 裡的商品 cat 都是'fund'（沿用基金的欄位
+   對應與警語邏輯，見 catalog.js 該常數的說明），如果不覆寫，這裡依 cat 判斷會顯示「搜尋
+   基金中」，沒辦法區分「使用者主動要看ETF」跟「一般基金推薦清單」這兩種不同情境。 */
+function catalogGlobeLoaderOpts(items,titleOverride){
   const cats=new Set(items.map(p=>p.cat));
-  const title=cats.size>1
+  const title=titleOverride||(cats.size>1
     ?'搜尋基金與債券中'
     :({
       bond:'搜尋債券中',
       fund:'搜尋基金中',
       deposit:'搜尋定存方案中'
-    }[[...cats][0]]||'搜尋商品中');
+    }[[...cats][0]]||'搜尋商品中'));
   return {loader:'globe',loadingMs:6000,globeSize:220,globeTitle:title};
 }
 /* 【AI_Behavior_Instruction v1.1 §8.10】基金商品清單、配息型商品清單後方必須完整保留法定警語，
@@ -789,7 +869,19 @@ function enterProductDetail(p,items,opts){
   },{label:'為您整理商品資訊中',cancelToken:myToken});
 }
 function backToCatalogList(items){
-  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),catalogGlobeLoaderOpts(items));
+  /* items===ETF_PICKS：使用者是從 ETF 清單「查看其他產品」回來的，loading 標題也要延續
+     showETFPicks() 的「搜尋ETF中」，不能落回 catalogGlobeLoaderOpts() 依 cat 判斷出的
+     「搜尋基金中」——ETF_PICKS 裡的商品 cat 都是'fund'，這裡不特別處理就會顯示錯的標題。 */
+  aiSay(['以下整理其他商品供您參考：'],()=>showCatalogCards(items),catalogGlobeLoaderOpts(items,items===ETF_PICKS?'搜尋ETF中':undefined));
+}
+/* 試算頁「我還是想再保守一點，偏好ETF」選項專用——帶出獨立於 CATALOG 之外的 ETF_PICKS
+   （見 catalog.js 該常數的說明），不經過 matchCatalogAtLeast()，因為使用者是自己主動
+   表態想看ETF，不是本行問卷算出的推薦結果。跟 showCatalogCards() 其餘呼叫端一樣走
+   globe-loader（catalogGlobeLoaderOpts()），維持「查詢商品」的一致體感。 */
+function showETFPicks(){
+  aiSay(['凱基也提供多元的ETF可以選購，跟您相近的資產與風險能力的用戶，大都買市值型ETF：'],()=>{
+    showCatalogCards(ETF_PICKS);
+  },catalogGlobeLoaderOpts(ETF_PICKS,'搜尋ETF中'));
 }
 /* 債券／基金／外匯定存都用同一個 card/calculator 元件（Figma 對應的拉桿試算卡，含手搖飲/聚餐動畫）
    跟活存做配置比較；insight（investRationale）沒有對應欄位，先用一句話帶出。
@@ -833,6 +925,18 @@ function enterProductCalc(p,items,opts){
           keywords:['查看','其他','清單','商品','天期','回去','返回'],
           onSelect:()=>{clearControls();backToCatalogList(items);}}
       );
+      /* 只在債券／基金情境才提供這個轉向 ETF 的選項——定存已經是本表風險最低的商品，
+         不需要再往「更保守」的方向多繞一圈；放在 nextItems 最後一個，對應使用者要的
+         「試算頁最下方的 CTA」。點下去不經過 CATALOG／matchCatalogAtLeast()，直接帶出
+         獨立的 ETF_PICKS 清單（見 catalog.js 該常數的說明），跟本行問卷算出的推薦
+         結果是兩條不同的路，不用重新跑一次風險/資產規模比對。
+         items!==ETF_PICKS：使用者如果已經在試算 ETF_PICKS 裡的其中一檔，就不用再出現
+         這個選項——已經在看ETF了，沒有必要再繞回同一份清單。 */
+      if((p.cat==='bond'||p.cat==='fund')&&items!==ETF_PICKS){
+        nextItems.push({id:'etf',title:'我還是想再保守一點，偏好ETF',description:'看看跟您相同性質的用戶投資哪些ETF',
+          keywords:['保守','ETF','etf','市值型','穩健一點'],
+          onSelect:()=>{clearControls();showETFPicks();}});
+      }
       showNextSteps('了解產品之後，您想怎麼進行下一步呢？',nextItems);
       /* 試算卡＋下一步清單通常長過一個畫面很多，down() 貼齊底部會把 cardAnchor（剛才點的
          商品卡片）整個推出畫面上緣；這裡再往回捲一點點，固定露出卡片下緣 PEEK_PX 高度，
@@ -915,6 +1019,10 @@ function adjustH2(base){
   const rawResult=result;
   if(result==='fund'&&(S.cashRatio==='95% 以上'||S.h1Ratio==='1–50%')){
     result='bond';reason='*您已具備一定的投資概念，不過目前現金比例偏高、配置仍偏保守。*建議先以債券為主，穩健地累積收益。';
+    /* S.assetRange 這一半現在恆為 false：那題已拿掉，S.assetRange 固定是 resetAll() 的
+       '50–100 萬' 預設值，不會等於'200 萬以上'。這個判斷式因此實質上只看 S.h1Amt
+       （使用者真實填寫的他行資產級距）——保留 S.assetRange 這半只是不改動既有寫法，
+       不是還在依賴它，之後如果要精簡可以直接拿掉 */
   }else if(result==='bond'&&(S.assetRange==='200 萬以上'||S.h1Amt==='200 萬以上')&&S.h1Ratio==='50% 以上'){
     result='fund';reason='*您的資金規模充足，投資風格也偏積極。*可以搭配基金組合，讓資金有更大的成長空間。';
   }

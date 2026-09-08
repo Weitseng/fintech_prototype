@@ -303,6 +303,13 @@ function assetMid(){return {'50 萬以下':250000,'50–100 萬':750000,'100 萬
 
 function resetAll(){
   flowGen++;
+  /* assetRange：stepB() 的「初始資產級距」這題已經拿掉、不再讓使用者選，這裡的
+     '50–100 萬' 現在是唯一來源、固定不變的預設值，只做兩件事——① assetMid() 拿去估算
+     bridge 文案／圓餅圖裡「這筆約 NT$xxx」的金額，選中位數的級距比較不會對多數使用者
+     顯得灌水；② 維持是 assetRangeRank() 最低的 rank=1，讓 catalog.js
+     biggerAssetTierAllowed()／flow.js 判斷式仍然照 S.h1Amt（使用者真實填寫的他行資產）
+     決定，不會被這個常數蓋掉。商品清單本身的資產規模篩選已經不再依賴這個值，
+     見 catalog.js assetTierAllowed() 的說明。 */
   S={assetRange:'50–100 萬',cashRatio:'50–95%',q1:null,depositWeight:'mid',q2:null,q3:null,
      attribute:null,recoType:null,horizonOverride:false,path:null,h1Amt:null,h1Ratio:null,h2Items:null,h2Reason:null,recoTypeH:null,selectedProductCode:null};
   if(activePopover){activePopover.remove();activePopover=null;}
