@@ -176,7 +176,7 @@ function stepWelcome(){
           <img class="welcome-paper-watermark" src="assets/welcome-paper-watermark-dollar.svg" alt="">
           <div class="welcome-paper-txt">
             <h1>您好，我是您的智富管家</h1>
-            <div class="lead">我留意到您這個月的收支有些變化，這通常代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
+            <div class="lead">我留意到您這個月的收支有些變化，這代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
           </div>
           <button type="button" class="btn-primary welcome-paper-btn">我想看看資產報告</button>
         </div>
