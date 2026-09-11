@@ -157,21 +157,35 @@ function stepWelcome(){
   document.querySelector('.app-header').style.display='';
   showInput();
   const p=wrap();p.className='selpage welcome-page';
+  /* 版面結構比照 Figma node 522:7170「opening page」（pzGDt95JRVQKMWzlcKvYBF）：IP 圖示
+     跟下面的「紙張」之間多一條 .welcome-divider——原稿的進場動效是 IP 先出現，接著這條
+     分隔線用 scaleX 從 0 長到 1，最後 .welcome-content（對應原稿的 paper 容器）才滑入
+     定位＋淡入，見 style.css 同一批 .welcome-* 動畫規則的說明。
+     .welcome-paper 還原自原稿改版後的 node 530:7926（get_design_context 讀出的實際
+     padding／gap／配色，而非目測screenshot）：問候語＋CTA 包在一張卡片裡，右下角疊一顆
+     半透明的定存美元圖示當背景壓底圖，底部收一條鋸齒（撕紙）邊，CTA 改回全站共用的
+     .btn-primary 實心藍全寬按鈕（原本這裡是右下角的膠囊按鈕，改版後直接換成跟
+     stepA()「開始體驗」同一顆按鈕樣式，只是圓角換成 --radius-small）。按鈕點擊行為
+     不變，一樣呼叫 enterChat() 進入資產分析。 */
   p.innerHTML=`
-    <div class="welcome-icon-wrap"><img class="welcome-icon" src="assets/IP_v2.svg" alt=""></div>
-    <div class="selpage-intro">
-      <h1>您好，我是您的智富管家</h1>
-      <div class="lead">我留意到您這個月的收支有些變化，這通常代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
-    </div>
-    <div id="welcomeNextMount"></div>`;
+    <div class="welcome-icon-wrap"><span class="welcome-icon-lottie" data-lottie-key="ip-v2-idle" data-lottie-loop="true"></span></div>
+    <div class="welcome-divider" aria-hidden="true"></div>
+    <div class="welcome-content">
+      <div class="welcome-paper">
+        <div class="welcome-paper-card">
+          <img class="welcome-paper-watermark" src="assets/welcome-paper-watermark-dollar.svg" alt="">
+          <div class="welcome-paper-txt">
+            <h1>您好，我是您的智富管家</h1>
+            <div class="lead">我留意到您這個月的收支有些變化，這通常代表有一筆資金正閒置著、還沒發揮該有的效益。想知道是怎麼一回事嗎？</div>
+          </div>
+          <button type="button" class="btn-primary welcome-paper-btn">我想看看資產報告</button>
+        </div>
+        <div class="welcome-paper-edge" aria-hidden="true"></div>
+      </div>
+    </div>`;
   destroyActiveLottieIcons();screen().innerHTML='';screen().appendChild(p);
-  const list=document.createElement('div');list.className='nsl';
-  const itemsEl=document.createElement('div');itemsEl.className='nsl-items';
-  const btn=document.createElement('button');btn.type='button';btn.className='nsl-item';
-  btn.innerHTML=`<span class="nsl-item-text"><span class="nsl-item-title">好，我想看看資產報告</span></span>${NSL_ICON_CHEVRON}`;
-  btn.onclick=()=>enterChat();
-  itemsEl.appendChild(btn);list.appendChild(itemsEl);
-  p.querySelector('#welcomeNextMount').appendChild(list);
+  initLottieIcons(p);
+  p.querySelector('.welcome-paper-btn').onclick=()=>enterChat();
 }
 
 /* stepB() 資產情境兩題的正式 icon（取代原本 8 個選項共用的錢袋佔位圖）：
