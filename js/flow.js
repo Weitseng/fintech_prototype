@@ -168,7 +168,11 @@ function stepWelcome(){
      stepA()「開始體驗」同一顆按鈕樣式，只是圓角換成 --radius-small）。按鈕點擊行為
      不變，一樣呼叫 enterChat() 進入資產分析。 */
   p.innerHTML=`
-    <div class="welcome-icon-wrap"><span class="welcome-icon-lottie" data-lottie-key="ip-v2-idle" data-lottie-loop="true"></span></div>
+    <div class="welcome-icon-wrap">
+      <span class="welcome-icon-ring welcome-icon-ring-1" aria-hidden="true"></span>
+      <span class="welcome-icon-ring welcome-icon-ring-2" aria-hidden="true"></span>
+      <span class="welcome-icon-lottie" data-lottie-key="ip-v2-idle" data-lottie-loop="true"></span>
+    </div>
     <div class="welcome-divider" aria-hidden="true"></div>
     <div class="welcome-content">
       <div class="welcome-paper">

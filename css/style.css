@@ -240,11 +240,42 @@ body{font-family:var(--font-cn);
    h1／.lead 的 margin 要蓋掉 .selpage h1（margin:6px 0 4px）／.selpage .lead
    （margin-bottom:22px）這兩條共用預設值，選擇器多疊一層 .selpage-intro 才會贏過
    原本兩層 class 的特異性，不用改動共用規則、也不會影響 stepA() 的版面。 */
-.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-20);
+.welcome-icon-wrap{position:relative;display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-20);
   animation:welcomeIconPopIn .55s cubic-bezier(.34,1.56,.64,1) backwards}
 /* IP 進場改成 scale 0→100% 帶一點位移（不是單純淡入），沿用 .calc-toggle-knob
    （component-library.css）同一條回彈曲線，讓角色像「彈出來」一樣有活潑感。 */
 @keyframes welcomeIconPopIn{from{opacity:0;transform:scale(0) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+/* IP 底部的「發電波」漣漪，還原自 Figma node 541:9240「circle」（get_motion_context 讀出
+   的兩條 keyframe）：兩個同心圓從 IP 中心點各自往外擴散、邊放大邊淡出，兩圈時間點稍微
+   錯開（ring-2 比 ring-1 晚一點點開始淡出、擴散得慢一點），疊在一起造成雙層漣漪的效果。
+   原稿週期 4.03s；改成 3s 一個循環、間隔（放大到底、淡到 0 之後的靜止等待）壓到 2s，
+   等於真正有動作的擴散階段壓縮到剩前 1s 左右（約 33～43%），不是連續不斷地擴散，比較
+   像雷達 ping 而不是快速閃爍，只是循環頻率比原稿快一些。
+   z-index 明確排出層次（不能只靠 DOM 順序，因為圓圈放大到 4 倍後半徑會超出
+   .welcome-icon-wrap 自己的框，視覺上會蓋到下面的 divider／紙張）：ring 用
+   z-index:0 墊在最底層，.welcome-icon-lottie（機器人本體）疊在 ring 上面，
+   .welcome-divider／.welcome-content 再各自宣告 z-index:1，確保漣漪擴散再大，
+   也只會在 IP 圖示跟分隔線之間的空白處看到，不會蓋到分隔線或紙張卡片本身。圓圈本身
+   用 border 畫（不用原稿匯出的 SVG stroke 圖檔）：border-radius:50% 的圓比一張靜態
+   SVG 更好縮放，顏色沿用 --color-container-card-white（原稿 stroke 顏色 #1F304D
+   剛好就是這個 token 在深色模式下的值）。 */
+.welcome-icon-ring{position:absolute;top:50%;left:50%;width:73px;height:73px;margin:-36.5px 0 0 -36.5px;
+  z-index:0;border-radius:50%;border:2px solid var(--color-container-card-white);pointer-events:none}
+.welcome-icon-ring-1{animation:welcomeIconRing1 3s linear infinite}
+.welcome-icon-ring-2{animation:welcomeIconRing2 3s linear infinite}
+@keyframes welcomeIconRing1{
+  0%{opacity:.5;transform:scale(1)}
+  4%{opacity:1;transform:scale(1);animation-timing-function:cubic-bezier(.5,0,.5,1)}
+  33%{opacity:0;transform:scale(4.27)}
+  100%{opacity:0;transform:scale(4.27)}
+}
+@keyframes welcomeIconRing2{
+  0%{opacity:1;transform:scale(1)}
+  8%{opacity:.5;transform:scale(1);animation-timing-function:cubic-bezier(.5,0,.5,1)}
+  19%{opacity:.5;transform:scale(1.9)}
+  43%{opacity:0;transform:scale(4.23)}
+  100%{opacity:0;transform:scale(4.23)}
+}
 /* 機器人吉祥物待機動畫用 Lottie 播放（js/flow.js CASH_RATIO_ICONS 同一套 initLottieIcon()
    機制，key＝ip-v2-idle，見 index.html／assets/lottie/ip-v2-idle.js），data-lottie-loop="true"
    無限循環播放。尺寸還原自 Figma node 522:7233「IP_v2」實測的 size-[180px]（不是先前
@@ -255,7 +286,7 @@ body{font-family:var(--font-cn);
    canvas 畫出來的角色周圍/後方透出一圈疊影，變成「IP 後面卡了一張看不出來在動的
    IP」。比照 fbqr-icon-lottie（慶祝動畫）不放 fallback 的做法——這裡的動畫來源已確認
    能正常載入播放，不需要防呆，拿掉疊影问题比多一層保險更重要。 */
-.welcome-icon-lottie{display:grid;width:180px;height:180px}
+.welcome-icon-lottie{position:relative;z-index:1;display:grid;width:180px;height:180px}
 .welcome-icon-lottie>*{grid-area:1/1;width:100%;height:100%}
 /* 進場節奏參考自 Figma node 522:7170「opening page」（pzGDt95JRVQKMWzlcKvYBF）的 Smart
    Animate 時間軸（get_motion_context 讀出的 divider／paper／txt／btn 四條 keyframe）：
@@ -287,11 +318,11 @@ body{font-family:var(--font-cn);
    節點本身也改了，還沿用舊稿的 480/58%，導致 divider 看起來比卡片窄，兩端的圓頭縮在
    卡片邊緣裡面，這裡改成用新量到的比例，clamp() 下限也同比例放寬。高度原稿是 6px，
    上一版誤寫成 3px，這裡一併修正。 */
-.welcome-divider{width:clamp(210px,74.6%,616px);height:6px;margin:0 auto;
+.welcome-divider{position:relative;z-index:1;width:clamp(210px,74.6%,616px);height:6px;margin:0 auto;
   border-radius:var(--radius-full,999px);background:var(--color-container-general-divider);
   transform-origin:center;animation:welcomeDividerGrow .55s cubic-bezier(.5,0,.5,1) .5s backwards}
 @keyframes welcomeDividerGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.welcome-content{width:clamp(260px,71%,590px);margin:0 auto;
+.welcome-content{position:relative;z-index:1;width:clamp(260px,71%,590px);margin:0 auto;
   animation:welcomeContentIn .4s ease-out .9s backwards}
 @keyframes welcomeContentIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
 /* .welcome-paper 還原自 Figma node 530:7926（get_design_context 讀出的實際
@@ -338,6 +369,7 @@ body{font-family:var(--font-cn);
   background-repeat:repeat-x;background-size:calc(100%/18) 11px;background-position:0 0}
 @media (prefers-reduced-motion: reduce){
   .welcome-icon-wrap,.welcome-divider,.welcome-content{animation:none}
+  .welcome-icon-ring{display:none}
 }
 /* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
    要優先壓縮影片區塊，標題文字／開始體驗按鈕永遠不能被擠出畫面。只加在 stepA 的 .selpage
