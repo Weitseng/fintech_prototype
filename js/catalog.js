@@ -196,26 +196,41 @@ const CATALOG=[
 const BOND_ISSUER_DISCLAIMER='以上皆為公司（金融）債，收益主要來自票息，須留意利率、信用（發行人違約）與匯率風險；實際條件依個別票息、到期日與債信評等而定。';
 
 /* ================= ETF 精選清單（js/flow.js showETFPicks() 專用） =================
-   刻意獨立於 CATALOG 之外，不放進共用商品陣列：這三檔只透過「我還是想再保守一點，偏好ETF」
+   刻意獨立於 CATALOG 之外，不放進共用商品陣列：這幾檔只透過「我還是想再保守一點，偏好ETF」
    這個使用者主動點選的專屬入口帶出（見 enterProductCalc()），不是本行既有問卷（風險承受度／
    資產規模）算出來的推薦結果——放進 CATALOG 會被 matchCatalog() 依 risk／assetSize 撈進一般
-   債券／基金推薦清單，語意不對，使用者會在還沒表態「想要ETF」之前就看到這三檔。
+   債券／基金推薦清單，語意不對，使用者會在還沒表態「想要ETF」之前就看到這幾檔。
    cat 沿用 'fund'：ETF 本質上是基金的一種（受益憑證、可在集中市場交易），card/product／
    catalogDisclaimerLines() 這些既有元件都是依 cat 判斷欄位與警語，用 'fund' 才能直接沿用
    現成的「近一年報酬率／基金淨值」欄位對應與基金風險警語，不用另外開一個 'etf' 分支。
-   三檔都是追蹤台灣市值前 50 大公司的市值型ETF；009816 是凱基投信自家發行（isOwnBrand()
-   認得出來），排第一檔，呼應「凱基也提供多元的ETF」這句話。
+   009816／00915／00926／00945B 都是凱基投信自家發行（isOwnBrand() 認得出來），排在
+   0050／006208 這兩檔他牌ETF之前，呼應「凱基也提供多元的ETF」這句話。
    NAV／近一年報酬率為 2026-09-07 網路查證的參考數字（0050／006208 為市場成交價概數，
-   009816 為官方淨值），非即時官方數據，正式上線前需業務或商品負責人覆核；009816 是
-   2026/1/22 才成立的新基金，還沒有滿一年，這裡的報酬率是成立以來的參考數字，不是
-   真正的年化報酬率——跟 catalog.js 開頭 FUND8 那則說明是同一種「示範用途、非正式數字」
-   的處理方式。 */
+   其餘四檔為官方淨值或收盤價），非即時官方數據，正式上線前需業務或商品負責人覆核；
+   009816 是 2026/1/22 才成立的新基金，00945B 則是 2024/05 才掛牌，兩者都還沒有滿一年／
+   三年，這裡的報酬率是成立以來的參考數字，不是真正的年化報酬率——跟 catalog.js 開頭
+   FUND8 那則說明是同一種「示範用途、非正式數字」的處理方式。 */
 const ETF_PICKS=[
   {code:'009816',cat:'fund',name:'凱基台灣TOP50 ETF',currency:'TWD',rate:0.18,rate1y:0.18,rate3y:0.18,nav:15.91,navLabel:'收盤價',return1y:0.18,
     payFreq:'不配息',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',
     feature:'凱基投信發行；追蹤特選臺灣TOP50指數，市值型；台灣首檔不配息ETF，成分股股利留在基金內部再投入；2026/1/22 成立，未滿一年無完整年度績效，報酬率為成立以來參考數字',
     managerInfo:'凱基投信發行的市值型ETF，追蹤台灣市值前50大企業，成分股獲配的現金股利留在基金內部再投入，訴求長期複利累積、不另外配息。2026年初成立，尚無完整一年績效紀錄。'},
+  {code:'00915',cat:'fund',name:'凱基優選高股息30 ETF',currency:'TWD',rate:0.31,rate1y:0.31,rate3y:0.18,nav:32.76,navLabel:'收盤價',return1y:0.31,
+    payFreq:'季配',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'中等',investType:['收益'],assetSize:'中',entry:'單筆／定期定額',
+    feature:'凱基投信發行；追蹤臺灣多因子優選高股息30指數，多因子高股息策略，市值型；季配息（2、5、8、11月）；2022/08成立',
+    managerInfo:'凱基投信發行的高股息ETF，追蹤臺灣多因子優選高股息30指數，以流動性、品質因子與下方風險篩選後，再依規模、低波動與股利因子綜合評選30檔台股，訴求兼顧配息與抗跌表現，採季配息機制。'},
+  {code:'00926',cat:'fund',name:'凱基全球菁英55 ETF',currency:'TWD',rate:0.18,rate1y:0.18,rate3y:0.15,nav:24.59,navLabel:'收盤價',return1y:0.18,
+    payFreq:'年配',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'積極',investType:['成長'],assetSize:'中',entry:'單筆／定期定額',
+    feature:'凱基投信發行；追蹤彭博全球菁英55指數，聚焦全球科技與消費龍頭股，海外股票型；年配息（12月）；2023/05成立',
+    managerInfo:'凱基投信發行的海外股票型ETF，追蹤彭博全球菁英55指數，成分股涵蓋全球科技與消費產業龍頭企業，訴求參與全球產業趨勢成長，採年配息機制。'},
+  {code:'00945B',cat:'fund',name:'凱基美國非投等債 ETF',currency:'TWD',rate:0.076,rate1y:0.076,rate3y:0.076,nav:14.65,navLabel:'收盤價',return1y:0.076,
+    payFreq:'月配',minAmt:'小額',maturity:'-',callDate:'-',
+    risk:'穩健',investType:['收益'],assetSize:'小',entry:'單筆／定期定額',
+    feature:'凱基投信發行；追蹤彭博美國企業非投資等級1-5年Ba至B債券指數，月配息型；全台首檔月配美國非投等債ETF；2024/05掛牌，尚未滿三年，報酬率為參考數字',
+    managerInfo:'凱基投信發行的債券型ETF，採指數化策略投資於美國非投資等級（高收益）公司債，追蹤彭博美國企業非投資等級1-5年Ba至B債券指數，訴求較高息收與相對短年期債券的波動控管，為全台首檔月配美國非投等債ETF。'},
   {code:'0050',cat:'fund',name:'元大台灣50 ETF',currency:'TWD',rate:0.35,rate1y:0.35,rate3y:0.28,nav:107.9,navLabel:'收盤價',return1y:0.35,
     payFreq:'半年配',minAmt:'小額',maturity:'-',callDate:'-',
     risk:'積極',investType:['成長'],assetSize:'小',entry:'單筆／定期定額',

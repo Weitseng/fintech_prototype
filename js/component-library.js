@@ -702,6 +702,11 @@ COMPONENTS['card/recommendation']={render:renderRecommendationCard};
    - 債券的兩個標題字串不要寫死在這裡，改讀 catalog.js 的 BOND_CARD_LABELS——那兩個值
      直接對應 Excel 工作表的欄位標題儲存格（H2／J2），之後 Excel 標題改名只要改那邊。 */
 function renderProductCardDisplay(p,onDetail,onCalc){
+  /* ETF_PICKS 裡的商品名稱都以「 ETF」結尾（見 catalog.js），卡片上改拿掉這個字尾、
+     換成股票代號——集中市場交易的商品，使用者認的是代號，不是「XX ETF」這種說法；
+     商品詳情頁／試算頁的完整名稱（p.name 本身）不受影響，只有卡片顯示這裡改寫 */
+  const isETF=typeof ETF_PICKS!=='undefined'&&ETF_PICKS.includes(p);
+  const displayName=isETF?`${p.name.replace(/\s*ETF\s*$/,'')}（${p.code}）`:p.name;
   const rateLabel=p.cat==='bond'?BOND_CARD_LABELS.rate:p.cat==='deposit'?'年利率':'近一年報酬率';
   const rateSrc=p.cat==='fund'?p.return1y:p.rate1y;
   const rate1Str=(rateSrc*100).toFixed(2);
@@ -712,7 +717,7 @@ function renderProductCardDisplay(p,onDetail,onCalc){
   const stat2Value=p.cat==='deposit'?`${p.currency} ${p.maxAmt}`:p.cat==='bond'?`${p.refPrice}%`:p.nav;
   const el=document.createElement('div');el.className='pcard';
   el.innerHTML=`<div class="pcard-header">
-      <div class="pcard-name" title="${p.name}">${p.name}</div>
+      <div class="pcard-name" title="${displayName}">${displayName}</div>
       <div class="pcard-tags"><span class="pcard-tag">${p.payFreq}</span><span class="pcard-tag">${p.currency}</span></div>
     </div>
     <div class="pcard-stats">
@@ -806,7 +811,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         </div>
       </div>
     </div>
-    <div class="calc-note">*${showPeriodTabs?`${tag}投資1年/投資3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':'基金為歷史績效示範，不代表未來報酬'}</div>
+    <div class="calc-note">*${showPeriodTabs?`${tag}投資1年/投資3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':tag==='ETF'?'ETF為歷史績效示範，不代表未來報酬':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="calc-result">
       <div class="calc-result-panel">
         <div class="calc-emoji-layer"></div>
