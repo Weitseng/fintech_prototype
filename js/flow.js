@@ -895,7 +895,7 @@ function backToCatalogList(items){
    表態想看ETF，不是本行問卷算出的推薦結果。跟 showCatalogCards() 其餘呼叫端一樣走
    globe-loader（catalogGlobeLoaderOpts()），維持「查詢商品」的一致體感。 */
 function showETFPicks(){
-  aiSay(['凱基也提供多元的ETF可以選購，跟您相近的資產與風險能力的用戶，大都買市值型ETF：'],()=>{
+  aiSay(['跟您相近的資產與風險能力的用戶，也有不少人選擇市值型、高股息或債券型ETF：'],()=>{
     showCatalogCards(ETF_PICKS);
   },catalogGlobeLoaderOpts(ETF_PICKS,'搜尋ETF中'));
 }
