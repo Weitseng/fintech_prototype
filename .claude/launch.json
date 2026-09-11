@@ -3,15 +3,15 @@
   "configurations": [
     {
       "name": "static-server",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": [".claude/static-server.py"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/static-server.js"],
       "port": 8734,
       "autoPort": true
     },
     {
-      "name": "static-server-node",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [".claude/static-server.js"],
+      "name": "static-server-python",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [".claude/static-server.py"],
       "port": 8734,
       "autoPort": true
     }

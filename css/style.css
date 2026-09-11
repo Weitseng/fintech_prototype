@@ -240,12 +240,105 @@ body{font-family:var(--font-cn);
    h1／.lead 的 margin 要蓋掉 .selpage h1（margin:6px 0 4px）／.selpage .lead
    （margin-bottom:22px）這兩條共用預設值，選擇器多疊一層 .selpage-intro 才會贏過
    原本兩層 class 的特異性，不用改動共用規則、也不會影響 stepA() 的版面。 */
-.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-12)}
-.welcome-icon{width:80px;height:80px}
-.welcome-page .selpage-intro h1{margin:0 0 var(--spacing-8)}
-.welcome-page .selpage-intro .lead{font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);
-  line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);margin-bottom:0}
-.welcome-page .nsl{margin-top:var(--spacing-28)}
+.welcome-icon-wrap{display:flex;justify-content:center;margin:var(--spacing-40) 0 var(--spacing-20);
+  animation:welcomeIconPopIn .55s cubic-bezier(.34,1.56,.64,1) backwards}
+/* IP 進場改成 scale 0→100% 帶一點位移（不是單純淡入），沿用 .calc-toggle-knob
+   （component-library.css）同一條回彈曲線，讓角色像「彈出來」一樣有活潑感。 */
+@keyframes welcomeIconPopIn{from{opacity:0;transform:scale(0) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+/* 機器人吉祥物待機動畫用 Lottie 播放（js/flow.js CASH_RATIO_ICONS 同一套 initLottieIcon()
+   機制，key＝ip-v2-idle，見 index.html／assets/lottie/ip-v2-idle.js），data-lottie-loop="true"
+   無限循環播放。尺寸還原自 Figma node 522:7233「IP_v2」實測的 size-[180px]（不是先前
+   誤用的 80px——80px 是舊版跟本無關的靜態圖示尺寸）。不疊加靜態 SVG fallback：疊圖
+   fallback 是給「Lottie 可能載入失敗」的情境用的防呆（見 CASH_RATIO_ICONS 的說明），
+   但疊在同一個 grid cell 時，只要 Lottie 來源動畫本身的角色比例／位置跟那張靜態 SVG
+   對不上（這裡兩者是各自獨立輸出的兩份美術檔，本來就不會像素對齊），fallback 會在
+   canvas 畫出來的角色周圍/後方透出一圈疊影，變成「IP 後面卡了一張看不出來在動的
+   IP」。比照 fbqr-icon-lottie（慶祝動畫）不放 fallback 的做法——這裡的動畫來源已確認
+   能正常載入播放，不需要防呆，拿掉疊影问题比多一層保險更重要。 */
+.welcome-icon-lottie{display:grid;width:180px;height:180px}
+.welcome-icon-lottie>*{grid-area:1/1;width:100%;height:100%}
+/* 進場節奏參考自 Figma node 522:7170「opening page」（pzGDt95JRVQKMWzlcKvYBF）的 Smart
+   Animate 時間軸（get_motion_context 讀出的 divider／paper／txt／btn 四條 keyframe）：
+   IP 先出現、接著分隔線長出來、最後問候語＋CTA 那張「紙」才出場。
+   原稿的 paper 節點是 translate 0px 0px → 0px 306px（往「下」移動 306px 才落到定位，
+   不是常見的「從下往上滑入」），推測是模擬 divider 撐開版面前／後 paper 在 autolayout
+   裡位置上移的過場；上一版做反了方向（寫成往上滑），對照原稿檔案看起來會像是「紙張
+   從錯的方向冒出來」。這裡改成跟原稿一致的方向——.welcome-content 從「稍微偏上、
+   對應 paper 還沒被 divider 推下去之前的位置」滑到最終定位（translateY 從負值到 0，
+   數值縮小到 16px，不照搬原稿 306px 那麼誇張的位移，這裡的 306px 是原稿版面本身
+   量出來的絕對座標差，直接套用在我們小得多的卡片上動作會大到不成比例）。
+   原稿的 paper 容器本身在滑動時其實是透明的、要等內容（txt／btn）淡入才看得到——
+   但這樣直接照搬到網頁上，使用者會完全看不到紙張在動（滑動當下不可見，等它靜止了
+   才突然淡入），肉眼感覺不到任何「跑出來」的動作，所以這裡把滑動跟淡入合併成同一個
+   動畫（.welcome-content 本身同時做 translateY 跟 opacity）；easing 也改回原稿標記的
+   ease-out（拿掉上一版自己加的回彈曲線——那是我自己加的活潑效果，原始檔案裡沒有這個
+   彈跳，跟原稿比對起來動作會顯得跳痛/不自然）。
+   1) .welcome-icon-wrap 先淡入（0～0.5s，不變）
+   2) .welcome-divider 用 scaleX 0→1 長出來（0.5～1.05s，cubic-bezier(.5,0,.5,1)，對應
+      原稿 divider 節點的 easing）
+   3) .welcome-content（問候語＋CTA 整塊，對應原稿的 paper 容器）在分隔線快長完時
+      邊往下滑邊淡入（0.9～1.3s，ease-out，方向／easing 都對應原稿）——h1／.lead／
+      .nsl 都是它的子元素，靠父層的 opacity 一起現身，不需要再各自疊加淡入動畫。 */
+/* 寬度還原自 Figma 的實際座標，不是憑感覺挑的：node 522:7170「opening page」整個
+   frame 是 826px 寬（跟 .app 的 max-width:820px 幾乎是同一個尺度）。紙張改成 node
+   530:7926（width=590、x=118，比例 ≈71%）之後，divider（node 530:7734）也跟著改寬了，
+   重新量測是 width=616、x=105（比例 ≈74.6%）——divider 本來就故意比紙張寬一點（616 vs
+   590，兩側各多探出 13px），不是紙張變寬後 divider 沒跟著更新；上一版沒注意到 divider
+   節點本身也改了，還沿用舊稿的 480/58%，導致 divider 看起來比卡片窄，兩端的圓頭縮在
+   卡片邊緣裡面，這裡改成用新量到的比例，clamp() 下限也同比例放寬。高度原稿是 6px，
+   上一版誤寫成 3px，這裡一併修正。 */
+.welcome-divider{width:clamp(210px,74.6%,616px);height:6px;margin:0 auto;
+  border-radius:var(--radius-full,999px);background:var(--color-container-general-divider);
+  transform-origin:center;animation:welcomeDividerGrow .55s cubic-bezier(.5,0,.5,1) .5s backwards}
+@keyframes welcomeDividerGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.welcome-content{width:clamp(260px,71%,590px);margin:0 auto;
+  animation:welcomeContentIn .4s ease-out .9s backwards}
+@keyframes welcomeContentIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+/* .welcome-paper 還原自 Figma node 530:7926（get_design_context 讀出的實際
+   padding/gap/字級/配色，不是目測 screenshot 湊的）：
+   - 卡片（.welcome-paper-card）背景＝Container/Card/White，跟深色模式下 AI 訊息卡片、
+     選項卡共用同一份 token（--color-container-card-white），四角刻意不做 border-radius——
+     原稿的「紙張」本身是直角，只有底部收一條鋸齒邊（不是四角都是圓角卡片）。
+   - 卡片內距 40/24（上下/左右）；文字區塊跟按鈕之間改版後從 32px 加大到 60px
+     （--spacing-60），標題跟內文之間仍是 12px。
+   - 卡片右下角疊一顆半透明（原稿 group opacity 0.5）的定存美元圖示當背景壓底圖
+     （assets/welcome-paper-watermark-dollar.svg，還原自 Figma component「Icon/Dollar/
+     fixed NTD deposit」，202×202，right:21px／top:100px），純裝飾、不影響版面尺寸
+     （aria-hidden 概念上等同裝飾圖，實際用 alt=""），卡片需要 position:relative 當定位
+     基準、overflow:hidden 避免文字內容較短時圖示探出卡片下緣。
+   - 標題字級原稿標記是「Title」（24px／weight 500），不是這頁其他地方沿用的
+     --type-headline-*（32px／weight 400）——只在 .welcome-paper-txt 這裡改用
+     --type-title-*，不影響 stepA() 開場頁等其他共用 .selpage h1 的地方。
+   - 按鈕改版後從右下角的膠囊按鈕（Capsule Button_Blue）換成滿版的實心藍按鈕，
+     配色／字級／padding 跟全站共用的 .btn-primary（component-library.css）完全一致
+     （同樣讀 --color-container-general-active-primary／--color-content-general-light-active／
+     --type-subtitle-* token），直接複用該 class，只多疊一個 .welcome-paper-btn 把
+     圓角從 --radius-none 換成原稿標記的 --radius-small（3px），不用整顆重寫。
+   - 底部鋸齒邊：原稿的「鋸齒邊」是張隨卡片寬度等比例縮放的 SVG（改版後 18 個三角形
+     變成每顆 32.7778×11px，寬度剛好是卡片新寬度 590 的 1/18，比例跟舊版 460 寬時的
+     25.5556px 一致，證實原稿是「固定 18 顆齒」而非「固定齒寬」）。這裡的
+     background-size 因此改用 calc(100%/18) 而不是寫死的 px 值，讓齒的大小跟著
+     .welcome-paper-edge 實際渲染出來的寬度等比例縮放，卡片多寬都維持剛好 18 顆完整的齒，
+     不會在邊緣卡出一顆被裁一半的齒。素材本身（assets/welcome-paper-edge-tooth.svg）
+     只存一顆齒的路徑，填色沿用原稿匯出時就已經是 #1F304D（剛好是我們深色卡片本身的
+     顏色，不用另外換色）。 */
+.welcome-paper{display:flex;flex-direction:column;width:100%}
+.welcome-paper-card{display:flex;flex-direction:column;gap:var(--spacing-60);
+  position:relative;overflow:hidden;
+  width:100%;padding:var(--spacing-40) var(--spacing-24);background:var(--color-container-card-white)}
+.welcome-paper-watermark{position:absolute;right:21px;top:100px;width:202px;height:202px;pointer-events:none}
+.welcome-paper-txt{display:flex;flex-direction:column;gap:var(--spacing-12);position:relative}
+.welcome-paper-txt h1{font-family:var(--font-cn);font-size:var(--type-title-size);font-weight:var(--type-title-weight-cn);
+  line-height:var(--type-title-lh-cn);letter-spacing:var(--type-title-ls-cn);margin:0;color:var(--color-content-general-primary)}
+.welcome-paper-txt .lead{font-family:var(--font-cn);font-size:var(--type-subtitle-size);font-weight:var(--type-subtitle-r-weight-cn);
+  line-height:var(--type-subtitle-lh-cn);letter-spacing:var(--type-subtitle-ls-cn);margin:0;color:var(--color-content-general-primary)}
+.btn-primary.welcome-paper-btn{position:relative;border-radius:var(--radius-small)}
+.welcome-paper-edge{width:100%;height:11px;flex-shrink:0;
+  background-image:url(../assets/welcome-paper-edge-tooth.svg);
+  background-repeat:repeat-x;background-size:calc(100%/18) 11px;background-position:0 0}
+@media (prefers-reduced-motion: reduce){
+  .welcome-icon-wrap,.welcome-divider,.welcome-content{animation:none}
+}
 /* 開場頁（js/flow.js stepA()）專用版面：整頁需 fit 視窗高度、不產生垂直捲動，且視窗變矮時
    要優先壓縮影片區塊，標題文字／開始體驗按鈕永遠不能被擠出畫面。只加在 stepA 的 .selpage
    上（多一個 .opening-page class），不影響 stepB 等其他 .selpage 頁面——那些頁面內容
