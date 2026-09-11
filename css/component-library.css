@@ -20,8 +20,11 @@
       真正的原因（環形本身兩段顏色核對 374:4210 讀出來的 #3773DC／#55A784，對應
       --color-chart-blue-2nd／--color-chart-teal-2nd，色碼跟對應關係本身沒有錯，不用改）。
       改成直接套用 --color-container-card-white，跟卡片背景永遠同一個 token，不會再因為
-      切換主題而不一致。 */
-.pie-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-16);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
+      切換主題而不一致。
+   左右內距改成跟 .linechart-card 統一用 --spacing-32（原本依 Figma 個別稿子量出來是
+   16px，跟折線圖卡片的 60px 不一致），是使用者明確要求「這兩張卡片的左右 padding 統一」
+   才改的，不是又重新去對了一次 Figma——先統一成 24px，後續使用者又改口要 32px。 */
+.pie-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-32);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;align-items:center;animation:fade .4s ease}
 .pie-overview{display:flex;flex-wrap:wrap;gap:var(--spacing-24);align-items:center;justify-content:center}
 .pie-chart{width:180px;height:180px;border-radius:50%;flex-shrink:0;position:relative;transition:background .5s ease}
@@ -58,7 +61,7 @@
        座標對齊 SVG 內部畫的線／點，不會因為卡片寬度改變就跑位）
    有一處規格存疑，沒有照抄，維持原本做法，已在 js/component-library.js renderLineChart()
    開頭記錄、等設計確認：曲線下方漸層填色的方向與色碼（稿子的漸層方向跟色碼待確認）。 */
-.linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-60);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
+.linechart-card{background:var(--color-container-card-white);border-radius:var(--radius-medium);padding:var(--spacing-24) var(--spacing-32);margin:var(--spacing-24) 0;box-shadow:var(--shadow-popover);
   display:flex;flex-direction:column;animation:fade .4s ease}
 .linechart-wrap{position:relative;width:100%}
 .linechart-svg{display:block;width:100%;height:100%;overflow:visible}
