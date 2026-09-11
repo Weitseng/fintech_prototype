@@ -922,7 +922,8 @@ function enterProductCalc(p,items,opts){
   /* items===ETF_PICKS：ETF_PICKS 裡的商品 cat 都沿用 'fund'（見 catalog.js 該常數的說明），
      單純依 cat 判斷會把試算卡的「基金」標籤也套到 ETF 商品上，這裡改成先看是不是來自
      ETF_PICKS 清單，是的話直接顯示「ETF」 */
-  const tag=items===ETF_PICKS?'ETF':{bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
+  const isETF=items===ETF_PICKS;
+  const tag=isETF?'ETF':{bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
   aiSay([investRationale(tag)],()=>{
     renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});
@@ -933,17 +934,21 @@ function enterProductCalc(p,items,opts){
           keywords:['補充','更多','其他資產','完整','他行','納入','資產'],
           onSelect:()=>{clearControls();S.path='supplement';stageH1();}});
       }
-      nextItems.push(
-        {id:'order',title:'前往申購',description:'直接帶入試算結果，快速完成線上申購',
-          keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
-          onSelect:()=>{clearControls();finishFlow('order');}},
-        {id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',
+      /* ETF 是集中市場交易的商品，用語跟著改成「下單」；債券／基金／定存維持既有的
+         「申購」用語。ETF 路徑也不提供「諮詢理專」——使用者是自己主動點「偏好ETF」
+         選了自助交易的商品，不需要再導向理專諮詢這條路。 */
+      nextItems.push({id:'order',title:isETF?'前往下單':'前往申購',
+        description:isETF?'直接帶入試算結果，快速完成線上下單':'直接帶入試算結果，快速完成線上申購',
+        keywords:['下單','申購','買','購買','下訂','前往','好','可以','下一步','ok','OK'],
+        onSelect:()=>{clearControls();finishFlow('order');}});
+      if(!isETF){
+        nextItems.push({id:'advisor',title:'諮詢理專',description:'由專人為您做更深入的資產規劃與解答',
           keywords:['理專','諮詢','專員','問問題','找人','客服'],
-          onSelect:()=>{clearControls();finishFlow('advisor');}},
-        {id:'back',title:backLabel,description:'回到清單看看別的選擇',
-          keywords:['查看','其他','清單','商品','天期','回去','返回'],
-          onSelect:()=>{clearControls();backToCatalogList(items);}}
-      );
+          onSelect:()=>{clearControls();finishFlow('advisor');}});
+      }
+      nextItems.push({id:'back',title:backLabel,description:'回到清單看看別的選擇',
+        keywords:['查看','其他','清單','商品','天期','回去','返回'],
+        onSelect:()=>{clearControls();backToCatalogList(items);}});
       /* 只在債券／基金情境才提供這個轉向 ETF 的選項——定存已經是本表風險最低的商品，
          不需要再往「更保守」的方向多繞一圈；放在 nextItems 最後一個，對應使用者要的
          「試算頁最下方的 CTA」。點下去不經過 CATALOG／matchCatalogAtLeast()，直接帶出
