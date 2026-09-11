@@ -823,7 +823,9 @@ function enterProductDetail(p,items,opts){
      留下一句「查看○○○○詳情」的回覆泡泡，這裡直接拿來當錨點，商品內容如果長過一個畫面，
      貼齊底部時還能保留一點這句回覆泡泡的邊緣（見下面 peekAnchorAbove()） */
   const cardAnchor=opts.anchor||null;
-  const catLabel={bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat;
+  /* items===ETF_PICKS：ETF_PICKS 裡的商品 cat 都沿用 'fund'（見 catalog.js 該常數的說明），
+     單純依 cat 判斷會把 ETF 商品也顯示成「基金」，這裡改成先看是不是來自 ETF_PICKS 清單 */
+  const catLabel=items===ETF_PICKS?'ETF':({bond:'債券',fund:'基金',deposit:'定存'}[p.cat]||p.cat);
   const isDeposit=p.cat==='deposit';
   /* 定存商品介紹內文（feature 及以下欄位）不套用 **粗體** 強調——粗體會被 mdToHtml
      轉成 <strong>，顏色跟著變成 --color-content-general-active，不是一般內文的
@@ -856,7 +858,7 @@ function enterProductDetail(p,items,opts){
     if(p.issuerInfo)messages.push(`**關於發行機構**\n${p.issuerInfo}`);
     noteLines=[...(p.issuerInfo?[BOND_ISSUER_DISCLAIMER]:[]),...catalogDisclaimerLines([p])];
   }else if(p.cat==='fund'){
-    if(p.managerInfo)messages.push(`**關於這檔基金**\n${p.managerInfo}`);
+    if(p.managerInfo)messages.push(`**關於這檔${catLabel}**\n${p.managerInfo}`);
     noteLines=catalogDisclaimerLines([p]);
   }
   aiSay(messages,()=>{
@@ -917,7 +919,10 @@ function enterProductCalc(p,items,opts){
      傳進來即可，這裡不需要再自己另開一輪 */
   const cardAnchor=opts.anchor||null;
   S.selectedProductCode=p.code;
-  const tag={bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
+  /* items===ETF_PICKS：ETF_PICKS 裡的商品 cat 都沿用 'fund'（見 catalog.js 該常數的說明），
+     單純依 cat 判斷會把試算卡的「基金」標籤也套到 ETF 商品上，這裡改成先看是不是來自
+     ETF_PICKS 清單，是的話直接顯示「ETF」 */
+  const tag=items===ETF_PICKS?'ETF':{bond:'債券',fund:'基金',deposit:'外匯定存'}[p.cat];
   const backLabel=p.cat==='deposit'?'查看其他天期':'查看其他產品';
   aiSay([investRationale(tag)],()=>{
     renderComponent('card/calculator',p,100-keepPctFor(),{tag,showPeriodTabs:p.cat!=='deposit'});

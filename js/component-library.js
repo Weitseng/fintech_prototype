@@ -806,7 +806,7 @@ function renderAssetVsDepositCalc(asset,initialAssetRatio,opts){
         </div>
       </div>
     </div>
-    <div class="calc-note">*${showPeriodTabs?`${tag}投資1年/投資3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':'基金為歷史績效示範，不代表未來報酬'}</div>
+    <div class="calc-note">*${showPeriodTabs?`${tag}投資1年/投資3年報酬率為試算參考值，`:''}${asset.cat==='bond'?'債券票面利率固定、不隨年期變動':asset.cat==='deposit'?'定存利率為銀行公告牌告利率，非試算示範值':tag==='ETF'?'ETF為歷史績效示範，不代表未來報酬':'基金為歷史績效示範，不代表未來報酬'}</div>
     <div class="calc-result">
       <div class="calc-result-panel">
         <div class="calc-emoji-layer"></div>
